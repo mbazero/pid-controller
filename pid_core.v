@@ -2,11 +2,6 @@
 
 // pid_core -- mba 2014
 
-/*
-TODO
-- implement clear
-*/
-
 module pid_core #(
 	// parameters
 	parameter W_IN				= 18,							// input data width
@@ -40,7 +35,7 @@ module pid_core #(
 //////////////////////////////////////////
 
 /* input data */
-reg signed	[W_IN:0]	data;						// active input data
+reg signed	[W_OUT-1:0]	data;					// active input data
 
 /* pid parameters */
 reg signed	[W_OUT-1:0]	setpoint;			// active lock setpoint
@@ -49,11 +44,11 @@ reg signed	[W_OUT-1:0]	i_coef;				// active integral coefficient
 reg signed	[W_OUT-1:0]	d_coef;				// active derivative coefficient
 
 /* error signals */
-wire signed	[W_IN:0]		e_cur;				// current error signal
-reg signed	[W_IN:0]		e_prev	[0:1];	// previous two error signals
+wire signed	[W_OUT-1:0]	e_cur;				// current error signal
+reg signed	[W_OUT-1:0]	e_prev	[0:1];	// previous two error signals
 
 /* z-transform coefficients */
-wire signed	[W_OUT:0]	k1, k2, k3; 		// z-transform coefficients for discrete PID filter
+wire signed	[W_OUT-1:0]	k1, k2, k3; 		// z-transform coefficients for discrete PID filter
 
 /* control variable (u) cur, prev, and delta vals */
 reg signed	[W_OUT-1:0]	u_prev;				// previous pid filter output
@@ -114,7 +109,7 @@ end
 
 /* previous error and output registers */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
 		u_prev		<= 0;
 		e_prev[0] 	<= 0;
 		e_prev[1]	<= 0;
