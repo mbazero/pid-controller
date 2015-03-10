@@ -9,7 +9,7 @@
 module adc_controller #(
 	// parameters
 	parameter W_OUT	= 18,								// width of adc data channels
-	parameter N_CHAN	= 6,								// number of adc channels to be read (max = 8)
+	parameter N_CHAN	= 8,								// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
 	parameter T_CYCLE	= 85								// conversion cycle time in number of adc clock cycles
 	/* adc data sheet suggests a 5us cycle time. max adc clock rate is 17MHz. 5us*17M = 85 */
 	)(
@@ -46,6 +46,7 @@ module adc_controller #(
 
 /* parameters */
 localparam RD_LENGTH		= W_OUT*(N_CHAN/2);		// bits of data to be read per serial port in a single cycle
+localparam OS_MIN	= 1;									// set minimum oversampling rate of 2^1 to support 8 channels
 
 /* registers */
 reg	[2:0]					os_cur;			// active oversampling mode
@@ -82,8 +83,8 @@ assign sclk_out			= n_cs_out | clk_in;	// only pass serial clock to adc when chi
 genvar i;
 generate
 	for ( i = 0; i < N_CHAN/2; i = i+1 ) begin : data_out_arr
-		assign data_valid_out[i] 		= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
-		assign data_valid_out[i+N_CHAN/2]		= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
+		assign data_valid_out[i] 				= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
+		assign data_valid_out[i+N_CHAN/2]	= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
 	end
 endgenerate
 
@@ -94,9 +95,9 @@ endgenerate
 /* oversampling mode register */
 always @( posedge update_in or posedge reset_in ) begin
 	if ( reset_in == 1 )
-		os_cur <= 0;
+		os_cur <= OS_MIN;
 	else if ( update_in == 1 )
-		os_cur <= os_in;
+		os_cur <= (os_in >= OS_MIN) ? os_in : OS_MIN;	// enforce minimum oversample rate
 end
 
 /* serial read shift register */
