@@ -10,7 +10,7 @@ module oversample_filter #(
 	// parameters
 	parameter W_IN		= 18,										// width of input data
 	parameter W_OUT	= 18,										// width of output data
-	parameter W_OS		= 4;										// width of oversample mode signal (max oversample ratio = 2^(2^W_OS - 1))
+	parameter W_OS		= 4										// width of oversample mode signal (max oversample ratio = 2^(2^W_OS - 1))
 	)(
 	// inputs <- top level entity
 	input wire								clk_in,				// system clock

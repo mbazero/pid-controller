@@ -84,6 +84,7 @@ if ( W_OUT >= W_IN ) begin
 end else begin
 	assign data_out = lock_data_stage[3][W_OUT-1 -: W_IN]; // take n MSB bits of lock data where n = W_OUT
 end
+
 //////////////////////////////
 
 /* lock data range check */
