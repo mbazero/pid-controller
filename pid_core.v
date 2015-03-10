@@ -43,17 +43,17 @@ module pid_core #(
 reg signed	[W_IN:0]	data;						// active input data
 
 /* pid parameters */
-reg signed	[15:0]		setpoint;			// active lock setpoint
-reg signed 	[15:0]		p_coef;				// active proportional coefficient
-reg signed	[15:0]		i_coef;				// active integral coefficient
-reg signed	[15:0]		d_coef;				// active derivative coefficient
+reg signed	[W_OUT-1:0]	setpoint;			// active lock setpoint
+reg signed 	[W_OUT-1:0]	p_coef;				// active proportional coefficient
+reg signed	[W_OUT-1:0]	i_coef;				// active integral coefficient
+reg signed	[W_OUT-1:0]	d_coef;				// active derivative coefficient
 
 /* error signals */
-wire signed	[15:0]		e_cur;				// current error signal
-reg signed	[15:0]		e_prev	[0:1];	// previous two error signals
+wire signed	[W_IN:0]		e_cur;				// current error signal
+reg signed	[W_IN:0]		e_prev	[0:1];	// previous two error signals
 
 /* z-transform coefficients */
-wire signed	[17:0]		k1, k2, k3; 		// z-transform coefficients for discrete PID filter
+wire signed	[W_OUT:0]	k1, k2, k3; 		// z-transform coefficients for discrete PID filter
 
 /* control variable (u) cur, prev, and delta vals */
 reg signed	[W_OUT-1:0]	u_prev;				// previous pid filter output
@@ -108,7 +108,7 @@ always @ ( posedge clk_in ) begin
 	if ( reset_in == 1 )
 		data <= 0;
 	else if (( data_valid_in == 1 ) & ( cur_state == ST_IDLE )) begin
-		data <= {1'b0, data_in}; // convert unsigned input data to signed local data
+		data <= data_in; // convert unsigned input data to signed local data
 	end
 end
 
@@ -127,7 +127,12 @@ end
 
 /* frontpanel parameter registers */
 always @( posedge clk_in ) begin
-	if (( update_in == 1 ) & ( update_en_in == 1 )) begin
+	if ( reset_in == 1 ) begin
+		setpoint <= 0;
+		p_coef	<= 0;
+		i_coef	<= 0;
+		d_coef	<= 0;
+	end else if (( update_in == 1 ) & ( update_en_in == 1 )) begin
 		setpoint	<= setpoint_in;
 		p_coef	<= p_coef_in;
 		i_coef	<= i_coef_in;

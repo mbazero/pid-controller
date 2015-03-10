@@ -104,7 +104,7 @@ always @( posedge update_in or posedge reset_in ) begin
 end
 
 /* serial read shift register */
-always @( posedge clk_in or posedge reset_in ) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		data_a_out <= 0;
 		data_b_out <= 0;
@@ -132,7 +132,7 @@ initial begin
 end
 
 /* state sequential logic */
-always @( posedge clk_in or posedge reset_in ) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		cv_cur_state <= CV_ST_IDLE;
 	end else begin
@@ -141,7 +141,7 @@ always @( posedge clk_in or posedge reset_in ) begin
 end
 
 /* state counter sequential logic */
-always @( posedge clk_in or posedge reset_in ) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		cv_counter <= 0;
 	end else if ( cv_cur_state != cv_next_state ) begin
@@ -184,7 +184,7 @@ initial begin
 end
 
 /* state sequential logic */
-always @( posedge clk_in or posedge reset_in ) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		rd_cur_state <= RD_ST_IDLE;
 	end else begin
@@ -193,7 +193,7 @@ always @( posedge clk_in or posedge reset_in ) begin
 end
 
 /* state counter sequential logic */
-always @( posedge clk_in or posedge reset_in ) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		rd_counter <= 0;
 	end else if ( rd_cur_state != rd_next_state ) begin

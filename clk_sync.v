@@ -57,10 +57,14 @@ assign data_valid_out = data_valid & {N_ADC{ cur_state == ST_SEND }};
 //////////////////////////////////////////
 
 /* latch all data and data valid vectors when any channel asserts data_valid */
-always @( posedge data_valid_rdc ) begin
-	data_a_out <= data_a_in;
-	data_b_out <= data_b_in;
-	data_valid <= data_valid_in;
+always @( posedge data_valid_rdc or posedge reset_in ) begin
+	if ( reset_in == 1 ) begin
+		data_valid <= 0;
+	end else begin
+		data_a_out <= data_a_in;
+		data_b_out <= data_b_in;
+		data_valid <= data_valid_in;
+	end
 end
 
 //////////////////////////////////////////
@@ -68,7 +72,7 @@ end
 //////////////////////////////////////////
 
 /* state register - synchronous with system clock */
-always @( posedge sys_clk_in or posedge reset_in ) begin
+always @( posedge sys_clk_in ) begin
 	if ( reset_in == 1 ) begin
 		cur_state <= ST_WAIT_PE;
 	end else begin

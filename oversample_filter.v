@@ -79,7 +79,7 @@ assign osf_reset 			= ( reset_in | ~activate_in ); //TODO check this
 //////////////////////////////////////////
 
 /* sum accumulator */
-always @( posedge clk_in or posedge reset_in) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		sum <= 0;
 	end else if (( cur_state == ST_IDLE ) | ( cur_state == ST_DELAY )) begin
@@ -90,7 +90,7 @@ always @( posedge clk_in or posedge reset_in) begin
 end
 
 /* count number of adc data words received in the current state */
-always @( posedge clk_in or posedge reset_in ) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		sample_counter	<= 0;
 	end else if ( cur_state != next_state ) begin
@@ -101,7 +101,7 @@ always @( posedge clk_in or posedge reset_in ) begin
 end
 
 /* latch frontpanel parameters on update signal */
-always @( posedge clk_in or posedge reset_in ) begin
+always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		os_cur		<= 0;
 		cycle_delay	<= 0;
