@@ -129,7 +129,7 @@ module tle_adc_controller_tf;
 												 //           check that the block transfer begins (0-255)
 	parameter pipeInSize = 1024;      // REQUIRED: byte (must be even) length of default
 												 //           PipeIn; Integer 0-2^32
-	parameter pipeOutSize = 1024;     // REQUIRED: byte (must be even) length of default
+	parameter pipeOutSize = 8;     // REQUIRED: byte (must be even) length of default
 												 //           PipeOut; Integer 0-2^32
 
 	integer k;
@@ -161,18 +161,54 @@ module tle_adc_controller_tf;
 	//------------------------------------------------------------------------
 
 	// generate ~17MHz clock
-	always #30 clk17_in = !clk17_in; 
+	always #60 clk17_in = !clk17_in; 
 	
 	// generate 50MHz clock
-	always #10 clk50_in = !clk50_in; 
+	always #20 clk50_in = !clk50_in; 
 
 	// serial data channels
 	assign adc_data_a_in = data_a_tx[TX_LEN-1]; 
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
+
+	// endpoint params
+	parameter adc_os_owi					= 8'h01;
+	parameter adc_cstart_ti				= 8'h53;
+
+	parameter osf_activate_owi			= 8'h15;
+	parameter osf_cycle_delay_owi		= 8'h02;
+	parameter osf_log_ovr_owi			= 8'h03;
+	parameter osf_update_en_owi		= 8'h04;
+
+	parameter pid_clear_ti				= 8'h55;
+	parameter pid_setpoint_owi			= 8'h04;
+	parameter pid_p_coef_owi			= 8'h05;
+	parameter pid_i_coef_owi			= 8'h06;
+	parameter pid_d_coef_owi			= 8'h07;
+	parameter pid_update_en_owi		= 8'h08;
+
+	parameter rtr_src_sel_owi			= 8'h09;
+	parameter rtr_dest_sel_owi			= 8'h0a;
+
+	parameter opp_init_owi0				= 8'h0b;
+	parameter opp_init_owi1				= 8'h0c;
+	parameter opp_init_owi2				= 8'h0d;
+	parameter opp_min_owi0				= 8'h0e;
+	parameter opp_min_owi1				= 8'h0f;
+	parameter opp_min_owi2				= 8'h10;
+	parameter opp_max_owi0				= 8'h11;
+	parameter opp_max_owi1				= 8'h12;	
+	parameter opp_max_owi2				= 8'h13;
+	parameter opp_update_en_owi		= 8'h14;
+
+	parameter dac_ref_set_ti			= 8'h56;
 	
-	// ok local params
-	localparam	mask = 32'hffffffff,
-				mod_update_ep = 8'h57;
+	parameter module_update_ti			= 8'h57;
+	
+	parameter sys_reset_ti				= 8'h58; 
+	
+	parameter osf_bulk_data_opo		= 8'ha3;
+
+	parameter mask					= 32'hffffffff;
 	
 	initial begin
 		// Initialize Inputs
@@ -195,33 +231,33 @@ module tle_adc_controller_tf;
 		#100;
 		
 		// System reset
-		ActivateTriggerIn(8'h58, 0);
+		ActivateTriggerIn(sys_reset_ti, 0);
 		
 		// Set ADC oversampling mode
-		SetWireInValue(8'h01, 16'd0, mask);	// os = 0
+		SetWireInValue(adc_os_owi, 0, mask);	// os = 0
 		
 		UpdateWireIns;
-		ActivateTriggerIn(mod_update_ep, 0);
+		ActivateTriggerIn(module_update_ti, 0);
 
 		// Set OSF ratio and activate channel 0
-		SetWireInValue(8'h15, 16'd1, mask); // set OSF[0] activation 
-		SetWireInValue(8'h02, 16'd0, mask); // cycle delay = 0
-		SetWireInValue(8'h03, 16'd0, mask); // log ovr = 0
-		SetWireInValue(8'h04, 16'd1, mask); // sensitize OSF channel 0
+		SetWireInValue(osf_activate_owi, 16'd1, mask); // set OSF[0] activation 
+		SetWireInValue(osf_cycle_delay_owi, 16'd0, mask); // cycle delay = 0
+		SetWireInValue(osf_log_ovr_owi, 16'd0, mask); // log ovr = 0
+		SetWireInValue(osf_update_en_owi, 16'd1, mask); // sensitize OSF channel 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(mod_update_ep, 0);
+		ActivateTriggerIn(module_update_ti, 0);
 
 
 		// Set channel 0 PID params
-		SetWireInValue(8'h04, 16'd3, 16'hffff);	// setpoint = 3
-		SetWireInValue(8'h05, 16'd10, 16'hffff);	// p = 10
-		SetWireInValue(8'h06, 16'd3, 16'hffff);	// i = 3
-		SetWireInValue(8'h07, 16'd0, 16'hffff);	// d = 0
-		SetWireInValue(8'h08, 16'd1, 16'hffff);	// sensitize PID channel 0
+		SetWireInValue(pid_setpoint_owi, 16'd3, mask);	// setpoint = 3
+		SetWireInValue(pid_p_coef_owi, 16'd10, mask);	// p = 10
+		SetWireInValue(pid_i_coef_owi, 16'd3, mask);	// i = 3
+		SetWireInValue(pid_d_coef_owi, 16'd0, mask);	// d = 0
+		SetWireInValue(pid_update_en_owi, 16'd1, mask);	// sensitize PID channel 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(mod_update_ep, 0);
+		ActivateTriggerIn(module_update_ti, 0);
 
 		// Set channel 5 PID params
 //		SetWireInValue(8'h02, 16'd0, 16'hffff);	// setpoint = 0
@@ -234,11 +270,11 @@ module tle_adc_controller_tf;
 //		ActivateTriggerIn(8'h54, 0);
 
 		// Route input channel 0 to output channel 0
-		SetWireInValue(8'h09, 16'd0, 16'hffff);	// router source
-		SetWireInValue(8'h0a, 16'd0, 16'hffff);	// router destination
+		SetWireInValue(rtr_src_sel_owi, 16'd0, mask);	// router source
+		SetWireInValue(rtr_dest_sel_owi, 16'd0, mask);	// router destination
 
 		UpdateWireIns;
-		ActivateTriggerIn(mod_update_ep, 0);
+		ActivateTriggerIn(module_update_ti, 0);
 
 		// Route input channel 5 to output channel 0 
 //		SetWireInValue(8'h0b, 16'd5, 16'hffff);	// router source
@@ -248,13 +284,13 @@ module tle_adc_controller_tf;
 //		ActivateTriggerIn(8'h54, 0);
 
 		// Set channel 0 OPP params
-		SetWireInValue(8'h0b, 16'd500, 16'hffff);	// opp init p1 = 0 
-		SetWireInValue(8'h0c, 16'd0, 16'hffff); 	// opp init p2 = 0 
-		SetWireInValue(8'h0d, 16'd500, 16'hffff);	// opp init p3 = 500
-		SetWireInValue(8'h14, 16'd1, 16'hffff);	// sensitize OPP channel 0
+		SetWireInValue(opp_init_owi0, 16'd500, mask);	// opp init p1 = 0 
+		SetWireInValue(opp_init_owi1, 16'd0, mask); 	// opp init p2 = 0 
+		SetWireInValue(opp_init_owi2, 16'd500, mask);	// opp init p3 = 500
+		SetWireInValue(opp_update_en_owi, 16'd1, mask);	// sensitize OPP channel 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(mod_update_ep, 0);
+		ActivateTriggerIn(module_update_ti, 0);
 
 		// Set channel 1 OPP params
 //		SetWireInValue(8'h07, 16'd100, 16'hffff);	// opp init p3 = 100
@@ -263,13 +299,15 @@ module tle_adc_controller_tf;
 //		UpdateWireIns;
 //		ActivateTriggerIn(8'h54, 0);
 		
+		// activate channel 0
+		SetWireInValue(osf_activate_owi, 16'd1, mask);
+		UpdateWireIns;
+
 		// trigger adc cstart
-		ActivateTriggerIn(8'h53, 0);
+		ActivateTriggerIn(adc_cstart_ti, 0);
 
 		// transission simulation
-		repeat(4) begin
-			chan[0] = {$random} % 15; 
-		
+		repeat(8) begin
 			// wait for convst_out to pulse and then assert busy
 			@(posedge adc_convst_out) begin
 				@(posedge clk17_in) adc_busy_in = 1; 
@@ -300,7 +338,13 @@ module tle_adc_controller_tf;
 			// simulate conversion end
 			#200;
 			@(posedge clk17_in) adc_busy_in = 0; 
+
+			// double chan 0 value
+			chan[0] = chan[0] << 2; 
 		end
+
+		// read from pipe 
+		ReadFromPipeOut(osf_bulk_data_opo, pipeOutSize);
 		
 		$stop;
 
