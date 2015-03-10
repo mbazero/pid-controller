@@ -13,7 +13,7 @@ module pid_core #(
 	input wire								reset_in,		// system reset
 
 	// inputs <- oversample filter
-	input wire unsigned 	[W_IN-1:0]	data_in, 		// unsigned input data
+	input wire signed 	[W_IN-1:0]	data_in, 		// unsigned input data
 	input wire								data_valid_in,	// input data valid signal
 
 	// inputs <- frontpanel controller
@@ -21,6 +21,7 @@ module pid_core #(
 	input wire signed 	[15:0] 		p_coef_in,		// proportional coefficient
 	input wire signed 	[15:0] 		i_coef_in,		// integral coefficient
 	input wire signed 	[15:0] 		d_coef_in,		// derivative coefficient
+	input wire								lock_en_in,		// enables pid filter
 	input wire								clear_in,		// clears pid memory
 	input wire								update_en_in,	// sensitizes module to update signal
 	input wire								update_in, 		// pulse triggers update of frontpanel parameters
@@ -109,7 +110,7 @@ end
 
 /* previous error and output registers */
 always @( posedge clk_in ) begin
-	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
+	if (( reset_in == 1 ) | ( lock_en_in == 0 ) | ( clear_in == 1 )) begin
 		u_prev		<= 0;
 		e_prev[0] 	<= 0;
 		e_prev[1]	<= 0;
@@ -122,7 +123,7 @@ end
 
 /* frontpanel parameter registers */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if (( reset_in == 1 ) | ( lock_en_in == 0 )) begin
 		setpoint <= 0;
 		p_coef	<= 0;
 		i_coef	<= 0;

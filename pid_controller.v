@@ -3,6 +3,7 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - make sure output preprocessor multiplier is delivered in signed fashion
 // - figure out lock en signal (is it really needed, if so, make it a frontpanel param)
 // - HUGE: you need to totally revamp the cycle control unit. see notes that module.
 // - modify adc reset so it is synchronous with the 17MHz clock
@@ -341,6 +342,7 @@ generate
 			.p_coef_in			(pid_p_coef),
 			.i_coef_in			(pid_i_coef),
 			.d_coef_in			(pid_d_coef),
+			.lock_en_in			(1'b1), //DEBUG lock always active for testing
 			.clear_in			(pid_clear[m]),
 			.update_en_in		(pid_update_en[m]),
 			.update_in			(module_update),
@@ -390,7 +392,6 @@ generate
 			.output_min_in		(18'd0),
 			.output_init_in	(opp_init[W_DAC_DATA-1:0]),
 			.multiplier_in		(8'b1),							// DEBUG: multiplier fixed at 1 for testing
-			.lock_en_in			(1'b1),							// DEBUG: dac locks always enabled for testing
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
 			.data_out			(opp_dac_data[x]),
