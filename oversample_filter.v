@@ -37,37 +37,38 @@ module oversample_filter #(
 //////////////////////////////////////////
 
 /* local params */
-localparam	MAX_OS	= 2^W_OS - 1;	// maximum log2 oversample ratio
+localparam	MAX_OS	= 2^W_OS - 1;		// maximum log2 oversample ratio
+localparam	W_SUM		= MAX_OS + W_IN;	// width of sum register
 
 /* wires */
-wire						idle;
-wire						osf_reset;		// local reset signal which is activated by system reset or channel deactive
+wire	idle;
+wire	osf_reset;	// local reset signal which is activated by system reset or channel deactive
 
 /* registers */
-reg	[15:0]			cycle_delay;
-reg	[MAX_OS:0]		sample_counter;
-reg	[W_OS-1:0]		os_cur;
-reg	[31:0]			sum;
+reg	[15:0]		cycle_delay;
+reg	[MAX_OS:0]	sample_counter;
+reg	[W_OS-1:0]	os_cur;
+reg	[W_SUM-1:0]	sum;
 
 /* state registers */
-reg	[15:0]			counter;
-reg	[2:0]				cur_state;
-reg	[2:0]				next_state;
+reg	[15:0]	counter;
+reg	[2:0]		cur_state;
+reg	[2:0]		next_state;
 
 /* state parameters */
-localparam	ST_IDLE			= 3'd0,
-				ST_DELAY			= 3'd1,
-				ST_SAMPLE		= 3'd2,
-				ST_SEND			= 3'd3;
+localparam	ST_IDLE			= 3'd0,	// wait for channel activation signal
+				ST_DELAY			= 3'd1,	// wait specified number of adc cycles before accepting data (to account for DAC/DDS settling times)
+				ST_SAMPLE		= 3'd2,	// collect adc data and maintain accumulating sum
+				ST_SEND			= 3'd3;	// divide sum by oversample ratio and assert data valid
 
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
 
-/* data out */
+/* divide sum by oversample ratio (left shift amount equal to log2 oversample ration) */
 assign data_out 			= ( sum >> os_cur );
 
-/* data valid out */
+/* assert data_valid_out during the SEND state */
 assign data_valid_out 	= ( cur_state == ST_SEND );
 
 /* osf reset */
@@ -77,17 +78,19 @@ assign osf_reset 			= ( reset_in | ~activate_in ); //TODO check this
 // sequential logic
 //////////////////////////////////////////
 
-/* sum */
-always @( posedge clk_in ) begin
-	if (( cur_state == ST_IDLE ) | ( cur_state == ST_DELAY )) begin
+/* sum accumulator */
+always @( posedge clk_in or posedge reset_in) begin
+	if ( reset_in == 1 ) begin
+		sum <= 0;
+	end else if (( cur_state == ST_IDLE ) | ( cur_state == ST_DELAY )) begin
 		sum <= 0;
 	end else if (( data_valid_in == 1) & ( cur_state == ST_SAMPLE )) begin
 		sum <= sum + data_in;
 	end
 end
 
-/* sample counter */
-always @( posedge clk_in ) begin
+/* count number of adc data words received in the current state */
+always @( posedge clk_in or posedge reset_in ) begin
 	if ( reset_in == 1 ) begin
 		sample_counter	<= 0;
 	end else if ( cur_state != next_state ) begin
@@ -97,10 +100,13 @@ always @( posedge clk_in ) begin
 	end
 end
 
-/* frontpanel parameter registers */
-always @( posedge clk_in ) begin
-	if (( update_in == 1 ) & ( update_en_in == 1 )) begin
-		os_cur 	<= os_in;
+/* latch frontpanel parameters on update signal */
+always @( posedge clk_in or posedge reset_in ) begin
+	if ( reset_in == 1 ) begin
+		os_cur		<= 0;
+		cycle_delay	<= 0;
+	end else if (( update_in == 1 ) & ( update_en_in == 1 )) begin
+		os_cur 			<= os_in;
 		cycle_delay		<= cycle_delay_in;
 	end
 end
@@ -144,10 +150,10 @@ always @( * ) begin
 			if ( activate_in == 1 )							next_state <= ST_SAMPLE;
 		end
 		ST_DELAY: begin
-			if ( sample_counter == cycle_delay ) 		next_state <= ST_SAMPLE;
+			if ( sample_counter >= cycle_delay ) 		next_state <= ST_SAMPLE;
 		end
 		ST_SAMPLE: begin
-			if ( sample_counter[os_cur] == 1 )	next_state <= ST_SEND;
+			if ( sample_counter[os_cur] == 1 )			next_state <= ST_SEND;
 		end
 		ST_SEND: 												next_state <= ST_DELAY;
 	endcase
