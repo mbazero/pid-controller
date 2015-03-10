@@ -1,23 +1,26 @@
 `timescale 1ns / 1ps
 
 // adc_controller -- mba 2014
+// runs AD7608 in continuous conversion mode
 
 // TODO
-// - CHANGE ALL FP PARAM REGISTERS TO LATCH ON POSEDGE OF UPDATE SIGNAL
-// - figure out adc channel mapping
+// - AD7608 datasheet lists a maximum time from the last CS rising edge to busy falling
+// edge. I don't think this time is satisfied for large oversample ratios.
+// Investigate why this time restriction exists and perhaps change CS start
+// time if it's important.
 
 module adc_controller #(
 	// parameters
-	parameter W_OUT	= 18,								// width of adc data channels
-	parameter N_CHAN	= 8,								// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
-	parameter T_CYCLE	= 85								// conversion cycle time in number of adc clock cycles
-	/* adc data sheet suggests a 5us cycle time. max adc clock rate is 17MHz. 5us*17M = 85 */
+	parameter W_OUT			= 18,						// width of adc data channels
+	parameter N_CHAN			= 8,						// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
+	parameter MIN_T_CYCLE	= 85						// minimum cycle time in number of adc clock cycles
+	/* adc data sheet lists the min cycle time as 5us. max adc clock rate is 17MHz. 5us*17M = 85 */
 	)(
 	// inputs <- top level entity
 	input wire						clk_in,				// ADC serial clock; max frequency 17MHz
 	input wire						reset_in, 			// system reset
 
-	// inputs <- top level entity (from adc hardware)
+	// inputs <- AD7608
 	input wire						busy_in,				// conversion busy signal
 	input wire						data_a_in,			// serial data channel a
 	input wire						data_b_in,			// serial data channel b
@@ -27,7 +30,7 @@ module adc_controller #(
 	input wire						update_in,			// pulse triggers update of frontpanel parameters
 	input wire						cstart_in,			// pulse starts continuous adc conversion cycle
 
-	// outputs -> top level entity (to adc hardware)
+	// outputs -> AD7608
 	output wire	[2:0]				os_out,				// oversampling signal to adc
 	output wire						convst_out,			// convert start signal to adc
 	output wire						reset_out,			// reset signal to adc
@@ -46,7 +49,7 @@ module adc_controller #(
 
 /* parameters */
 localparam RD_LENGTH		= W_OUT*(N_CHAN/2);		// bits of data to be read per serial port in a single cycle
-localparam OS_MIN	= 1;									// set minimum oversampling rate of 2^1 to support 8 channels
+localparam OS_MIN	= 1;									// set minimum oversampling ratio of 2^1 to support 8 channels
 
 /* registers */
 reg	[2:0]					os_cur;			// active oversampling mode
@@ -113,11 +116,10 @@ end
 
 /*
 * Data reading and conversion must happen concurrently in order to acheive
-* max throughput of 200ksps. Toward this end, the ADC controller has two
-* independent state machines, one to handle data conversion and one to
-* handle serial data reading.
+* max throughput. Toward this end, the ADC controller has two independent
+* state machines, one to handle data conversion and one to handle serial
+* data reading.
 */
-
 //////////////////////////////////////////
 // convert state machine
 //////////////////////////////////////////
@@ -161,7 +163,7 @@ always @( * ) begin
 				cv_next_state <= CV_ST_CONV;
 		end
 		CV_ST_CONV: begin
-			if (( cv_counter >= T_CYCLE ) & ( busy_in == 0 ))
+			if (( cv_counter >= MIN_T_CYCLE ) & ( busy_in == 0 ))
 				cv_next_state <= CV_ST_CONVST;
 		end
 	endcase
