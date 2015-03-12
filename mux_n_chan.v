@@ -11,15 +11,15 @@ module mux_n_chan #(
 	// inputs
 	input wire[W_CHAN*N_IN-1:0]	data_in,				// input channels on a single bus
 	input wire[W_SEL-1:0]			chan_select_in,	// channel select
-	
-	// outputs 
+
+	// outputs
 	output wire[W_CHAN-1:0]			data_out				// data out bus
    );
 
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
-	wire	[W_CHAN-1:0]	channel	[0:N_IN-1];		// input channels seperated into discrete structures  
+	wire	[W_CHAN-1:0]	channel	[0:N_IN-1];		// input channels seperated into discrete structures
 
 //////////////////////////////////////////
 // combinational logic
@@ -31,9 +31,9 @@ generate
 	for ( i = 0; i < N_IN; i = i+1 ) begin : chan_array
 		assign channel[i] = data_in[ i*W_CHAN +: W_CHAN ];
 	end
-endgenerate 
+endgenerate
 
-/* data out */ 
-assign data_out = channel[chan_select_in]; 
+/* data out */
+assign data_out = channel[chan_select_in];
 
 endmodule
