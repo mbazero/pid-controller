@@ -21,6 +21,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
 	input wire signed		[7:0]			multiplier_in,		// output multiplication factor
+	input wire								lock_en_in,			// lock enable signal, opp outputs constant value if lock disables
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 

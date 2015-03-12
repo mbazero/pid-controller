@@ -36,6 +36,7 @@ module frontpanel_interface #(
 	output wire				[N_ADC-1:0]			osf_update_en_out, 			// computed on osf param change
 
 	// outputs -> pid core
+	output wire				[N_ADC-1:0]			pid_lock_en_out,
 	output wire				[N_ADC-1:0]			pid_clear_out,
 	output wire				[15:0]				pid_setpoint_out,				// dm
 	output wire signed	[15:0]				pid_p_coef_out,				// dm
@@ -140,6 +141,7 @@ assign osf_log_ovr_out		= osf_log_ovr_wire[W_OSF_ORT-1:0];
 assign osf_update_en_out	= osf_update_en_wire[N_ADC-1:0];
 
 /* pid core */
+assign pid_lock_en_out		= {N_ADC{1'b1}}; //DEBUG locks always active
 assign pid_clear_out			= pid_clear_trig[N_ADC-1:0];
 assign pid_setpoint_out		= pid_setpoint_wire;
 assign pid_p_coef_out 		= pid_p_coef_wire;

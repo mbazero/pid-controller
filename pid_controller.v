@@ -123,7 +123,7 @@ assign clk17_db = clk17_in;
 
 /* parameters */
 localparam N_OUT 					= N_DAC + 3*N_DDS;	// total number of output channels; each dds has three output channels (phase, freq, and amp)
-localparam W_PIDV 				= W_PID + 1;			// width of pid data bus with valid signal
+localparam W_PIDV 				= W_PID + 2;			// width of pid data bus with data valid and lock enable signals
 localparam W_RTR_SEL 			= 4;						// width of router select signal
 localparam PIPE_LATENCY 		= 5;						// latency in clock cycles of pipeline
 localparam W_OSF_ORT				= 6;						// width of oversample ratio signal
@@ -164,6 +164,7 @@ wire	[15:0]					pid_i_coef;
 wire	[15:0]					pid_d_coef;
 wire	[W_PID-1:0]				pid_data[0:N_ADC-1];
 wire	[N_ADC-1:0]				pid_data_valid;
+wire	[N_ADC-1:0]				pid_lock_en;
 
 /* router */
 wire	[W_RTR_SEL-1:0]		rtr_src_sel;
@@ -172,10 +173,10 @@ wire	[W_PIDV*N_ADC-1:0]	rtr_input_bus;
 wire	[W_PIDV*N_OUT-1:0]	rtr_output_bus;
 wire	[W_PID-1:0]				rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
+wire	[N_OUT-1:0]				rtr_lock_en;
 
 /* output preprocessor */
 wire	[N_OUT-1:0]				opp_update_en;
-wire	[N_OUT-1:0]				opp_lock_en;
 wire	[47:0]					opp_max;
 wire	[47:0]					opp_min;
 wire	[47:0]					opp_init;
@@ -217,7 +218,7 @@ assign n_out_buf_en = 1'b0;
 genvar i;
 generate
 	for ( i = 0; i < N_ADC; i = i + 1 ) begin : rtr_in_arr
-		assign rtr_input_bus[ i*W_PIDV +: W_PIDV ] = {pid_data_valid[i], pid_data[i]};
+		assign rtr_input_bus[ i*W_PIDV +: W_PIDV ] = {pid_lock_en[i], pid_data_valid[i], pid_data[i]};
 	end
 endgenerate
 
@@ -227,6 +228,7 @@ generate
 	for ( j = 0; j < N_OUT; j = j + 1 ) begin : rtr_out_arr
 		assign rtr_data[j] 			= rtr_output_bus[ j*W_PIDV +: W_PID ];
 		assign rtr_data_valid[j]	= rtr_output_bus[ j*W_PIDV + W_PID ];
+		assign rtr_lock_en[j]		= rtr_output_bus[ j*W_PIDV + W_PID + 1];
 	end
 endgenerate
 
@@ -342,7 +344,7 @@ generate
 			.p_coef_in			(pid_p_coef),
 			.i_coef_in			(pid_i_coef),
 			.d_coef_in			(pid_d_coef),
-			.lock_en_in			(1'b1), //DEBUG lock always active for testing
+			.lock_en_in			(pid_lock_en[m]), //DEBUG lock always active for testing
 			.clear_in			(pid_clear[m]),
 			.update_en_in		(pid_update_en[m]),
 			.update_in			(module_update),
@@ -392,6 +394,7 @@ generate
 			.output_min_in		(18'd0),
 			.output_init_in	(opp_init[W_DAC_DATA-1:0]),
 			.multiplier_in		(8'b1),							// DEBUG: multiplier fixed at 1 for testing
+			.lock_en_in			(rtr_lock_en[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
 			.data_out			(opp_dac_data[x]),
@@ -582,6 +585,7 @@ fp_io (
 	.osf_log_ovr_out		(osf_log_ovr),
 	.osf_activate_out		(osf_activate),
 	.osf_update_en_out	(osf_update_en),
+	.pid_lock_en_out		(pid_lock_en),
 	.pid_clear_out			(pid_clear),
 	.pid_setpoint_out		(pid_setpoint),
 	.pid_p_coef_out		(pid_p_coef),
