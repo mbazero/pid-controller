@@ -403,25 +403,6 @@ generate
 	end
 endgenerate
 
-///* dac cycle controller */
-//cycle_controller #(
-//	.W_DATA				(W_DAC_DATA),
-//	.W_DAC_INST			(W_DAC_INST),
-//	.N_DAC				(N_DAC),
-//	.PIPE_LATENCY		(PIPE_LATENCY))
-//ccu (
-//	.clk_in				(clk50_in),
-//	.reset_in			(sys_reset),
-//	.bus_data_in		(ccu_input_bus),
-//	.data_valid_in		(opp_dac_data_valid),
-//	.adc_data_valid_in(adc_data_valid[0]),
-//	.dac_done_in		(dac_done),
-//	.data_out			(ccu_data),
-//	.channel_out		(ccu_channel),
-//	.data_valid_out	(ccu_data_valid),
-//	.dac_stall_out		(ccu_dac_stall)
-//	);
-//
 ///* dac controller */
 //dac_controller #(
 //	.W_DATA				(W_DAC_DATA),

@@ -6,7 +6,7 @@
 module clk_sync #(
 	// parameters
 	parameter W_DATA	= 18,							// width of data bus
-	parameter N_ADC	= 6							// number of active adc channels
+	parameter N_ADC	= 8							// number of active adc channels
 	)(
 	// inputs <- top level entity
 	input wire						sys_clk_in,		// 50MHz system clock

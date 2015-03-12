@@ -5,7 +5,7 @@
 module pid_core #(
 	// parameters
 	parameter W_IN				= 18,							// input data width
-	parameter W_OUT 			= 32,							// output data width
+	parameter W_OUT 			= 18,							// output data width
 	parameter COMP_LATENCY	= 1							// pid computation latency in clock cycles
 	)(
 	// inputs <- top level entity
@@ -29,7 +29,7 @@ module pid_core #(
 	// outputs -> source mux
 	output wire signed	[W_OUT-1:0]	data_out,		// pid filter output
 	output wire								data_valid_out	// output data valid signal
-    );
+   );
 
 //////////////////////////////////////////
 // internal structures
@@ -104,7 +104,7 @@ always @ ( posedge clk_in ) begin
 	if (( reset_in == 1 ) | ( lock_en_in == 0 )) begin
 		data <= 0;
 	else if (( data_valid_in == 1 ) & ( cur_state == ST_IDLE )) begin
-		data <= data_in; // convert unsigned input data to signed local data
+		data <= data_in;
 	end
 end
 
