@@ -18,7 +18,6 @@ module dac_controller #(
 	input wire	[W_DATA-1:0]	data_in,
 	input wire	[2:0]				channel_in,
 	input wire						data_valid_in,
-	input wire						stall_in,
 
 	// outputs -> top level entity (to dac hardware)
 	output wire 					nldac_out, 		// load DACs
@@ -58,7 +57,6 @@ reg	[2:0]		next_state;
 localparam	ST_IDLE			= 3'd0,	// idle state: wait for new data
 				ST_SYNC_DATA	= 3'd1,	// data sync state: prepare dac for data transfer
 				ST_SYNC_REF		= 3'd2,	// ref set sync state: prepare dac for reference set
-				ST_STALL			= 3'd3, 	// dac stall state: stall dac for duration of channel write
 				ST_TX				= 3'd3,	// transmit state: transmit dac update instruction
 				ST_DAC_DONE		= 3'd4;	// dac done state: pusle dac_done signal to indicate operation completion
 
@@ -160,7 +158,6 @@ always @( * ) begin
 		ST_IDLE: begin
 			if ( data_valid_in == 1	)			next_state <= ST_SYNC_DATA;
 			else if ( ref_set_in == 1 )		next_state <= ST_SYNC_REF;
-			else if ( stall_in == 1 )			next_state <= ST_STALL;
 		end
 		ST_SYNC_DATA: begin
 			if ( counter == 0 ) 					next_state <= ST_TX;
@@ -170,9 +167,6 @@ always @( * ) begin
 		end
 		ST_TX: begin
 			if ( counter == 31 ) 				next_state <= ST_DAC_DONE;
-		end
-		ST_STALL: begin
-			if ( counter == 32 ) 				next_state <= ST_DAC_DONE;
 		end
 		ST_DAC_DONE: begin
 			if ( counter == 0 ) 					next_state <= ST_IDLE;

@@ -190,12 +190,10 @@ wire	[N_DDS-1:0]				opp_freq_data_valid;
 wire	[N_DDS-1:0]				opp_phase_data_valid;
 wire	[N_DDS-1:0]				opp_amp_data_valid;
 
-/* cycle controller */
-wire	[W_DAC_DATA*N_DAC-1:0]	ccu_input_bus;
-wire	[W_DAC_DATA-1:0]		ccu_data;
-wire	[2:0]						ccu_channel;
-wire								ccu_data_valid;
-wire								ccu_dac_stall;
+/* dac instruction queue */
+wire	[W_DAC_DATA*N_DAC-1:0]	diq_input_bus;
+wire	[W_DAC_DATA-1:0]		diq_data;
+wire								diq_data_valid;
 
 /* dac controller */
 wire								dac_ref_set;
@@ -232,11 +230,11 @@ generate
 	end
 endgenerate
 
-/* concatinate dac output channels to single data bus for presentation to cycle controller */
+/* concatinate dac output channels to single data bus for presentation to dac instruction queue */
 genvar k;
 generate
-	for ( k = 0; k < N_DAC; k = k + 1 ) begin : ccu_in_arr
-		assign ccu_input_bus[ k*W_DAC_DATA +: W_DAC_DATA ] = opp_dac_data[k];
+	for ( k = 0; k < N_DAC; k = k + 1 ) begin : diq_in_arr
+		assign diq_input_bus[ k*W_DAC_DATA +: W_DAC_DATA ] = opp_dac_data[k];
 	end
 endgenerate
 
@@ -403,27 +401,19 @@ generate
 	end
 endgenerate
 
-///* dac controller */
-//dac_controller #(
-//	.W_DATA				(W_DAC_DATA),
-//	.N_CHAN				(N_DAC))
-//dac_cntrl (
-//	.clk_in				(clk50_in),
-//	.reset_in			(sys_reset),
-//	.ref_set_in			(dac_ref_set),
-//	.data_in				(ccu_data),
-//	.channel_in			(ccu_channel),
-//	.data_valid_in		(ccu_data_valid),
-//	.stall_in			(ccu_dac_stall),
-//	.nldac_out			(dac_nldac_out),
-//	.nsync_out			(dac_nsync_out),
-//	.sclk_out			(dac_sclk_out),
-//	.din_out				(dac_din_out),
-//	.nclr_out			(dac_nclr_out),
-//	.dac_done_out		(dac_done),
-//	.data_out			(dac_data),
-//	.channel_out		(dac_chan)
-//	);
+/* dac instruction queue */
+dac_instr_queue #(
+	.W_DAC				(W_DAC_DATA),
+	.N_DAC				(N_DAC))
+dac_iq (
+	.clk_in				(clk50_in),
+	.reset_in			(sys_reset),
+	.data_in				(diq_input_bus),
+	.data_valid_in		(opp_dac_data_valid),
+	.rdreq_in			(dac_done),
+	.data_out			(diq_data),
+	.data_valid_out	(diq_data_valid)
+	);
 
 /* dac controller */
 dac_controller #(
