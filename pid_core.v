@@ -35,9 +35,6 @@ module pid_core #(
 // internal structures
 //////////////////////////////////////////
 
-/* pid core reset */
-wire pid_reset = reset_in | ~lock_en_in;	// local pid core reset
-
 /* input data */
 reg signed	[W_OUT-1:0]	data;					// active input data
 
@@ -104,7 +101,7 @@ end
 
 /* data register */
 always @ ( posedge clk_in ) begin
-	if ( pid_reset == 1 )
+	if (( reset_in == 1 ) | ( lock_en_in == 0 )) begin
 		data <= 0;
 	else if (( data_valid_in == 1 ) & ( cur_state == ST_IDLE )) begin
 		data <= data_in; // convert unsigned input data to signed local data
@@ -113,7 +110,7 @@ end
 
 /* previous error and output registers */
 always @( posedge clk_in ) begin
-	if (( pid_reset == 1 ) | ( clear_in == 1 )) begin
+	if (( reset_in == 1 ) | ( lock_en_in == 0 ) | ( clear_in == 1 )) begin
 		u_prev		<= 0;
 		e_prev[0] 	<= 0;
 		e_prev[1]	<= 0;
@@ -126,7 +123,7 @@ end
 
 /* frontpanel parameter registers */
 always @( posedge clk_in ) begin
-	if ( pid_reset == 1 ) begin
+	if (( reset_in == 1 ) | ( lock_en_in == 0 )) begin
 		setpoint <= 0;
 		p_coef	<= 0;
 		i_coef	<= 0;
@@ -152,7 +149,7 @@ end
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
-	if ( pid_reset == 1 ) begin
+	if ( reset_in == 1 ) begin
 		cur_state <= ST_IDLE;
 	end else begin
 		cur_state <= next_state;
@@ -161,7 +158,7 @@ end
 
 /* state counter sequential logic */
 always @( posedge clk_in ) begin
-	if ( pid_reset == 1 ) begin
+	if ( reset_in == 1 ) begin
 		counter <= 0;
 	end else if ( cur_state != next_state ) begin
 		counter <= 0;
