@@ -346,7 +346,7 @@ generate
 			.p_coef_in			(pid_p_coef),
 			.i_coef_in			(pid_i_coef),
 			.d_coef_in			(pid_d_coef),
-			.lock_en_in			(pid_lock_en[m]), //DEBUG lock always active for testing
+			.lock_en_in			(pid_lock_en[m]),
 			.clear_in			(pid_clear[m]),
 			.update_en_in		(pid_update_en[m]),
 			.update_in			(module_update),
@@ -363,7 +363,6 @@ router #(
 	.N_IN					(N_ADC),
 	.N_OUT				(N_OUT))
 rtr (
-	.clk_in				(clk50_in),
 	.data_bus_in		(rtr_input_bus),
 	.src_select_in		(rtr_src_sel),
 	.output_active_in	(rtr_output_active),
@@ -396,7 +395,7 @@ generate
 			.output_max_in		(16'd32767),
 			.output_min_in		(16'd0),
 			.output_init_in	(opp_init[W_DAC_DATA-1:0]),
-			.multiplier_in		(8'b1),							// DEBUG: multiplier fixed at 1 for testing
+			.multiplier_in		(opp_multiplier),
 			.lock_en_in			(rtr_lock_en[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
@@ -465,11 +464,11 @@ generate
 			.data_valid_in		(rtr_data_valid[F]),
 			.update_en_in		(opp_update_en[F]),
 			.update_in			(module_update),
-			.lock_en_in			(1'b1),							// frequency lock always enabled for testing
+			.lock_en_in			(1'b1), //DEBUG
 			.output_max_in		(opp_max[W_DDS_FREQ-1:0]),
 			.output_min_in		(opp_min[W_DDS_FREQ-1:0]),
 			.output_init_in	(opp_init[W_DDS_FREQ-1:0]),
-			.multiplier_in		(8'b1),
+			.multiplier_in		(8'b1), //DEBUG
 			.data_out			(opp_freq_data[y]),
 			.data_valid_out	(opp_freq_data_valid[y])
 			);
@@ -486,11 +485,11 @@ generate
 			.data_valid_in		(rtr_data_valid[P]),
 			.update_en_in		(opp_update_en[P]),
 			.update_in			(module_update),
-			.lock_en_in			(1'b0),							// phase lock always disabled for testing
+			.lock_en_in			(1'b0), //DEBUG
 			.output_max_in		(opp_max[W_DDS_PHASE-1:0]),
 			.output_min_in		(opp_min[W_DDS_PHASE-1:0]),
 			.output_init_in	(opp_init[W_DDS_PHASE-1:0]),
-			.multiplier_in		(8'b1),
+			.multiplier_in		(8'b1), //DEBUG
 			.data_out			(opp_phase_data[y]),
 			.data_valid_out	(opp_phase_data_valid[y])
 			);
@@ -507,11 +506,11 @@ generate
 			.data_valid_in		(rtr_data_valid[A]),
 			.update_en_in		(opp_update_en[A]),
 			.update_in			(module_update),
-			.lock_en_in			(1'b0),							// amplitude lock always disabled for testing
+			.lock_en_in			(1'b0), //DEBUG
 			.output_max_in		(opp_max[W_DDS_AMP-1:0]),
 			.output_min_in		(opp_min[W_DDS_AMP-1:0]),
 			.output_init_in	(opp_init[W_DDS_AMP-1:0]),
-			.multiplier_in		(8'b1),
+			.multiplier_in		(8'b1), //DEBUG
 			.data_out			(opp_amp_data[y]),
 			.data_valid_out	(opp_amp_data_valid[y])
 			);
@@ -550,8 +549,7 @@ frontpanel_interface #(
 	.W_OSF_CD				(W_OSF_CD),
 	.W_OSF_OSM				(W_OSF_OSM))
 fp_io (
-	// debug
-	.adc_data0_db			(adc_data0_db),
+	.adc_data0_db			(adc_data0_db), //DEBUG
 	.clk50_in				(clk50_in),
 	.clk17_in				(clk17_in),
 	.adc_data_valid_in	(cs_data_valid),

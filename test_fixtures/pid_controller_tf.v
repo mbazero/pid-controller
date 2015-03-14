@@ -333,7 +333,6 @@ module pid_controller_tf;
 
 	end
 
-	`include "./oksim/okHostCalls.v"
+	`include "./ok_sim/okHostCalls.v"
 
 endmodule
-

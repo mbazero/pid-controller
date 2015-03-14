@@ -156,12 +156,13 @@ assign pid_update_en_out	= pid_update_en_wire[N_ADC-1:0];
 /* router */
 assign rtr_src_sel_out		= rtr_src_sel_wire[3:0];
 assign rtr_dest_sel_out		= rtr_dest_sel_wire[3:0];
-assign rtr_output_active	= rtr_output_active_wire[N_OUT-1:0];
+assign rtr_output_active_out	= rtr_output_active_wire[N_OUT-1:0];
 
 /* output preprocessor */
 assign opp_min_out			= {opp_min_wire[2], opp_min_wire[1], opp_min_wire[0]};
 assign opp_max_out			= {opp_max_wire[2], opp_max_wire[1], opp_max_wire[0]};
 assign opp_init_out			= {opp_init_wire[2], opp_init_wire[1], opp_init_wire[0]};
+assign opp_multiplier_out	= 8'b1; //DEBUG
 assign opp_update_en_out	= opp_update_en_wire[N_OUT-1:0];
 
 /* dac controller */

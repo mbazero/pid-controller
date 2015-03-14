@@ -9,9 +9,6 @@ module router #(
 	parameter N_IN		= 8,										// number of input channels
 	parameter N_OUT	= 8										// number of output channels
 	)(
-	// inputs <- top level entity
-	input wire								clk_in,				// system clock
-
 	// inputs <- pid core
 	input wire	[W_CHAN*N_IN-1:0]		data_bus_in,		// input channels on a single bus
 
