@@ -18,15 +18,15 @@ module router #(
 	input wire								clk_in,				// system clock
 
 	// inputs <- pid core
-	input wire	[W_CHAN*N_IN-1:0]		data_in,				// input channels on a single bus
+	input wire	[W_CHAN*N_IN-1:0]		data_bus_in,		// input channels on a single bus
 
 	// inputs <- frontpanel controller
-	input wire	[W_SEL-1:0]				src_select_in,		// source channel select
+	input wire	[W_SEL-1:0]				src_select_in,		// source channel select--route is disabled if MSB = 0
 	input wire	[W_SEL-1:0]				dest_select_in,	// destination channel select
 	input wire								update_in,			// update frontpanel params
 
 	// outputs -> output preprocessor
-	output wire	[W_CHAN*N_OUT-1:0]	data_out				// output channels on a single bus
+	output wire	[W_CHAN*N_OUT-1:0]	data_bus_out		// output channels on a single bus
    );
 
 //////////////////////////////////////////
@@ -41,7 +41,7 @@ wire	[W_CHAN-1:0]	mux_data_out	[0:N_OUT-1]; 		// output channels in discrete str
 genvar i;
 generate
 	for ( i = 0; i < N_OUT; i = i+1 ) begin : out_array
-		assign data_out[ i*W_CHAN +: W_CHAN ] = mux_data_out[i];
+		assign data_bus_out[ i*W_CHAN +: W_CHAN ] = mux_data_out[i];
 	end
 endgenerate
 
@@ -58,10 +58,12 @@ generate
 			.W_SEL				(W_SEL),
 			.N_IN					(N_IN))
 		mux_inst (
-			.data_in				(data_in),
+			.data_bus_in		(data_bus_in),
 			.chan_select_in	(src_select[j]),
 			.data_out			(mux_data_out[j])
 			);
+
+		mux_data_out
 	end
 endgenerate
 
