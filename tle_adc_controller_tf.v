@@ -188,6 +188,7 @@ module tle_adc_controller_tf;
 
 	parameter rtr_src_sel_owi			= 8'h09;
 	parameter rtr_dest_sel_owi			= 8'h0a;
+	parameter rtr_output_active_owi	= 8'h16;
 
 	parameter opp_init_owi0				= 8'h0b;
 	parameter opp_init_owi1				= 8'h0c;

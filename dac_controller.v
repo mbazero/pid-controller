@@ -100,7 +100,7 @@ assign channel_out = address[W_CHS-1:0];
 always @( posedge data_valid_in ) begin
 	if ( cur_state == ST_IDLE ) begin
 		data 		<= data_in;
-		address 	<= {0, channel_in}; // MSB of channel signal is only used in broadcast mode
+		address 	<= {1'b0, channel_in}; // MSB of channel signal is only used in broadcast mode
 	end
 end
 

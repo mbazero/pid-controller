@@ -104,6 +104,7 @@ wire	[15:0]	osf_osm_wire;
 
 /* pid core */
 wire	[15:0] 	pid_clear_trig;
+wire	[15:0]	pid_lock_en_wire;
 wire	[15:0] 	pid_setpoint_wire;
 wire	[15:0] 	pid_p_coef_wire;
 wire	[15:0] 	pid_i_coef_wire;
@@ -144,8 +145,8 @@ assign osf_osm_out			= osf_osm_wire[W_OSF_OSM-1:0];
 assign osf_update_en_out	= osf_update_en_wire[N_ADC-1:0];
 
 /* pid core */
-assign pid_lock_en_out		= {N_ADC{1'b1}}; //DEBUG locks always active
 assign pid_clear_out			= pid_clear_trig[N_ADC-1:0];
+assign pid_lock_en_out		= pid_lock_en_wire[N_ADC-1:0];
 assign pid_setpoint_out		= pid_setpoint_wire;
 assign pid_p_coef_out 		= pid_p_coef_wire;
 assign pid_i_coef_out 		= pid_i_coef_wire;
@@ -155,7 +156,7 @@ assign pid_update_en_out	= pid_update_en_wire[N_ADC-1:0];
 /* router */
 assign rtr_src_sel_out		= rtr_src_sel_wire[3:0];
 assign rtr_dest_sel_out		= rtr_dest_sel_wire[3:0];
-assign rtr_output_active	= rtr_output_active_wire[N_OUT-1:0]
+assign rtr_output_active	= rtr_output_active_wire[N_OUT-1:0];
 
 /* output preprocessor */
 assign opp_min_out			= {opp_min_wire[2], opp_min_wire[1], opp_min_wire[0]};
@@ -294,6 +295,12 @@ okTriggerIn pid_clear_ti (
 	.ep_trigger		(pid_clear_trig)
 	);
 
+okWireIn pid_lock_en_owi (
+	.ok1				(ok1),
+	.ep_addr			(8'h17),
+	.ep_dataout		(pid_lock_en_wire)
+	);
+
 okWireIn pid_setpoint_owi (
 	.ok1				(ok1),
 	.ep_addr			(8'h04),
@@ -339,7 +346,7 @@ okWireIn rtr_dest_sel_owi (
 
 okWireIn rtr_output_active_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h15),
+	.ep_addr			(8'h16),
 	.ep_dataout		(rtr_output_active_wire)
 	);
 

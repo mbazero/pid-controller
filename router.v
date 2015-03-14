@@ -60,7 +60,7 @@ generate
 			.chan_select_in	(src_select[j]),
 			.data_out			(mux_data_out[j])
 			);
-		assign data_out[j] = (output_active[j] == 1) ? mux_data_out[j] : 0; // only pass mux output if output channel is activated
+		assign data_out[j] = (output_active[j] == 1) ? mux_data_out[j] : {W_CHAN{1'b0}}; // only pass mux output if output channel is activated
 	end
 endgenerate
 

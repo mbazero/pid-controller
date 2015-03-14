@@ -170,6 +170,7 @@ wire	[N_ADC-1:0]				pid_lock_en;
 /* router */
 wire	[W_RTR_SEL-1:0]		rtr_src_sel;
 wire	[W_RTR_SEL-1:0]		rtr_dest_sel;
+wire	[N_OUT-1:0]				rtr_output_active;
 wire	[W_PIDV*N_ADC-1:0]	rtr_input_bus;
 wire	[W_PIDV*N_OUT-1:0]	rtr_output_bus;
 wire	[W_PID-1:0]				rtr_data[0:N_OUT-1];
@@ -362,11 +363,12 @@ router #(
 	.N_OUT				(N_OUT))
 rtr (
 	.clk_in				(clk50_in),
-	.data_in				(rtr_input_bus),
+	.data_bus_in		(rtr_input_bus),
 	.src_select_in		(rtr_src_sel),
+	.output_active_in	(rtr_output_active),
 	.dest_select_in	(rtr_dest_sel),
 	.update_in			(module_update),
-	.data_out			(rtr_output_bus)
+	.data_bus_out		(rtr_output_bus)
 	);
 
 /* OUTPUT CHANNEL MAPPINGS
@@ -569,6 +571,7 @@ fp_io (
 	.pid_update_en_out	(pid_update_en),
 	.rtr_src_sel_out		(rtr_src_sel),
 	.rtr_dest_sel_out		(rtr_dest_sel),
+	.rtr_output_active_out(rtr_output_active),
 	.opp_min_out			(opp_min),
 	.opp_max_out			(opp_max),
 	.opp_init_out			(opp_init),
