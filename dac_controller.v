@@ -4,7 +4,8 @@
 
 module dac_controller #(
 	// parameters
-	parameter W_DATA	= 16,							// width of input data channels
+	parameter W_DATA	= 16,							// width of data signal
+	parameter W_CHS	= 3,							// width of channel select signal
 	parameter N_CHAN	= 8							// number of channels
 	)(
 	// inputs <- top level entity
@@ -16,7 +17,7 @@ module dac_controller #(
 
 	// inputs <- cycle controller
 	input wire	[W_DATA-1:0]	data_in,
-	input wire	[2:0]				channel_in,
+	input wire	[W_CHS-1:0]		channel_in,
 	input wire						data_valid_in,
 
 	// outputs -> top level entity (to dac hardware)
@@ -29,7 +30,7 @@ module dac_controller #(
 	// outputs -> top level entity
 	output wire						dac_done_out,	// pulsed when dac finishes updating a channels
 	output wire	[W_DATA-1:0]	data_out,		// output data
-	output wire	[2:0]				channel_out		// output data valid
+	output wire	[W_CHS-1:0]		channel_out		// output data valid
 	);
 
 //////////////////////////////////////////
@@ -156,20 +157,25 @@ always @( * ) begin
 	next_state <= cur_state; // default assignment if no case condition is satisified
 	case (cur_state)
 		ST_IDLE: begin
-			if ( data_valid_in == 1	)			next_state <= ST_SYNC_DATA;
-			else if ( ref_set_in == 1 )		next_state <= ST_SYNC_REF;
+			if ( data_valid_in == 1	) begin
+				next_state <= ST_SYNC_DATA;
+			end else if ( ref_set_in == 1 ) begin
+				next_state <= ST_SYNC_REF;
+			end
 		end
 		ST_SYNC_DATA: begin
-			if ( counter == 0 ) 					next_state <= ST_TX;
+				next_state <= ST_TX;
 		end
 		ST_SYNC_REF: begin
-			if ( counter == 0 ) 					next_state <= ST_TX;
+				next_state <= ST_TX;
 		end
 		ST_TX: begin
-			if ( counter == 31 ) 				next_state <= ST_DAC_DONE;
+			if ( counter == 31 ) begin
+				next_state <= ST_DAC_DONE;
+			end
 		end
 		ST_DAC_DONE: begin
-			if ( counter == 0 ) 					next_state <= ST_IDLE;
+				next_state <= ST_IDLE;
 		end
 	endcase
 end

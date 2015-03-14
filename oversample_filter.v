@@ -10,7 +10,7 @@ module oversample_filter #(
 	// parameters
 	parameter W_IN		= 18,										// width of input data
 	parameter W_OUT	= 18,										// width of output data
-	parameter W_OS		= 4										// width of oversample mode signal (max oversample ratio = 2^(2^W_OS - 1))
+	parameter W_OSM	= 4										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
 	)(
 	// inputs <- top level entity
 	input wire								clk_in,				// system clock
@@ -22,7 +22,7 @@ module oversample_filter #(
 
 	// inputs <- frontpanel controller
 	input wire				[15:0]		cycle_delay_in,	// delay period in adc cycles
-	input wire				[W_OS-1:0]	os_in,				// log base 2 of the oversample ratio
+	input wire				[W_OSM-1:0]	osm_in,				// oversample mode (log base 2 of the oversample ratio)
 	input wire								activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
 	input wire								update_en_in,		// sensistizes module to update signal
 	input wire								update_in,			// pulse triggers update of frontpanel parameters
@@ -37,7 +37,7 @@ module oversample_filter #(
 //////////////////////////////////////////
 
 /* local params */
-localparam	MAX_OS	= 2^W_OS - 1;		// maximum log2 oversample ratio
+localparam	MAX_OS	= 2^W_OSM - 1;		// maximum log2 oversample ratio
 localparam	W_SUM		= MAX_OS + W_IN;	// width of sum register
 
 /* wires */
@@ -47,7 +47,7 @@ wire	osf_reset;	// local reset signal which is activated by system reset or chan
 /* registers */
 reg	[15:0]		cycle_delay;
 reg	[MAX_OS:0]	sample_counter;
-reg	[W_OS-1:0]	os_cur;
+reg	[W_OSM-1:0]	osm_cur;
 reg	[W_SUM-1:0]	sum;
 
 /* state registers */
@@ -66,7 +66,7 @@ localparam	ST_IDLE			= 3'd0,	// wait for channel activation signal
 //////////////////////////////////////////
 
 /* divide sum by oversample ratio (left shift amount equal to log2 oversample ration) */
-assign data_out 			= ( sum >> os_cur );
+assign data_out 			= ( sum >> osm_cur );
 
 /* assert data_valid_out during the SEND state */
 assign data_valid_out 	= ( cur_state == ST_SEND );
@@ -80,7 +80,7 @@ assign osf_reset 			= ( reset_in | ~activate_in ); //TODO check this
 
 /* sum accumulator */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( osf_reset == 1 ) begin
 		sum <= 0;
 	end else if (( cur_state == ST_IDLE ) | ( cur_state == ST_DELAY )) begin
 		sum <= 0;
@@ -91,7 +91,7 @@ end
 
 /* count number of adc data words received in the current state */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( osf_reset == 1 ) begin
 		sample_counter	<= 0;
 	end else if ( cur_state != next_state ) begin
 		sample_counter	<= 0;
@@ -102,11 +102,11 @@ end
 
 /* latch frontpanel parameters on update signal */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
-		os_cur		<= 0;
+	if ( reset_in == 1 ) begin // module retains parameters when it becomes deactivated
+		osm_cur		<= 0;
 		cycle_delay	<= 0;
 	end else if (( update_in == 1 ) & ( update_en_in == 1 )) begin
-		os_cur 			<= os_in;
+		osm_cur 			<= osm_in;
 		cycle_delay		<= cycle_delay_in;
 	end
 end
@@ -124,7 +124,7 @@ end
 
 /* state register */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( osf_reset == 1 ) begin
 		cur_state <= ST_IDLE;
 	end else begin
 		cur_state <= next_state;
@@ -133,7 +133,7 @@ end
 
 /* state counter */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( osf_reset == 1 ) begin
 		counter <= 0;
 	end else if ( cur_state != next_state ) begin
 		counter <= 0;
@@ -153,7 +153,7 @@ always @( * ) begin
 			if ( sample_counter >= cycle_delay ) 		next_state <= ST_SAMPLE;
 		end
 		ST_SAMPLE: begin
-			if ( sample_counter[os_cur] == 1 )			next_state <= ST_SEND;
+			if ( sample_counter[osm_cur] == 1 )			next_state <= ST_SEND;
 		end
 		ST_SEND: 												next_state <= ST_DELAY;
 	endcase

@@ -14,7 +14,7 @@ module frontpanel_interface #(
 	parameter N_OUT		= 8,									// number of output channels
 	parameter W_ADC		= 18,									// width of adc channels
 	parameter W_OSF_CD	= 16,									// width of osf cycle delay signal
-	parameter W_OSF_ORT	= 6									// width of oversample ratio signal
+	parameter W_OSF_OSM	= 6									// width of oversample ratio signal
 	)(
 	// inputs <- top level entity
 	input	wire										clk50_in,
@@ -32,7 +32,7 @@ module frontpanel_interface #(
 	// outputs -> oversample filter
 	output wire				[N_ADC-1:0]			osf_activate_out,				// dm
 	output wire				[W_OSF_CD-1:0]		osf_cycle_delay_out, 		// dm
-	output wire				[W_OSF_ORT-1:0]	osf_log_ovr_out, 				// computed from osf_ovr
+	output wire				[W_OSF_OSM-1:0]	osf_osm_out, 				// computed from osf_ovr
 	output wire				[N_ADC-1:0]			osf_update_en_out, 			// computed on osf param change
 
 	// outputs -> pid core
@@ -53,7 +53,7 @@ module frontpanel_interface #(
 	output wire				[47:0]				opp_max_out,					// dm
 	output wire				[47:0]				opp_init_out,					// dm
 	output wire				[7:0]					opp_multiplier_out, 			// dm
-	output wire				[3:0]					opp_update_en_out, 			// computed on opp param change
+	output wire				[N_OUT-1:0]			opp_update_en_out, 			// computed on opp param change
 
 	// outputs -> dac controller
 	output wire										dac_ref_set_out, 				// dm (in global module)
@@ -98,7 +98,7 @@ reg	[W_ADC-1:0]	adc_data[0:N_ADC-1];
 wire	[15:0]	osf_activate_wire;
 wire	[15:0]	osf_update_en_wire;
 wire	[15:0]	osf_cycle_delay_wire;
-wire	[15:0]	osf_log_ovr_wire;
+wire	[15:0]	osf_osm_wire;
 
 /* pid core */
 wire	[15:0] 	pid_clear_trig;
@@ -137,7 +137,7 @@ assign adc_cstart_out		= adc_cstart_trig[0];
 /* oversample filter */
 assign osf_activate_out		= osf_activate_wire[N_ADC-1:0];
 assign osf_cycle_delay_out	= osf_cycle_delay_wire[W_OSF_CD-1:0];
-assign osf_log_ovr_out		= osf_log_ovr_wire[W_OSF_ORT-1:0];
+assign osf_osm_out			= osf_osm_wire[W_OSF_OSM-1:0];
 assign osf_update_en_out	= osf_update_en_wire[N_ADC-1:0];
 
 /* pid core */
@@ -270,10 +270,10 @@ okWireIn osf_cycle_delay_owi (
 	.ep_dataout		(osf_cycle_delay_wire)
 	);
 
-okWireIn osf_log_ovr_owi (
+okWireIn osf_osm_owi (
 	.ok1				(ok1),
 	.ep_addr			(8'h03),
-	.ep_dataout		(osf_log_ovr_wire)
+	.ep_dataout		(osf_osm_wire)
 	);
 
 okWireIn osf_update_en_owi (

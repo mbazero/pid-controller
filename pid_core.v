@@ -103,7 +103,7 @@ end
 always @ ( posedge clk_in ) begin
 	if (( reset_in == 1 ) | ( lock_en_in == 0 )) begin
 		data <= 0;
-	else if (( data_valid_in == 1 ) & ( cur_state == ST_IDLE )) begin
+	end else if (( data_valid_in == 1 ) & ( cur_state == ST_IDLE )) begin
 		data <= data_in;
 	end
 end

@@ -19,7 +19,9 @@ module mux_n_chan #(
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
-	wire	[W_CHAN-1:0]	channel	[0:N_IN-1];		// input channels seperated into discrete structures
+
+/* input channels seperated into discrete structures */
+wire	[W_CHAN-1:0]	channel	[0:N_IN-1];
 
 //////////////////////////////////////////
 // combinational logic

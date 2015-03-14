@@ -1,25 +1,25 @@
 `timescale 1ns / 1ps
 
 ////////////////////////////////////////////////////////////////////////////////
-// Company: 
+// Company:
 // Engineer:
 //
 // Create Date:   14:32:40 12/15/2014
 // Design Name:   pid_controller
 // Module Name:   Y:/Documents/MIST/pid_controller/tle_adc_controller_tf.v
 // Project Name:  pid_controller
-// Target Device:  
-// Tool versions:  
-// Description: 
+// Target Device:
+// Tool versions:
+// Description:
 //
 // Verilog Test Fixture created by ISE for module: pid_controller
 //
 // Dependencies:
-// 
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////
 
 module tle_adc_controller_tf;
@@ -30,10 +30,10 @@ module tle_adc_controller_tf;
 	localparam	TX_LEN	= W_DATA*N_CHAN/2;
 
 	// Simulation structures
-	reg [W_DATA-1:0]	chan[0:N_CHAN-1]; 
+	reg [W_DATA-1:0]	chan[0:N_CHAN-1];
 	reg [TX_LEN-1:0] 	data_a_tx;
-	reg [TX_LEN-1:0] 	data_b_tx; 
-	reg [15:0] wire_out; 
+	reg [TX_LEN-1:0] 	data_b_tx;
+	reg [15:0] wire_out;
 
 	// Inputs
 	reg clk50_in;
@@ -80,42 +80,42 @@ module tle_adc_controller_tf;
 
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
-		.clk50_in(clk50_in), 
-		.clk17_in(clk17_in), 
-		.adc_busy_in(adc_busy_in), 
-		.adc_data_a_in(adc_data_a_in), 
-		.adc_data_b_in(adc_data_b_in), 
-		.adc_os_out(adc_os_out), 
-		.adc_convst_out(adc_convst_out), 
-		.adc_reset_out(adc_reset_out), 
-		.adc_sclk_out(adc_sclk_out), 
-		.adc_n_cs_out(adc_n_cs_out), 
-		.dac_nldac_out(dac_nldac_out), 
-		.dac_nsync_out(dac_nsync_out), 
-		.dac_sclk_out(dac_sclk_out), 
-		.dac_din_out(dac_din_out), 
-		.dac_nclr_out(dac_nclr_out), 
-		.dds_sclk_out(dds_sclk_out), 
-		.dds_reset_out(dds_reset_out), 
-		.dds_csb_out(dds_csb_out), 
-		.dds_sdio_out(dds_sdio_out), 
-		.dds_io_update_out(dds_io_update_out), 
-		.n_out_buf_en(out_buf_en), 
-		.hi_in(hi_in), 
-		.hi_out(hi_out), 
-		.hi_inout(hi_inout), 
-		.adc_busy_db(adc_busy_db), 
-		.adc_data_a_db(adc_data_a_db), 
-		.adc_data_b_db(adc_data_b_db), 
-		.adc_os_db(adc_os_db), 
-		.adc_convst_db(adc_convst_db), 
-		.adc_reset_db(adc_reset_db), 
-		.adc_sclk_db(adc_sclk_db), 
-		.adc_n_cs_db(adc_n_cs_db), 
-		.adc_data_a_vect_db(adc_data_a_vect_db), 
-		.adc_data_valid_db(adc_data_valid_db), 
-		.adc_cstart_db(adc_cstart_db), 
-		.mod_update_db(mod_update_db), 
+		.clk50_in(clk50_in),
+		.clk17_in(clk17_in),
+		.adc_busy_in(adc_busy_in),
+		.adc_data_a_in(adc_data_a_in),
+		.adc_data_b_in(adc_data_b_in),
+		.adc_os_out(adc_os_out),
+		.adc_convst_out(adc_convst_out),
+		.adc_reset_out(adc_reset_out),
+		.adc_sclk_out(adc_sclk_out),
+		.adc_n_cs_out(adc_n_cs_out),
+		.dac_nldac_out(dac_nldac_out),
+		.dac_nsync_out(dac_nsync_out),
+		.dac_sclk_out(dac_sclk_out),
+		.dac_din_out(dac_din_out),
+		.dac_nclr_out(dac_nclr_out),
+		.dds_sclk_out(dds_sclk_out),
+		.dds_reset_out(dds_reset_out),
+		.dds_csb_out(dds_csb_out),
+		.dds_sdio_out(dds_sdio_out),
+		.dds_io_update_out(dds_io_update_out),
+		.n_out_buf_en(out_buf_en),
+		.hi_in(hi_in),
+		.hi_out(hi_out),
+		.hi_inout(hi_inout),
+		.adc_busy_db(adc_busy_db),
+		.adc_data_a_db(adc_data_a_db),
+		.adc_data_b_db(adc_data_b_db),
+		.adc_os_db(adc_os_db),
+		.adc_convst_db(adc_convst_db),
+		.adc_reset_db(adc_reset_db),
+		.adc_sclk_db(adc_sclk_db),
+		.adc_n_cs_db(adc_n_cs_db),
+		.adc_data_a_vect_db(adc_data_a_vect_db),
+		.adc_data_valid_db(adc_data_valid_db),
+		.adc_cstart_db(adc_cstart_db),
+		.mod_update_db(mod_update_db),
 		.clk17_db(clk17_db)
 	);
 
@@ -161,13 +161,13 @@ module tle_adc_controller_tf;
 	//------------------------------------------------------------------------
 
 	// generate ~17MHz clock
-	always #60 clk17_in = !clk17_in; 
-	
+	always #60 clk17_in = !clk17_in;
+
 	// generate 50MHz clock
-	always #20 clk50_in = !clk50_in; 
+	always #20 clk50_in = !clk50_in;
 
 	// serial data channels
-	assign adc_data_a_in = data_a_tx[TX_LEN-1]; 
+	assign adc_data_a_in = data_a_tx[TX_LEN-1];
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
 	// endpoint params
@@ -196,51 +196,51 @@ module tle_adc_controller_tf;
 	parameter opp_min_owi1				= 8'h0f;
 	parameter opp_min_owi2				= 8'h10;
 	parameter opp_max_owi0				= 8'h11;
-	parameter opp_max_owi1				= 8'h12;	
+	parameter opp_max_owi1				= 8'h12;
 	parameter opp_max_owi2				= 8'h13;
 	parameter opp_update_en_owi		= 8'h14;
 
 	parameter dac_ref_set_ti			= 8'h56;
-	
+
 	parameter module_update_ti			= 8'h57;
-	
-	parameter sys_reset_ti				= 8'h58; 
-	
+
+	parameter sys_reset_ti				= 8'h58;
+
 	parameter osf_bulk_data_opo		= 8'ha3;
 
 	parameter mask					= 32'hffffffff;
-	
+
 	initial begin
 		// Initialize Inputs
 		clk50_in = 0;
 		clk17_in = 0;
 		adc_busy_in = 0;
 		wire_out = 0;
-		
+
 		// Issue frontpanel reset
-		FrontPanelReset; 
-		
+		FrontPanelReset;
+
 		// set test channel values
 		chan[0] = 1111;
-		chan[1] = 2222; 
+		chan[1] = 2222;
 		chan[2] = 3333;
 		chan[3] = 4444;
 		chan[4] = 5555;
-		chan[5] = 6666; 
+		chan[5] = 6666;
 
 		#100;
-		
+
 		// System reset
 		ActivateTriggerIn(sys_reset_ti, 0);
-		
+
 		// Set ADC oversampling mode
 		SetWireInValue(adc_os_owi, 0, mask);	// os = 0
-		
+
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_ti, 0);
 
 		// Set OSF ratio and activate channel 0
-		SetWireInValue(osf_activate_owi, 16'd1, mask); // set OSF[0] activation 
+		SetWireInValue(osf_activate_owi, 16'd1, mask); // set OSF[0] activation
 		SetWireInValue(osf_cycle_delay_owi, 16'd0, mask); // cycle delay = 0
 		SetWireInValue(osf_log_ovr_owi, 16'd0, mask); // log ovr = 0
 		SetWireInValue(osf_update_en_owi, 16'd1, mask); // sensitize OSF channel 0
@@ -276,7 +276,7 @@ module tle_adc_controller_tf;
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_ti, 0);
 
-		// Route input channel 5 to output channel 0 
+		// Route input channel 5 to output channel 0
 //		SetWireInValue(8'h0b, 16'd5, 16'hffff);	// router source
 //		SetWireInValue(8'h0c, 16'd0, 16'hffff);	// router destination
 //
@@ -284,8 +284,8 @@ module tle_adc_controller_tf;
 //		ActivateTriggerIn(8'h54, 0);
 
 		// Set channel 0 OPP params
-		SetWireInValue(opp_init_owi0, 16'd500, mask);	// opp init p1 = 0 
-		SetWireInValue(opp_init_owi1, 16'd0, mask); 	// opp init p2 = 0 
+		SetWireInValue(opp_init_owi0, 16'd500, mask);	// opp init p1 = 0
+		SetWireInValue(opp_init_owi1, 16'd0, mask); 	// opp init p2 = 0
 		SetWireInValue(opp_init_owi2, 16'd500, mask);	// opp init p3 = 500
 		SetWireInValue(opp_update_en_owi, 16'd1, mask);	// sensitize OPP channel 0
 
@@ -298,7 +298,7 @@ module tle_adc_controller_tf;
 //
 //		UpdateWireIns;
 //		ActivateTriggerIn(8'h54, 0);
-		
+
 		// activate channel 0
 		SetWireInValue(osf_activate_owi, 16'd1, mask);
 		UpdateWireIns;
@@ -310,47 +310,47 @@ module tle_adc_controller_tf;
 		repeat(8) begin
 			// wait for convst_out to pulse and then assert busy
 			@(posedge adc_convst_out) begin
-				@(posedge clk17_in) adc_busy_in = 1; 
+				@(posedge clk17_in) adc_busy_in = 1;
 			end
 
 			// simulate serial transmission from adc to fpga
-			@(negedge adc_n_cs_out) begin 
+			@(negedge adc_n_cs_out) begin
 				data_a_tx = {chan[0], chan[1], chan[2]};
-				data_b_tx = {chan[3], chan[4], chan[5]}; 
+				data_b_tx = {chan[3], chan[4], chan[5]};
 			end
-			
-			// wait one cycle before transmitting 
-			@(posedge clk17_in); 
-	
+
+			// wait one cycle before transmitting
+			@(posedge clk17_in);
+
 			// simulate serial data transmission
 			repeat (53) begin
-				@(negedge clk17_in) 
-					data_a_tx = data_a_tx << 1; 
-					data_b_tx = data_b_tx << 1; 
+				@(negedge clk17_in)
+					data_a_tx = data_a_tx << 1;
+					data_b_tx = data_b_tx << 1;
 			end
-			
+
 			// simulate data read
 			UpdateWireOuts();
 			wire_out = GetWireOutValue(8'd32);
-			
+
 			//$display("Read Value: %d", test);
-			
+
 			// simulate conversion end
 			#200;
-			@(posedge clk17_in) adc_busy_in = 0; 
+			@(posedge clk17_in) adc_busy_in = 0;
 
 			// double chan 0 value
-			chan[0] = chan[0] << 2; 
+			chan[0] = chan[0] << 2;
 		end
 
-		// read from pipe 
+		// read from pipe
 		ReadFromPipeOut(osf_bulk_data_opo, pipeOutSize);
-		
+
 		$stop;
 
 	end
-	
+
 	`include "./oksim/okHostCalls.v"
-      
+
 endmodule
 

@@ -28,12 +28,13 @@ module pid_controller #(
 	parameter N_DDS			= 2,	// number of dds channels
 	parameter W_ADC			= 18, // width of adc channels
 	parameter W_OSF			= 18, // width of oversample filter output
-	parameter W_PID			= 16, // width of pid core output
+	parameter W_PID			= 18, // width of pid core output
 	parameter W_DAC_INST		= 32, // width of dac update instruction
 	parameter W_DDS_FREQ		= 48, // width of dds frequency word
 	parameter W_DDS_PHASE	= 14,	// width of dds phase word
 	parameter W_DDS_AMP 		= 10, // width of dds amplitude instruction
 	parameter W_DAC_DATA		= 16,	// width of dac data input
+	parameter W_DAC_CHS		= 3,	// width of dac channel input
 	parameter T_ADC_CYCLE	= 85	// adc conversion cycle time in number of adc clock cycles
 	)(
 	// inputs <- OPAL KELLY PLL
@@ -126,7 +127,7 @@ localparam N_OUT 					= N_DAC + 3*N_DDS;	// total number of output channels; eac
 localparam W_PIDV 				= W_PID + 2;			// width of pid data bus with data valid and lock enable signals
 localparam W_RTR_SEL 			= 4;						// width of router select signal
 localparam PIPE_LATENCY 		= 5;						// latency in clock cycles of pipeline
-localparam W_OSF_ORT				= 6;						// width of oversample ratio signal
+localparam W_OSF_OSM				= 6;						// width of oversample mode signal
 localparam W_OSF_CD				= 16;						// width of osf cycle delay signal
 localparam PID_COMP_LATENCY	= 1;						// pid core computation latency
 localparam OPP_COMP_LATENCY	= 1;						// output preprocessor compuation latency
@@ -151,7 +152,7 @@ wire	[W_ADC-1:0]				cs_data_b;
 wire	[N_ADC-1:0]				osf_activate;
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
-wire	[W_OSF_ORT-1:0]		osf_log_ovr;
+wire	[W_OSF_OSM-1:0]		osf_osm;
 wire	[W_OSF-1:0]				osf_data[0:N_ADC-1];
 wire	[N_ADC-1:0]				osf_data_valid;
 
@@ -192,8 +193,9 @@ wire	[N_DDS-1:0]				opp_amp_data_valid;
 
 /* dac instruction queue */
 wire	[W_DAC_DATA*N_DAC-1:0]	diq_input_bus;
-wire	[W_DAC_DATA-1:0]		diq_data;
-wire								diq_data_valid;
+wire	[W_DAC_DATA-1:0]			diq_data;
+wire	[W_DAC_CHS-1:0]			diq_chan;
+wire									diq_data_valid;
 
 /* dac controller */
 wire								dac_ref_set;
@@ -246,7 +248,7 @@ endgenerate
 adc_controller #(
 	.W_OUT				(W_ADC),
 	.N_CHAN				(N_ADC),
-	.T_CYCLE				(T_ADC_CYCLE))
+	.MIN_T_CYCLE		(T_ADC_CYCLE))
 adc_cont (
 	.clk_in				(clk17_in),
 	.reset_in			(sys_reset),
@@ -289,14 +291,14 @@ generate
 		oversample_filter #(
 			.W_IN					(W_ADC),
 			.W_OUT				(W_OSF),
-			.W_ORT				(W_OSF_ORT))
+			.W_OSM				(W_OSF_OSM))
 		ovr_inst_a (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
 			.data_in				(cs_data_a),
 			.data_valid_in		(cs_data_valid[l]),
 			.cycle_delay_in	(osf_cycle_delay),
-			.log_ovr_in			(osf_log_ovr),
+			.osm_in				(osf_osm),
 			.activate_in		(osf_activate[l]),
 			.update_en_in		(osf_update_en[l]),
 			.update_in			(module_update),
@@ -308,14 +310,14 @@ generate
 		oversample_filter #(
 			.W_IN					(W_ADC),
 			.W_OUT				(W_OSF),
-			.W_ORT				(W_OSF_ORT))
+			.W_OSM				(W_OSF_OSM))
 		ovr_inst_b (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
 			.data_in				(cs_data_b),
 			.data_valid_in		(cs_data_valid[l+N_ADC/2]),
 			.cycle_delay_in	(osf_cycle_delay),
-			.log_ovr_in			(osf_log_ovr),
+			.osm_in				(osf_osm),
 			.activate_in		(osf_activate[l+N_ADC/2]),
 			.update_en_in		(osf_update_en[l+N_ADC/2]),
 			.update_in			(module_update),
@@ -369,7 +371,7 @@ rtr (
 
 /* OUTPUT CHANNEL MAPPINGS
 *	[ 0 						: N_DAC - 1					] - DAC Channels
-*	[ N_DAC					: N_DAC + N_DDDS - 1		] - DDS Frequency Channels
+*	[ N_DAC					: N_DAC + N_DDS - 1		] - DDS Frequency Channels
 *	[ N_DAC + N_DDS		: N_DAC + 2*N_DDS - 1	] - DDS Phase Channels
 *	[ N_DAC + 2*N_DDS		: N_OUT						] - DDS Amplitude Channels */
 
@@ -379,7 +381,7 @@ generate
 	for ( x = 0; x < N_DAC; x = x + 1 ) begin : dac_opp_array
 		output_preprocessor #(
 			.W_IN 				(W_PID),
-			.W_OUT 				(W_DAC_DATA),
+			.W_OUT 				(W_DAC_DATA), // data truncation happens in opp
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		dac_opp (
 			.clk_in				(clk50_in),
@@ -388,8 +390,8 @@ generate
 			.data_valid_in		(rtr_data_valid[x]),
 			// DEBUG .output_max_in		(opp_max[W_DAC_DATA-1:0]),
 			// DEBUG .output_min_in		(opp_min[W_DAC_DATA-1:0]),
-			.output_max_in		(18'd32767),
-			.output_min_in		(18'd0),
+			.output_max_in		(16'd32767),
+			.output_min_in		(16'd0),
 			.output_init_in	(opp_init[W_DAC_DATA-1:0]),
 			.multiplier_in		(8'b1),							// DEBUG: multiplier fixed at 1 for testing
 			.lock_en_in			(rtr_lock_en[x]),
@@ -403,30 +405,32 @@ endgenerate
 
 /* dac instruction queue */
 dac_instr_queue #(
-	.W_DAC				(W_DAC_DATA),
-	.N_DAC				(N_DAC))
+	.W_DATA				(W_DAC_DATA),
+	.W_CHS				(W_DAC_CHS),
+	.N_CHAN				(N_DAC))
 dac_iq (
 	.clk_in				(clk50_in),
 	.reset_in			(sys_reset),
-	.data_in				(diq_input_bus),
+	.data_bus_in		(diq_input_bus),
 	.data_valid_in		(opp_dac_data_valid),
-	.rdreq_in			(dac_done),
+	.rd_ack_in			(dac_done),
 	.data_out			(diq_data),
+	.chan_out			(diq_chan),
 	.data_valid_out	(diq_data_valid)
 	);
 
 /* dac controller */
 dac_controller #(
 	.W_DATA				(W_DAC_DATA),
+	.W_CHS				(W_DAC_CHS),
 	.N_CHAN				(N_DAC))
 dac_cntrl (
 	.clk_in				(clk50_in),
 	.reset_in			(sys_reset),
 	.ref_set_in			(dac_ref_set),
-	.data_in				(opp_dac_data[0]),
-	.channel_in			(0),
-	.data_valid_in		(opp_dac_data_valid[0]),
-	.stall_in			(0),
+	.data_in				(diq_data),
+	.channel_in			(diq_chan),
+	.data_valid_in		(diq_data_valid),
 	.nldac_out			(dac_nldac_out),
 	.nsync_out			(dac_nsync_out),
 	.sclk_out			(dac_sclk_out),
@@ -541,7 +545,7 @@ frontpanel_interface #(
 	.N_OUT					(N_OUT),
 	.W_ADC					(W_ADC),
 	.W_OSF_CD				(W_OSF_CD),
-	.W_OSF_ORT				(W_OSF_ORT))
+	.W_OSF_OSM				(W_OSF_OSM))
 fp_io (
 	// debug
 	.adc_data0_db			(adc_data0_db),
@@ -553,7 +557,7 @@ fp_io (
 	.adc_cstart_out		(adc_cstart),
 	.adc_os_out				(adc_os),
 	.osf_cycle_delay_out	(osf_cycle_delay),
-	.osf_log_ovr_out		(osf_log_ovr),
+	.osf_osm_out			(osf_osm),
 	.osf_activate_out		(osf_activate),
 	.osf_update_en_out	(osf_update_en),
 	.pid_lock_en_out		(pid_lock_en),
