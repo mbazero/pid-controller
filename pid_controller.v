@@ -3,6 +3,7 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - should probably change everything to asynch reset b/c sys reset signal is a trigger (only one clock cycle)
 // - make sure output preprocessor multiplier is delivered in signed fashion
 // - figure out lock en signal (is it really needed, if so, make it a frontpanel param)
 // - HUGE: you need to totally revamp the cycle control unit. see notes that module.
@@ -23,9 +24,9 @@
 
 module pid_controller #(
 	// parameters
-	parameter N_ADC			= 6,	// number of adc channels
+	parameter N_ADC			= 8,	// number of adc channels
 	parameter N_DAC			= 8,	// number of dac channels
-	parameter N_DDS			= 2,	// number of dds channels
+	parameter N_DDS			= 0,	// number of dds channels
 	parameter W_ADC			= 18, // width of adc channels
 	parameter W_OSF			= 18, // width of oversample filter output
 	parameter W_PID			= 18, // width of pid core output
