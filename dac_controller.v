@@ -40,7 +40,7 @@ module dac_controller #(
 /* dac instruction structures */
 wire	[3:0]	 prefix;
 wire	[3:0]	 control;
-reg	[3:0]	 channel;
+reg	[3:0]	 address;
 reg	[15:0] data;
 wire	[3:0]	 feature;
 wire	[31:0] data_instr;
@@ -69,11 +69,13 @@ localparam	ST_IDLE			= 3'd0,	// idle state: wait for new data
 assign nclr_out = 1'b1;
 assign nldac_out = 1'b0;	// LDAC not used in synchronous update mode
 
-/* data update instruction components */
+/* static dac instruction componenets */
 assign prefix = 4'b0000;
 assign control = 4'b0011; // write to selected DAC register and update
 assign feature = 4'b0000;
-assign data_instr = {prefix, control, channel, data, feature};
+
+/* dac instruction */
+assign data_instr = {prefix, control, address, data, feature};
 
 /* dac control signals */
 assign nsync_out = ~( (cur_state == ST_SYNC_DATA) | (cur_state == ST_SYNC_REF) | (cur_state == ST_TX) );
@@ -88,7 +90,7 @@ assign dac_done_out = ( cur_state == ST_DAC_DONE );
 
 /* output data */
 assign data_out = data;
-assign channel_out = channel;
+assign channel_out = address[W_CHS-1:0];
 
 //////////////////////////////////////////
 // sequential logic
@@ -98,7 +100,7 @@ assign channel_out = channel;
 always @( posedge data_valid_in ) begin
 	if ( cur_state == ST_IDLE ) begin
 		data 		<= data_in;
-		channel 	<= channel_in;
+		address 	<= {0, channel_in}; // MSB of channel signal is only used in broadcast mode
 	end
 end
 
