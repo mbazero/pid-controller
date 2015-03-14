@@ -4,6 +4,7 @@
 
 // TODO
 // - consolodate triggers to single end point
+// - parameterize all input widths
 // - implement better wireOr functionality (right now you can only read adc_data from first channel)
 // - paramaterize all output widths
 // - if time: consolodate smaller signals to single endpoint
@@ -32,7 +33,7 @@ module frontpanel_interface #(
 	// outputs -> oversample filter
 	output wire				[N_ADC-1:0]			osf_activate_out,				// dm
 	output wire				[W_OSF_CD-1:0]		osf_cycle_delay_out, 		// dm
-	output wire				[W_OSF_OSM-1:0]	osf_osm_out, 				// computed from osf_ovr
+	output wire				[W_OSF_OSM-1:0]	osf_osm_out, 					// computed from osf_ovr
 	output wire				[N_ADC-1:0]			osf_update_en_out, 			// computed on osf param change
 
 	// outputs -> pid core
@@ -47,6 +48,7 @@ module frontpanel_interface #(
 	// outputs -> router
 	output wire				[3:0]					rtr_src_sel_out,				// dm (in osf module)
 	output wire				[3:0]					rtr_dest_sel_out,				// dm (in output module)
+	output wire				[N_OUT-1:0]			rtr_output_active_out,		// dm
 
 	// outputs -> output preprocessor
 	output wire				[47:0]				opp_min_out,					// dm
@@ -111,6 +113,7 @@ wire	[15:0] 	pid_update_en_wire;
 /* router */
 wire	[15:0]	rtr_src_sel_wire;
 wire	[15:0]	rtr_dest_sel_wire;
+wire	[15:0]	rtr_output_active_wire;
 
 /* dds preprocessor */
 wire	[15:0]	opp_max_wire[0:3];
@@ -152,6 +155,7 @@ assign pid_update_en_out	= pid_update_en_wire[N_ADC-1:0];
 /* router */
 assign rtr_src_sel_out		= rtr_src_sel_wire[3:0];
 assign rtr_dest_sel_out		= rtr_dest_sel_wire[3:0];
+assign rtr_output_active	= rtr_output_active_wire[N_OUT-1:0]
 
 /* output preprocessor */
 assign opp_min_out			= {opp_min_wire[2], opp_min_wire[1], opp_min_wire[0]};
@@ -331,6 +335,12 @@ okWireIn rtr_dest_sel_owi (
 	.ok1				(ok1),
 	.ep_addr			(8'h0A),
 	.ep_dataout		(rtr_dest_sel_wire)
+	);
+
+okWireIn rtr_output_active_owi (
+	.ok1				(ok1),
+	.ep_addr			(8'h15),
+	.ep_dataout		(rtr_output_active_wire)
 	);
 
 /* output preprocessor */
