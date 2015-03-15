@@ -30,7 +30,7 @@ module pid_controller_tf;
 	localparam	TX_LEN	= W_DATA*N_CHAN/2;
 
 	// Simulation structures
-	reg [W_DATA-1:0]	chan[0:N_CHAN-1];
+	reg signed [W_DATA-1:0]	chan[0:N_CHAN-1];
 	reg [TX_LEN-1:0] 	data_a_tx;
 	reg [TX_LEN-1:0] 	data_b_tx;
 	reg [15:0] wire_out;
@@ -66,6 +66,13 @@ module pid_controller_tf;
 	wire [15:0] hi_inout;
 	wire hi_aa;
 
+	//DEBUG
+	wire signed [17:0] pid_data;
+	reg signed [17:0] pid_data_reg;
+	wire pid_dv;
+	wire [15:0] opp_data;
+	wire opp_dv;
+
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
 		.clk50_in(clk50_in),
@@ -93,6 +100,11 @@ module pid_controller_tf;
 		.hi_out(hi_out),
 		.hi_inout(hi_inout),
 		.hi_aa(hi_aa),
+		//DEBUG
+		.pid_data_out(pid_data),
+		.pid_dv_out(pid_dv),
+		.opp_data_out(opp_data),
+		.opp_dv_out(opp_dv)
 	);
 
 	//------------------------------------------------------------------------
@@ -205,16 +217,14 @@ module pid_controller_tf;
 	reg [15:0] output_min = 0;
 	reg [15:0] output_max = 0;
 
-	reg [15:0] setpoint, p_coef, i_coef, d_coef;
+	reg signed [15:0] setpoint = 0, p_coef = 0, i_coef = 0, d_coef = 0;
+	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
 
 	// dac received data
 	reg [31:0] r_instr;
 	wire [15:0] r_data;
 	wire [3:0] r_prefix, r_control, r_address, r_feature;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
-
-	// expected value
-	reg [
 
 	initial begin
 		// Initialize Inputs
@@ -301,6 +311,9 @@ module pid_controller_tf;
 					@(posedge clk17_in) adc_busy_in = 1;
 				end
 
+				// set random chan[0] value
+				chan[0] = $random % 1000;
+
 				// simulate serial transmission from adc to fpga
 				@(negedge adc_n_cs_out) begin
 					data_a_tx = {chan[0], chan[1], chan[2], chan[3]};
@@ -321,8 +334,27 @@ module pid_controller_tf;
 				#200;
 				@(posedge clk17_in) adc_busy_in = 0;
 
-				// double chan 0 value
-				chan[0] = chan[0] << 1;
+			end
+
+			// check pid value
+			forever begin
+				@(posedge pid_dv) begin
+					pid_data_reg = pid_data;
+					e_count = e_count + 1;
+					error = setpoint - chan[0];
+					#1;
+					integral = integral + error;
+					derivative = error - error_prev;
+					#1;
+					u_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
+					error_prev = error;
+					#1;
+					if(u_expected == pid_data_reg) begin
+						$display("PID Success\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+					end else begin
+						$display("PID Failure\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+					end
+				end
 			end
 
 			// adc data receive
@@ -333,6 +365,7 @@ module pid_controller_tf;
 							r_instr = {r_instr[30:0], dac_din_out}; // shift data in
 						end
 					end
+
 				end
 			end
 

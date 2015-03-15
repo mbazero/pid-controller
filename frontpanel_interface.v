@@ -72,14 +72,8 @@ module frontpanel_interface #(
 
 	output wire										i2c_sda,
 	output wire										i2c_scl,
-	output wire										hi_muxsel,
-
-	// debug
-	output wire [17:0] adc_data0_db
-    );
-
-// debug
-assign adc_data0_db = adc_data[0];
+	output wire										hi_muxsel
+   );
 
 //////////////////////////////////////////
 // internal structures

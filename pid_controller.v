@@ -83,6 +83,12 @@ module pid_controller #(
 	output wire							i2c_sda,
 	output wire							i2c_scl,
 	output wire							hi_muxsel,
+
+	//DEBUG
+	output wire [17:0] pid_data_out,
+	output wire pid_dv_out,
+	output wire [15:0] opp_data_out,
+	output wire opp_dv_out
 	);
 
 //////////////////////////////////////////
@@ -174,10 +180,15 @@ wire	[2:0]						dac_chan;
 /* dds controller */
 wire	[N_DDS-1:0]				dds_done;
 
-
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
+
+//DEBUG
+assign pid_data_out = pid_data[0];
+assign pid_dv_out = pid_data_valid[0];
+assign opp_data_out = opp_dac_data[0];
+assign opp_dv_out = opp_dac_data_valid[0];
 
 /* output buffer enable */
 assign n_out_buf_en = 1'b0;
@@ -513,7 +524,6 @@ frontpanel_interface #(
 	.W_OSF_CD				(W_OSF_CD),
 	.W_OSF_OSM				(W_OSF_OSM))
 fp_io (
-	.adc_data0_db			(adc_data0_db), //DEBUG
 	.clk50_in				(clk50_in),
 	.clk17_in				(clk17_in),
 	.adc_data_valid_in	(cs_data_valid),
