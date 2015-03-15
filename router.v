@@ -36,7 +36,7 @@ wire	[W_CHAN-1:0]	data_out			[0:N_OUT-1]; 		// final output channels
 genvar i;
 generate
 	for ( i = 0; i < N_OUT; i = i+1 ) begin : out_array
-		assign data_bus_out[ i*W_CHAN +: W_CHAN ] = mux_data_out[i];
+		assign data_bus_out[ i*W_CHAN +: W_CHAN ] = data_out[i];
 	end
 endgenerate
 
