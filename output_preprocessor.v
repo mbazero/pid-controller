@@ -69,14 +69,14 @@ assign proc_stage[0] = lock_data_raw * multiplier;
 /* stage 1: add lock data to previous outputed data value */
 assign proc_stage[1] = proc_stage[0] + data_out_prev;
 
+/* stage 2: select output init value if lock is not enabled */
+assign proc_stage[2] = ( lock_en_in == 1 ) ? proc_stage[1] : output_init;
+
 /* stage 3: restrict lock data upper bound */
-assign proc_stage[2] = ( proc_stage[1] < output_max ) ? proc_stage[1] : output_max;
+assign proc_stage[3] = ( proc_stage[2] < output_max ) ? proc_stage[2] : output_max;
 
 /* stage 4: restrict lock data lower bound */
-assign proc_stage[3] = ( proc_stage[2] > output_min ) ? proc_stage[2] : output_min;
-
-/* stage 5: select output init value if lock is not enabled */
-assign proc_stage[4] = ( lock_en_in == 1 ) ? proc_stage[3] : output_init;
+assign proc_stage[4] = ( proc_stage[3] > output_min ) ? proc_stage[3] : output_min;
 
 /* data output */
 assign data_out = proc_stage[4];
