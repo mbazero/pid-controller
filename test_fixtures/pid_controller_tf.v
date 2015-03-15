@@ -228,6 +228,8 @@ module pid_controller_tf;
 
 	// misc structures
 	reg [15:0] output_init = 0;
+	reg [15:0] output_min = 0;
+	reg [15:0] output_max = 0;
 
 	// dac received data
 	reg [31:0] r_instr;
@@ -286,9 +288,11 @@ module pid_controller_tf;
 
 		// Set channel 0 OPP params
 		output_init = 500;
-		SetWireInValue(opp_init_owi0, output_init, mask);	// opp init p1 = 0
-		SetWireInValue(opp_init_owi1, 16'd0, mask); 	// opp init p2 = 0
-		SetWireInValue(opp_init_owi2, 16'd0, mask);	// opp init p3 = 500
+		output_min = 99;
+		output_max = 1111;
+		SetWireInValue(opp_init_owi0, output_init, mask); // set output init
+		SetWireInValue(opp_min_owi0, output_min, mask); // set output min
+		SetWireInValue(opp_max_owi0, output_max, mask); // set output max
 		SetWireInValue(opp_update_en_owi, 16'd1, mask);	// sensitize OPP channel 0
 
 		UpdateWireIns;
@@ -343,7 +347,7 @@ module pid_controller_tf;
 			repeat(REPS) begin
 				@(posedge adc_convst_out) begin
 					// set new init value
-					output_init = $random % 1000;
+					output_init = $random % 2000;
 					SetWireInValue(opp_init_owi0, output_init, mask);	// opp init p1 = 0
 					UpdateWireIns;
 					ActivateTriggerIn(module_update_ti, 0);
