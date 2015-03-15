@@ -232,7 +232,7 @@ module pid_controller_tf;
 		data_a_tx = 0;
 		data_b_tx = 0;
 		wire_out = 0;
-		
+
 		// Frontpanel reset
 		FrontPanelReset;
 
