@@ -3,12 +3,12 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - maybe add functionality to support simultenous update of all dac channels (nLDAC pin control)
 // - consistency with frontpanel param updating (some modules update on posedge of update signal, some on posedge of clock)
 // - consistency with frontpanel param reseting (
 // - should probably change everything to asynch reset b/c sys reset signal is a trigger (only one clock cycle)
 // - make sure output preprocessor multiplier is delivered in signed fashion
 // - figure out lock en signal (is it really needed, if so, make it a frontpanel param)
-// - HUGE: you need to totally revamp the cycle control unit. see notes that module.
 // - modify adc reset so it is synchronous with the 17MHz clock
 // - check modules instantiation in dds data path in this TLE (dds OPPs and dds controllers)
 // - parameterize dds controller

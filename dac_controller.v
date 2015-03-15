@@ -2,6 +2,9 @@
 
 // dac_controller -- mba 2014
 
+// TODO
+// - automatic internal reference setting
+
 module dac_controller #(
 	// parameters
 	parameter W_DATA	= 16,							// width of data signal
@@ -97,8 +100,11 @@ assign channel_out = address[W_CHS-1:0];
 //////////////////////////////////////////
 
 /* latch dac write data */
-always @( posedge data_valid_in ) begin
-	if ( cur_state == ST_IDLE ) begin
+always @( posedge clk_in ) begin
+	if ( reset_in == 1) begin
+		data		<= 0;
+		address	<= 0;
+	end else if (( cur_state == ST_IDLE ) & ( data_valid_in == 1)) begin
 		data 		<= data_in;
 		address 	<= {1'b0, channel_in}; // MSB of channel signal is only used in broadcast mode
 	end

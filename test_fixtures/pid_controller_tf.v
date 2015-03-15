@@ -222,7 +222,18 @@ module pid_controller_tf;
 		chan[3] = 4444;
 		chan[4] = 5555;
 		chan[5] = 6666;
+		chan[6] = 7777;
+		chan[7] = 8888;
 	end
+
+	// misc structures
+	reg [15:0] output_init = 0;
+
+	// dac received data
+	reg [31:0] r_instr;
+	wire [15:0] r_data;
+	wire [3:0] r_prefix, r_control, r_address, r_feature;
+	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
 	initial begin
 		// Initialize Inputs
@@ -274,9 +285,10 @@ module pid_controller_tf;
 		ActivateTriggerIn(module_update_ti, 0);
 
 		// Set channel 0 OPP params
-		SetWireInValue(opp_init_owi0, 16'd0, mask);	// opp init p1 = 0
+		output_init = 500;
+		SetWireInValue(opp_init_owi0, output_init, mask);	// opp init p1 = 0
 		SetWireInValue(opp_init_owi1, 16'd0, mask); 	// opp init p2 = 0
-		SetWireInValue(opp_init_owi2, 16'd500, mask);	// opp init p3 = 500
+		SetWireInValue(opp_init_owi2, 16'd0, mask);	// opp init p3 = 500
 		SetWireInValue(opp_update_en_owi, 16'd1, mask);	// sensitize OPP channel 0
 
 		UpdateWireIns;
@@ -293,42 +305,58 @@ module pid_controller_tf;
 		// trigger adc cstart
 		ActivateTriggerIn(adc_cstart_ti, 0);
 
-		// transission simulation
-		repeat(8) begin
-			// wait for convst_out to pulse and then assert busy
-			@(posedge adc_convst_out) begin
-				@(posedge clk17_in) adc_busy_in = 1;
-			end
+		fork
+			// transmission simulation
+			repeat(8) begin
+				// wait for convst_out to pulse and then assert busy
+				@(posedge adc_convst_out) begin
+					@(posedge clk17_in) adc_busy_in = 1;
+				end
 
-			// simulate serial transmission from adc to fpga
-			@(negedge adc_n_cs_out) begin
-				data_a_tx = {chan[0], chan[1], chan[2]};
-				data_b_tx = {chan[3], chan[4], chan[5]};
-			end
+				// simulate serial transmission from adc to fpga
+				@(negedge adc_n_cs_out) begin
+					data_a_tx = {chan[0], chan[1], chan[2], chan[3]};
+					data_b_tx = {chan[4], chan[5], chan[6], chan[7]};
+				end
 
-			// wait one cycle before transmitting
-			@(posedge clk17_in);
+				// wait one cycle before transmitting
+				@(posedge clk17_in);
 
-			// simulate serial data transmission
-			repeat (71) begin
-				@(negedge clk17_in)
+				// simulate serial data transmission
+				repeat (71) begin
+					@(negedge clk17_in)
 					data_a_tx = data_a_tx << 1;
 					data_b_tx = data_b_tx << 1;
+				end
+
+				// simulate conversion end
+				#200;
+				@(posedge clk17_in) adc_busy_in = 0;
+
+				// double chan 0 value
+				chan[0] = chan[0] << 1;
+
 			end
 
-			// simulate data read
-			//UpdateWireOuts();
-			//wire_out = GetWireOutValue(8'd32);
+			// set new frontpanel values
+			repeat(8) begin
+				@(posedge adc_convst_out) begin
+					// set new init value
+					output_init = $random % 1000;
+					SetWireInValue(opp_init_owi0, output_init, mask);	// opp init p1 = 0
+					UpdateWireIns;
+					ActivateTriggerIn(module_update_ti, 0);
+				end
+			end
 
-			//$display("Read Value: %d", test);
-
-			// simulate conversion end
-			#200;
-			@(posedge clk17_in) adc_busy_in = 0;
-
-			// double chan 0 value
-			chan[0] = chan[0] << 2;
-		end
+			repeat(8) begin
+				@(negedge dac_nsync_out) begin
+					repeat(32) begin
+						@(negedge dac_sclk_out) r_instr = {r_instr[30:0], dac_din_out}; // shift data in
+					end
+				end
+			end
+		join
 
 		$stop;
 
@@ -336,4 +364,4 @@ module pid_controller_tf;
 
 	`include "Z:/Users/mba13/pidc/ok_sim/okHostCalls.v"
 
-endmodule
+	endmodule
