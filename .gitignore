@@ -4,3 +4,4 @@
 *.wdb
 isim/
 *.exe
+*.pyc

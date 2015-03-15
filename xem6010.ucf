@@ -111,28 +111,28 @@ NET "adc_sclk_out"	LOC="A7"		| IOSTANDARD=LVCMOS33;
 #NET "dac_state[0]"		LOC="M22"	| IOSTANDARD=LVCMOS33;
 
 ## ADC DEBUG ################################################################
-NET "adc_n_cs_db"		LOC="A13"		| IOSTANDARD=LVCMOS33;
-NET "adc_busy_db"		LOC="C15"		| IOSTANDARD=LVCMOS33;
-NET "adc_convst_db"	LOC="A15"		| IOSTANDARD=LVCMOS33;
-
-NET "adc_os_db[0]"		LOC="C17"	| IOSTANDARD=LVCMOS33;
-NET "adc_os_db[1]"		LOC="A17"	| IOSTANDARD=LVCMOS33;
-NET "adc_os_db[2]"		LOC="A18"	| IOSTANDARD=LVCMOS33;
-
-NET "adc_reset_db"	LOC="C11"		| IOSTANDARD=LVCMOS33;
-NET "adc_sclk_db"		LOC="A11"		| IOSTANDARD=LVCMOS33;
-
-NET "adc_data_a_db"	LOC="C6"	| IOSTANDARD=LVCMOS33;
-NET "adc_data_b_db"	LOC="A3"	| IOSTANDARD=LVCMOS33;
-NET "adc_cstart_db"	LOC="A4"	| IOSTANDARD=LVCMOS33;
-NET "mod_update_db"	LOC="B8"	| IOSTANDARD=LVCMOS33;
-NET "clk17_db"			LOC="A8"	| IOSTANDARD=LVCMOS33;
-
-NET "adc_data_a_vect_db[0]"	LOC="D10"		| IOSTANDARD=LVCMOS33;
-NET "adc_data_a_vect_db[1]"	LOC="D8"		| IOSTANDARD=LVCMOS33;
-NET "adc_data_a_vect_db[2]"	LOC="C10"		| IOSTANDARD=LVCMOS33;
-NET "adc_data_a_vect_db[3]"	LOC="L17"		| IOSTANDARD=LVCMOS33;
-NET "adc_data_a_vect_db[4]"	LOC="D11"		| IOSTANDARD=LVCMOS33;
-NET "adc_data_a_vect_db[5]"	LOC="K18"		| IOSTANDARD=LVCMOS33;
-NET "adc_data_a_vect_db[6]"	LOC="C12"		| IOSTANDARD=LVCMOS33;
-NET "adc_data_valid_db"	LOC="D6"		| IOSTANDARD=LVCMOS33;
+#NET "adc_n_cs_db"		LOC="A13"		| IOSTANDARD=LVCMOS33;
+#NET "adc_busy_db"		LOC="C15"		| IOSTANDARD=LVCMOS33;
+#NET "adc_convst_db"	LOC="A15"		| IOSTANDARD=LVCMOS33;
+#
+#NET "adc_os_db[0]"		LOC="C17"	| IOSTANDARD=LVCMOS33;
+#NET "adc_os_db[1]"		LOC="A17"	| IOSTANDARD=LVCMOS33;
+#NET "adc_os_db[2]"		LOC="A18"	| IOSTANDARD=LVCMOS33;
+#
+#NET "adc_reset_db"	LOC="C11"		| IOSTANDARD=LVCMOS33;
+#NET "adc_sclk_db"		LOC="A11"		| IOSTANDARD=LVCMOS33;
+#
+#NET "adc_data_a_db"	LOC="C6"	| IOSTANDARD=LVCMOS33;
+#NET "adc_data_b_db"	LOC="A3"	| IOSTANDARD=LVCMOS33;
+#NET "adc_cstart_db"	LOC="A4"	| IOSTANDARD=LVCMOS33;
+#NET "mod_update_db"	LOC="B8"	| IOSTANDARD=LVCMOS33;
+#NET "clk17_db"			LOC="A8"	| IOSTANDARD=LVCMOS33;
+#
+#NET "adc_data_a_vect_db[0]"	LOC="D10"		| IOSTANDARD=LVCMOS33;
+#NET "adc_data_a_vect_db[1]"	LOC="D8"		| IOSTANDARD=LVCMOS33;
+#NET "adc_data_a_vect_db[2]"	LOC="C10"		| IOSTANDARD=LVCMOS33;
+#NET "adc_data_a_vect_db[3]"	LOC="L17"		| IOSTANDARD=LVCMOS33;
+#NET "adc_data_a_vect_db[4]"	LOC="D11"		| IOSTANDARD=LVCMOS33;
+#NET "adc_data_a_vect_db[5]"	LOC="K18"		| IOSTANDARD=LVCMOS33;
+#NET "adc_data_a_vect_db[6]"	LOC="C12"		| IOSTANDARD=LVCMOS33;
+#NET "adc_data_valid_db"	LOC="D6"		| IOSTANDARD=LVCMOS33;
