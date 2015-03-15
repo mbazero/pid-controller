@@ -522,7 +522,9 @@ frontpanel_interface #(
 	.N_OUT					(N_OUT),
 	.W_ADC					(W_ADC),
 	.W_OSF_CD				(W_OSF_CD),
-	.W_OSF_OSM				(W_OSF_OSM))
+	.W_OSF_OSM				(W_OSF_OSM),
+	.N_DAC					(N_DAC),
+	.W_DAC					(W_DAC_DATA))
 fp_io (
 	.clk50_in				(clk50_in),
 	.clk17_in				(clk17_in),
@@ -531,6 +533,8 @@ fp_io (
 	.adc_data_b_in			(cs_data_b),
 	.adc_cstart_out		(adc_cstart),
 	.adc_os_out				(adc_os),
+	.opp_dac_data_valid_in (opp_dac_data_valid),
+	.opp_dac_data0_in		(opp_dac_data[0]),
 	.osf_cycle_delay_out	(osf_cycle_delay),
 	.osf_osm_out			(osf_osm),
 	.osf_activate_out		(osf_activate),

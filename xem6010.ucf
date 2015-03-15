@@ -1,0 +1,138 @@
+#-------------------------------------------------------------------------
+# XEM6010 - Xilinx constraints file
+#
+# Pin mappings for the XEM6010.  Use this as a template and comment out 
+# the pins that are not used in your design.  (By default, map will fail
+# if this file contains constraints for signals not in your design).
+#
+# Copyright (c) 2004-2010 Opal Kelly Incorporated
+# $Rev: 584 $ $Date: 2010-10-01 11:14:42 -0500 (Fri, 01 Oct 2010) $
+#-------------------------------------------------------------------------
+CONFIG VCCAUX = "3.3"; //Required for Spartan-6
+
+############################################################################
+## FrontPanel Host Interface pins                                                       
+############################################################################
+NET "hi_in<0>"      LOC="Y12"  | IOSTANDARD="LVCMOS33";
+NET "hi_in<1>"      LOC="AB20" | IOSTANDARD="LVCMOS33";
+NET "hi_in<2>"      LOC="AB7"  | IOSTANDARD="LVCMOS33";
+NET "hi_in<3>"      LOC="AB8"  | IOSTANDARD="LVCMOS33";
+NET "hi_in<4>"      LOC="AA4"  | IOSTANDARD="LVCMOS33";
+NET "hi_in<5>"      LOC="AB4"  | IOSTANDARD="LVCMOS33";
+NET "hi_in<6>"      LOC="Y3"   | IOSTANDARD="LVCMOS33";
+NET "hi_in<7>"      LOC="AB3"  | IOSTANDARD="LVCMOS33";
+NET "hi_out<0>"     LOC="Y19"  | IOSTANDARD="LVCMOS33";
+NET "hi_out<1>"     LOC="AA8"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<0>"   LOC="AB12" | IOSTANDARD="LVCMOS33";
+NET "hi_inout<1>"   LOC="AA12" | IOSTANDARD="LVCMOS33";
+NET "hi_inout<2>"   LOC="Y13"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<3>"   LOC="AB18" | IOSTANDARD="LVCMOS33";
+NET "hi_inout<4>"   LOC="AA18" | IOSTANDARD="LVCMOS33";
+NET "hi_inout<5>"   LOC="V15"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<6>"   LOC="AB2"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<7>"   LOC="AA2"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<8>"   LOC="Y7"   | IOSTANDARD="LVCMOS33";
+NET "hi_inout<9>"   LOC="Y4"   | IOSTANDARD="LVCMOS33";
+NET "hi_inout<10>"  LOC="W4"   | IOSTANDARD="LVCMOS33";
+NET "hi_inout<11>"  LOC="AB6"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<12>"  LOC="AA6"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<13>"  LOC="U13"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<14>"  LOC="U14"  | IOSTANDARD="LVCMOS33";
+NET "hi_inout<15>"  LOC="AA20" | IOSTANDARD="LVCMOS33";
+NET "hi_aa"         LOC="W11"  | IOSTANDARD="LVCMOS33";
+
+NET "hi_muxsel"     LOC = "AA22"  | IOSTANDARD="LVCMOS33";
+NET "i2c_sda"       LOC = "AB9"   | IOSTANDARD="LVCMOS33" | PULLUP;
+NET "i2c_scl"       LOC = "Y9"    | IOSTANDARD="LVCMOS33" | PULLUP;
+
+NET "hi_in<0>" TNM_NET = "okHostClk";
+TIMESPEC "TS_okHostClk" = PERIOD "okHostClk" 20.83 ns HIGH 50%;  # 48 MHz
+NET "hi_inout[*]" TNM = "okHostINOUT_grp";
+TIMEGRP "okHostINOUT_grp" OFFSET = IN 9.83 ns VALID 9.83 ns BEFORE "hi_in<0>" RISING;
+TIMEGRP "okHostINOUT_grp" OFFSET = OUT 11.63 ns AFTER "hi_in<0>" RISING;
+NET "hi_out<0>" OFFSET = OUT 11.93 ns AFTER "hi_in<0>" RISING;
+NET "hi_out<1>" OFFSET = OUT 11.93 ns AFTER "hi_in<0>" RISING;
+NET "hi_in<1>" OFFSET = IN 14.13 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
+NET "hi_in<2>" OFFSET = IN 14.13 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
+NET "hi_in<3>" OFFSET = IN 14.13 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
+NET "hi_in<4>" OFFSET = IN 13.33 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
+NET "hi_in<5>" OFFSET = IN 13.33 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
+NET "hi_in<6>" OFFSET = IN 13.33 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
+NET "hi_in<7>" OFFSET = IN 13.33 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
+
+############################################################################
+## System Clocks                                                        
+############################################################################
+NET "clk50_in"   LOC="AB13"  | IOSTANDARD="LVCMOS33";
+NET "clk17_in"   LOC="Y11"   | IOSTANDARD="LVCMOS33";
+#NET "clk3"   LOC="AB11"  | IOSTANDARD="LVCMOS33";
+
+############################################################################
+## Peripherals                                                          
+############################################################################
+NET "n_out_buf_en"	LOC="K19"	| IOSTANDARD=LVCMOS33;
+
+## LEDs ################################################################
+#NET "led[0]"     LOC="Y17"    | IOSTANDARD=LVCMOS33;
+#NET "led[1]"     LOC="AB17"   | IOSTANDARD=LVCMOS33;
+#NET "led[2]"     LOC="AA14"   | IOSTANDARD=LVCMOS33;
+#NET "led[3]"     LOC="AB14"   | IOSTANDARD=LVCMOS33;
+#NET "led[4]"     LOC="AA16"   | IOSTANDARD=LVCMOS33;
+#NET "led[5]"     LOC="AB16"   | IOSTANDARD=LVCMOS33;
+#NET "led[6]"     LOC="AA10"   | IOSTANDARD=LVCMOS33;
+#NET "led[7]"     LOC="AB10"   | IOSTANDARD=LVCMOS33;
+
+## DAC ################################################################
+NET "dac_nldac_out"		LOC="B14"	| IOSTANDARD=LVCMOS33;
+NET "dac_nsync_out"		LOC="A14"	| IOSTANDARD=LVCMOS33;
+NET "dac_sclk_out"		LOC="B18"	| IOSTANDARD=LVCMOS33;
+NET "dac_din_out"			LOC="A16"	| IOSTANDARD=LVCMOS33;
+
+## ADC ################################################################
+NET "adc_n_cs_out"	LOC="C7"		| IOSTANDARD=LVCMOS33;
+NET "adc_busy_in"		LOC="A6"		| IOSTANDARD=LVCMOS33;
+NET "adc_convst_out"	LOC="A9"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_a_in"	LOC="B6"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_b_in"	LOC="C16"	| IOSTANDARD=LVCMOS33;
+
+NET "adc_os_out[0]"	LOC="A12"	| IOSTANDARD=LVCMOS33;
+NET "adc_os_out[1]"	LOC="B12"	| IOSTANDARD=LVCMOS33;
+NET "adc_os_out[2]"	LOC="B16"	| IOSTANDARD=LVCMOS33;
+
+NET "adc_reset_out"	LOC="C9"		| IOSTANDARD=LVCMOS33;
+NET "adc_sclk_out"	LOC="A7"		| IOSTANDARD=LVCMOS33;
+
+## DAC DEBUG ################################################################
+#NET "sclk_dac_db"	LOC="T21"	| IOSTANDARD=LVCMOS33;
+#NET "nsync_db"		LOC="T22"	| IOSTANDARD=LVCMOS33;
+#NET "din_db"		LOC="P21"	| IOSTANDARD=LVCMOS33;
+#NET "dac_state[2]"		LOC="P22"	| IOSTANDARD=LVCMOS33;
+#NET "dac_state[1]"		LOC="M21"	| IOSTANDARD=LVCMOS33;
+#NET "dac_state[0]"		LOC="M22"	| IOSTANDARD=LVCMOS33;
+
+## ADC DEBUG ################################################################
+NET "adc_n_cs_db"		LOC="A13"		| IOSTANDARD=LVCMOS33;
+NET "adc_busy_db"		LOC="C15"		| IOSTANDARD=LVCMOS33;
+NET "adc_convst_db"	LOC="A15"		| IOSTANDARD=LVCMOS33;
+
+NET "adc_os_db[0]"		LOC="C17"	| IOSTANDARD=LVCMOS33;
+NET "adc_os_db[1]"		LOC="A17"	| IOSTANDARD=LVCMOS33;
+NET "adc_os_db[2]"		LOC="A18"	| IOSTANDARD=LVCMOS33;
+
+NET "adc_reset_db"	LOC="C11"		| IOSTANDARD=LVCMOS33;
+NET "adc_sclk_db"		LOC="A11"		| IOSTANDARD=LVCMOS33;
+
+NET "adc_data_a_db"	LOC="C6"	| IOSTANDARD=LVCMOS33;
+NET "adc_data_b_db"	LOC="A3"	| IOSTANDARD=LVCMOS33;
+NET "adc_cstart_db"	LOC="A4"	| IOSTANDARD=LVCMOS33;
+NET "mod_update_db"	LOC="B8"	| IOSTANDARD=LVCMOS33;
+NET "clk17_db"			LOC="A8"	| IOSTANDARD=LVCMOS33;
+
+NET "adc_data_a_vect_db[0]"	LOC="D10"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_a_vect_db[1]"	LOC="D8"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_a_vect_db[2]"	LOC="C10"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_a_vect_db[3]"	LOC="L17"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_a_vect_db[4]"	LOC="D11"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_a_vect_db[5]"	LOC="K18"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_a_vect_db[6]"	LOC="C12"		| IOSTANDARD=LVCMOS33;
+NET "adc_data_valid_db"	LOC="D6"		| IOSTANDARD=LVCMOS33;

@@ -114,7 +114,7 @@ always @( posedge clk_in ) begin
 end
 
 /* frontpanel parameter registers */
-always @( update_in ) begin
+always @( posedge update_in ) begin
 	if ( update_en_in == 1 ) begin
 		output_max	<= output_max_in;
 		output_min	<= output_min_in;

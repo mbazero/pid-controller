@@ -15,7 +15,9 @@ module frontpanel_interface #(
 	parameter N_OUT		= 8,									// number of output channels
 	parameter W_ADC		= 18,									// width of adc channels
 	parameter W_OSF_CD	= 16,									// width of osf cycle delay signal
-	parameter W_OSF_OSM	= 6									// width of oversample ratio signal
+	parameter W_OSF_OSM	= 6,									// width of oversample ratio signal
+	parameter N_DAC		= 8,									// number of dac channels
+	parameter W_DAC		= 16									// width of dac data channel
 	)(
 	// inputs <- top level entity
 	input	wire										clk50_in,
@@ -25,6 +27,10 @@ module frontpanel_interface #(
 	input wire				[N_ADC-1:0]			adc_data_valid_in,
 	input wire				[W_ADC-1:0]			adc_data_a_in,
 	input wire				[W_ADC-1:0]			adc_data_b_in,
+
+	// inputs <- dac opp
+	input wire				[N_DAC-1:0]			opp_dac_data_valid_in,
+	input wire				[W_DAC-1:0]			opp_dac_data0_in,
 
 	// outputs -> adc controller
 	output wire				[2:0]					adc_os_out,						// dm
@@ -79,11 +85,14 @@ module frontpanel_interface #(
 // internal structures
 //////////////////////////////////////////
 
+/* local parameters */
+localparam N_PIPES = 2; // number of opal kelly pipes
+
 /* host interface */
 wire 						ticlk;
 wire	[30:0]			ok1;
 wire	[16:0] 			ok2;
-wire	[17*(N_ADC+1)-1:0]	ok2x;	// must have space for continuous update registers for each channel and one bulk update register
+wire	[17*(N_ADC+N_PIPES)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of bulk update pipes
 
 /* adc controller */
 wire	[15:0] 		adc_os_wire;
@@ -204,33 +213,53 @@ okHost hostIf (
 	.ok2				(ok2)
 	);
 
-okWireOR # (.N(N_ADC+1)) wireOR (.ok2(ok2), .ok2s(ok2x));
+okWireOR # (.N(N_ADC+N_PIPES)) wireOR (.ok2(ok2), .ok2s(ok2x));
 
-/* bulk data transfer */
-wire pipe_read;
-wire [15:0] pfifo_dout;
+/* oversample filter data pipe */
+wire osf_pipe_read;
+wire [15:0] osf_pipe_dout;
 
-okPipeOut bulk_tx_pipe (
+okPipeOut osf_pipe (
 		.ok1			(ok1),
 		.ok2			(ok2x[N_ADC*17 +: 17]),
 		.ep_addr		(8'ha3),
-		.ep_datain	(pfifo_dout),
-		.ep_read		(pipe_read)
+		.ep_datain	(osf_pipe_dout),
+		.ep_read		(osf_pipe_read)
 		);
 
-pipe_tx_fifo ptf (
-		.ti_clk_in	(ticlk),
-		.sys_clk_in	(clk50_in),
-		.reset_in	(sys_reset_out),
+pipe_tx_fifo osf_pipe_fifo (
+		.ti_clk_in		(ticlk),
+		.sys_clk_in		(clk50_in),
+		.reset_in		(sys_reset_out),
 		.data_valid_in	(adc_data_valid_in[0]),	//DEBUG
 		.data_in			(adc_data_a_in[17:2]),	//DEBUG
-		.pipe_read_in	(pipe_read),
-		.data_out		(pfifo_dout)
+		.pipe_read_in	(osf_pipe_read),
+		.data_out		(osf_pipe_dout)
 		);
 
-/* wire outs */
-//wire [7:0] owo_addr_arr [0:N_ADC-1] = '{8'h20, 8'h21, 8'h22, 8'h23, 8'h24, 8'h25}
+/* dac opp data pipe */
+wire opp_pipe_read;
+wire [15:0] opp_pipe_dout;
 
+okPipeOut opp_pipe (
+		.ok1			(ok1),
+		.ok2			(ok2x[(N_ADC+1)*17 +: 17]),
+		.ep_addr		(8'ha4),
+		.ep_datain	(opp_pipe_dout),
+		.ep_read		(opp_pipe_read)
+		);
+
+pipe_tx_fifo opp_pipe_fifo (
+		.ti_clk_in		(ticlk),
+		.sys_clk_in		(clk50_in),
+		.reset_in		(sys_reset_out),
+		.data_valid_in	(opp_dac_data_valid_in[0]),	//DEBUG
+		.data_in			(opp_dac_data0_in),	//DEBUG
+		.pipe_read_in	(opp_pipe_read),
+		.data_out		(opp_pipe_dout)
+		);
+
+/* adc continous update wire outs */
 genvar j;
 generate
 	for ( j = 0; j < N_ADC; j = j + 1 ) begin : adc_data_owo_arr
