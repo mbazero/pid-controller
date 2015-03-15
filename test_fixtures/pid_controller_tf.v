@@ -305,9 +305,10 @@ module pid_controller_tf;
 		// trigger adc cstart
 		ActivateTriggerIn(adc_cstart_ti, 0);
 
-		fork
+		fork : test
+			localparam REPS = 8;
 			// transmission simulation
-			repeat(8) begin
+			repeat(REPS) begin
 				// wait for convst_out to pulse and then assert busy
 				@(posedge adc_convst_out) begin
 					@(posedge clk17_in) adc_busy_in = 1;
@@ -339,7 +340,7 @@ module pid_controller_tf;
 			end
 
 			// set new frontpanel values
-			repeat(8) begin
+			repeat(REPS) begin
 				@(posedge adc_convst_out) begin
 					// set new init value
 					output_init = $random % 1000;
@@ -349,10 +350,20 @@ module pid_controller_tf;
 				end
 			end
 
-			repeat(8) begin
+			repeat(REPS) begin
 				@(negedge dac_nsync_out) begin
 					repeat(32) begin
-						@(negedge dac_sclk_out) r_instr = {r_instr[30:0], dac_din_out}; // shift data in
+						@(negedge dac_sclk_out) begin
+							r_instr = {r_instr[30:0], dac_din_out}; // shift data in
+						end
+					end
+
+					// check that received data is correct
+					@(posedge dac_sclk_out) begin
+						if(r_data == output_init)
+							$display("SUCCESS -- Expected: %d\tReceived: %d", output_init, r_data);
+						else
+							$display("FAILURE -- Expected: %d\tReceived: %d", output_init, r_data);
 					end
 				end
 			end
