@@ -44,11 +44,13 @@ localparam W_DINS = W_DATA + W_CHS;							// width of dac write instruction
 
 /* upper split data */
 wire [W_DATA*N_CHAN/2-1:0] data_bus_upper;				// upper half of input data bus
-wire [N_CHAN/2-1:0]			dv_upper; 						// upper and lower halfs of data valid bus
+wire [N_CHAN/2-1:0]			dv_upper; 						// upper half of data valid bus
+wire								dv_rdc_upper;					// reduction OR of upper data valid bus
 
 /* lower split data */
 wire [W_DATA*N_CHAN/2-1:0]	data_bus_lower;				// lower half of input data bus
-wire [N_CHAN/2-1:0]			dv_lower; 						// upper and lower halfs of data valid bus
+wire [N_CHAN/2-1:0]			dv_lower; 						// lower half of data valid bus
+wire								dv_rdc_lower;					// reduction OR of lower data valid bus
 
 /* mux data out */
 wire [W_DATA-1:0] mux_dout_upper, mux_dout_lower;		// mux output data for upper and lower channels

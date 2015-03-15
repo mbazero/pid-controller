@@ -77,7 +77,7 @@ module pid_controller #(
 	input wire		[7:0]				hi_in,
 	output wire		[1:0]				hi_out,
 	inout wire		[15:0]			hi_inout,
-	//inout wire							hi_aa,
+	inout wire							hi_aa,
 
 	output wire							i2c_sda,
 	output wire							i2c_scl,
@@ -584,7 +584,7 @@ fp_io (
 	.hi_in					(hi_in),
 	.hi_out					(hi_out),
 	.hi_inout				(hi_inout),
-	//.hi_aa					(hi_aa),
+	.hi_aa					(hi_aa),
 	.i2c_sda					(i2c_sda),
 	.i2c_scl 				(i2c_scl),
 	.hi_muxsel				(hi_muxsel)

@@ -77,7 +77,7 @@ module pid_controller_tf;
 	reg [7:0] hi_in;
 	wire [1:0] hi_out;
 	wire [15:0] hi_inout;
-	//wire hi_aa;
+	wire hi_aa;
 
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
@@ -105,7 +105,7 @@ module pid_controller_tf;
 		.hi_in(hi_in),
 		.hi_out(hi_out),
 		.hi_inout(hi_inout),
-		//.hi_aa(hi_aa),
+		.hi_aa(hi_aa),
 		.adc_busy_db(adc_busy_db),
 		.adc_data_a_db(adc_data_a_db),
 		.adc_data_b_db(adc_data_b_db),

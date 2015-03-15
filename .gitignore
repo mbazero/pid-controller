@@ -1,0 +1,6 @@
+*.log
+*.xmsgs
+*.cmd
+*.wdb
+isim/
+*.exe
