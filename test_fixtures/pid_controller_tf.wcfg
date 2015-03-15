@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="47" />
+   <WVObjectSize size="53" />
    <wvobject fp_name="/pid_controller_tf/uut/sys_reset" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">sys_reset</obj_property>
       <obj_property name="ObjectShortName">sys_reset</obj_property>
@@ -110,6 +110,48 @@
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_p_coef" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pid_p_coef[15:0]</obj_property>
+      <obj_property name="ObjectShortName">pid_p_coef[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_i_coef" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pid_i_coef[15:0]</obj_property>
+      <obj_property name="ObjectShortName">pid_i_coef[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_d_coef" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pid_d_coef[15:0]</obj_property>
+      <obj_property name="ObjectShortName">pid_d_coef[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /update_en_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">update_en_in</obj_property>
+      <obj_property name="ObjectShortName">update_en_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /update_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">update_in</obj_property>
+      <obj_property name="ObjectShortName">update_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /lock_en_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lock_en_in</obj_property>
+      <obj_property name="ObjectShortName">lock_en_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /p_coef" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">p_coef[17:0]</obj_property>
+      <obj_property name="ObjectShortName">p_coef[17:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /i_coef" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">i_coef[17:0]</obj_property>
+      <obj_property name="ObjectShortName">i_coef[17:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /d_coef" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">d_coef[17:0]</obj_property>
+      <obj_property name="ObjectShortName">d_coef[17:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/clk50_in" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk50_in</obj_property>
       <obj_property name="ObjectShortName">clk50_in</obj_property>
@@ -147,21 +189,6 @@
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /output_max" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">output_max[15:0]</obj_property>
-      <obj_property name="ObjectShortName">output_max[15:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /output_init" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">output_init[15:0]</obj_property>
-      <obj_property name="ObjectShortName">output_init[15:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /output_min" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">output_min[15:0]</obj_property>
-      <obj_property name="ObjectShortName">output_min[15:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/clk50_in" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk50_in</obj_property>

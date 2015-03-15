@@ -3,6 +3,7 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - only support integer PID coefficients (is that good or bad?)
 // - maybe add functionality to support simultenous update of all dac channels (nLDAC pin control)
 // - consistency with frontpanel param updating (some modules update on posedge of update signal, some on posedge of clock)
 // - consistency with frontpanel param reseting (
@@ -82,44 +83,7 @@ module pid_controller #(
 	output wire							i2c_sda,
 	output wire							i2c_scl,
 	output wire							hi_muxsel,
-
-	//////////////////////DEBUG//////////////////////
-	output wire adc_busy_db,
-	output wire adc_data_a_db,
-	output wire adc_data_b_db,
-
-	output wire [2:0] adc_os_db,
-	output wire adc_convst_db,
-	output wire adc_reset_db,
-	output wire adc_sclk_db,
-	output wire adc_n_cs_db,
-
-	output wire[6:0] adc_data_a_vect_db,
-	output wire adc_data_valid_db,
-
-	output wire adc_cstart_db,
-	output wire mod_update_db,
-	output wire clk17_db
 	);
-
-//////////////////////DEBUG//////////////////////
-assign adc_busy_db = adc_busy_in;
-assign adc_data_a_db = adc_data_a_in;
-assign adc_data_b_db = adc_data_b_in;
-
-assign adc_os_db = adc_os_out;
-assign adc_convst_db = adc_convst_out;
-assign adc_reset_db = adc_reset_out;
-assign adc_sclk_db = adc_sclk_out;
-assign adc_n_cs_db = adc_n_cs_out;
-
-wire [17:0] adc_data0_db;
-assign adc_data_a_vect_db = adc_data0_db[17:11];
-assign adc_data_valid_db = | adc_data_valid;
-
-assign adc_cstart_db = adc_cstart;
-assign mod_update_db = module_update;
-assign clk17_db = clk17_in;
 
 //////////////////////////////////////////
 // internal structures

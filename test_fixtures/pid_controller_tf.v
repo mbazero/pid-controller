@@ -59,19 +59,6 @@ module pid_controller_tf;
 	wire [1:0] dds_sdio_out;
 	wire [1:0] dds_io_update_out;
 	wire out_buf_en;
-	wire adc_busy_db;
-	wire adc_data_a_db;
-	wire adc_data_b_db;
-	wire [2:0] adc_os_db;
-	wire adc_convst_db;
-	wire adc_reset_db;
-	wire adc_sclk_db;
-	wire adc_n_cs_db;
-	wire [6:0] adc_data_a_vect_db;
-	wire adc_data_valid_db;
-	wire adc_cstart_db;
-	wire mod_update_db;
-	wire clk17_db;
 
 	// Frontpanel
 	reg [7:0] hi_in;
@@ -106,19 +93,6 @@ module pid_controller_tf;
 		.hi_out(hi_out),
 		.hi_inout(hi_inout),
 		.hi_aa(hi_aa),
-		.adc_busy_db(adc_busy_db),
-		.adc_data_a_db(adc_data_a_db),
-		.adc_data_b_db(adc_data_b_db),
-		.adc_os_db(adc_os_db),
-		.adc_convst_db(adc_convst_db),
-		.adc_reset_db(adc_reset_db),
-		.adc_sclk_db(adc_sclk_db),
-		.adc_n_cs_db(adc_n_cs_db),
-		.adc_data_a_vect_db(adc_data_a_vect_db),
-		.adc_data_valid_db(adc_data_valid_db),
-		.adc_cstart_db(adc_cstart_db),
-		.mod_update_db(mod_update_db),
-		.clk17_db(clk17_db)
 	);
 
 	//------------------------------------------------------------------------
@@ -216,7 +190,7 @@ module pid_controller_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = 1111;
+		chan[0] = 10;
 		chan[1] = 2222;
 		chan[2] = 3333;
 		chan[3] = 4444;
@@ -231,11 +205,16 @@ module pid_controller_tf;
 	reg [15:0] output_min = 0;
 	reg [15:0] output_max = 0;
 
+	reg [15:0] setpoint, p_coef, i_coef, d_coef;
+
 	// dac received data
 	reg [31:0] r_instr;
 	wire [15:0] r_data;
 	wire [3:0] r_prefix, r_control, r_address, r_feature;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
+
+	// expected value
+	reg [
 
 	initial begin
 		// Initialize Inputs
@@ -269,10 +248,14 @@ module pid_controller_tf;
 
 
 		// Set channel 0 PID params
-		SetWireInValue(pid_setpoint_owi, 16'd3, mask);	// setpoint = 3
-		SetWireInValue(pid_p_coef_owi, 16'd10, mask);	// p = 10
-		SetWireInValue(pid_i_coef_owi, 16'd3, mask);	// i = 3
-		SetWireInValue(pid_d_coef_owi, 16'd0, mask);	// d = 0
+		setpoint = 0;
+		p_coef = 10;
+		i_coef = 3;
+		d_coef = 0;
+		SetWireInValue(pid_setpoint_owi, setpoint, mask);	// setpoint = 3
+		SetWireInValue(pid_p_coef_owi, p_coef, mask);	// p = 10
+		SetWireInValue(pid_i_coef_owi, i_coef, mask);	// i = 3
+		SetWireInValue(pid_d_coef_owi, d_coef, mask);	// d = 0
 		SetWireInValue(pid_update_en_owi, 16'd1, mask);	// sensitize PID channel 0
 
 		UpdateWireIns;
@@ -299,8 +282,8 @@ module pid_controller_tf;
 		ActivateTriggerIn(module_update_ti, 0);
 
 		// activate pid lock 0
-		//SetWireInValue(pid_lock_en_owi, 16'd1, mask);
-		//UpdateWireIns;
+		SetWireInValue(pid_lock_en_owi, 16'd1, mask);
+		UpdateWireIns;
 
 		// activate adc channel 0
 		SetWireInValue(osf_activate_owi, 16'd1, mask);
@@ -309,10 +292,10 @@ module pid_controller_tf;
 		// trigger adc cstart
 		ActivateTriggerIn(adc_cstart_ti, 0);
 
-		fork : test
-			localparam REPS = 8;
+		fork
+
 			// transmission simulation
-			repeat(REPS) begin
+			forever begin
 				// wait for convst_out to pulse and then assert busy
 				@(posedge adc_convst_out) begin
 					@(posedge clk17_in) adc_busy_in = 1;
@@ -340,37 +323,19 @@ module pid_controller_tf;
 
 				// double chan 0 value
 				chan[0] = chan[0] << 1;
-
 			end
 
-			// set new frontpanel values
-			repeat(REPS) begin
-				@(posedge adc_convst_out) begin
-					// set new init value
-					output_init = $random % 2000;
-					SetWireInValue(opp_init_owi0, output_init, mask);	// opp init p1 = 0
-					UpdateWireIns;
-					ActivateTriggerIn(module_update_ti, 0);
-				end
-			end
-
-			repeat(REPS) begin
+			// adc data receive
+			forever begin
 				@(negedge dac_nsync_out) begin
 					repeat(32) begin
 						@(negedge dac_sclk_out) begin
 							r_instr = {r_instr[30:0], dac_din_out}; // shift data in
 						end
 					end
-
-					// check that received data is correct
-					@(posedge dac_sclk_out) begin
-						if(r_data == output_init)
-							$display("SUCCESS -- Expected: %d\tReceived: %d", output_init, r_data);
-						else
-							$display("FAILURE -- Expected: %d\tReceived: %d", output_init, r_data);
-					end
 				end
 			end
+
 		join
 
 		$stop;

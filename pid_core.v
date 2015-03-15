@@ -123,7 +123,7 @@ end
 
 /* frontpanel parameter registers */
 always @( posedge clk_in ) begin
-	if (( reset_in == 1 ) | ( lock_en_in == 0 )) begin
+	if ( reset_in == 1 ) begin
 		setpoint <= 0;
 		p_coef	<= 0;
 		i_coef	<= 0;
