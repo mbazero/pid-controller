@@ -3,6 +3,8 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - consistency with frontpanel param updating (some modules update on posedge of update signal, some on posedge of clock)
+// - consistency with frontpanel param reseting (
 // - should probably change everything to asynch reset b/c sys reset signal is a trigger (only one clock cycle)
 // - make sure output preprocessor multiplier is delivered in signed fashion
 // - figure out lock en signal (is it really needed, if so, make it a frontpanel param)

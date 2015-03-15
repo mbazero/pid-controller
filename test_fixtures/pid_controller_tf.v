@@ -163,10 +163,10 @@ module pid_controller_tf;
 	//------------------------------------------------------------------------
 
 	// generate ~17MHz clock
-	always #60 clk17_in = !clk17_in;
+	always #30 clk17_in = ~clk17_in;
 
 	// generate 50MHz clock
-	always #20 clk50_in = !clk50_in;
+	always #10 clk50_in = ~clk50_in;
 
 	// serial data channels
 	assign adc_data_a_in = data_a_tx[TX_LEN-1];
@@ -225,8 +225,6 @@ module pid_controller_tf;
 	end
 
 	initial begin
-		FrontPanelReset;
-		
 		// Initialize Inputs
 		clk50_in = 0;
 		clk17_in = 0;
@@ -234,6 +232,9 @@ module pid_controller_tf;
 		data_a_tx = 0;
 		data_b_tx = 0;
 		wire_out = 0;
+		
+		// Frontpanel reset
+		FrontPanelReset;
 
 		// System reset
 		ActivateTriggerIn(sys_reset_ti, 0);
@@ -333,6 +334,6 @@ module pid_controller_tf;
 
 	end
 
-	`include "./ok_sim/okHostCalls.v"
+	`include "Z:/Users/mba13/pidc/ok_sim/okHostCalls.v"
 
 endmodule
