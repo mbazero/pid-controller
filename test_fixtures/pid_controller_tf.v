@@ -261,7 +261,7 @@ module pid_controller_tf;
 		setpoint = 0;
 		p_coef = 10;
 		i_coef = 3;
-		d_coef = 0;
+		d_coef = 2;
 		SetWireInValue(pid_setpoint_owi, setpoint, mask);	// setpoint = 3
 		SetWireInValue(pid_p_coef_owi, p_coef, mask);	// p = 10
 		SetWireInValue(pid_i_coef_owi, i_coef, mask);	// i = 3
