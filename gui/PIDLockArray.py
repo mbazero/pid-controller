@@ -13,6 +13,7 @@ osf_log_ovr_owi		= 0x03
 osf_update_en_owi		= 0x04
 
 pid_clear_ti			= 0x55
+pid_lock_en_owi = 0x17
 pid_setpoint_owi		= 0x04
 pid_p_coef_owi			= 0x05
 pid_i_coef_owi			= 0x06
@@ -21,6 +22,7 @@ pid_update_en_owi		= 0x08
 
 rtr_src_sel_owi		= 0x09
 rtr_dest_sel_owi		= 0x0a
+rtr_output_active_owi   = 0x16
 
 opp_init_owi			= [0x0b, 0x0c, 0x0d]
 opp_min_owi				= [0x0e, 0x0f, 0x10]
@@ -35,7 +37,7 @@ sys_reset_ti			= 0x58
 
 ############ ok output address mappings ############
 adc_data_owo			= [32 + count for count in range(6)]
-osf_bulk_data_opo		= 0xa4
+osf_bulk_data_opo		= 0xa3
 
 # trigger id mappings
 ADC_CSTART 		= 0
@@ -357,6 +359,7 @@ class PIDChannel:
 
 		self.okc.SetWireInValue(rtr_src_sel_owi, self.rtr_src_sel)		# set source channel
 		self.okc.SetWireInValue(rtr_dest_sel_owi, self.rtr_dest_sel)	# set destination channel
+		self.okc.SetWireInValue(rtr_output_active_owi, 1)	# set destination channel
 		self.okc.UpdateWireIns()												# update wire in values
 		self.okc.ModUpdate()												# update modules
 
@@ -445,20 +448,15 @@ class PIDChannel:
 
 
 	#################### opp handlers #######################
-	def handle_opp_lock_en(self, state):
-		# ALWAYS ENABLED IN DEBUG MODE
-
-		# self.okc.SetWireInValuereInValue(opp_lock_en_owi, state)
-		# self.okc.SetWireInValuereInValue(opp_update_en_owi, self.channel_no)
-		# self.okc.UpdateWi()
-		# self.okc.ModUpdate()
-
+	def handle_opp_lock_en(self, state): #TODO change name to handle_pid_lock_en
 		if (state == 1) :
-			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PID filter activated (always activated for testing)'
+			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PID filter activated'
+			self.okc.SetAndUpdateWireInValue(pid_lock_en_owi, 1)
 
 			self.okc.Set
 		else :
-			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PIF filter deactivated (unimplemented)'
+			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PIF filter deactivated'
+			self.okc.SetAndUpdateWireInValue(pid_lock_en_owi, 0)
 
 	def handle_opp_init(self, text):
 		opp_init_old = self.opp_init

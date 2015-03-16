@@ -11,7 +11,7 @@
 
 module frontpanel_interface #(
 	// parameters
-	parameter N_ADC		= 6,									// number of active adc channels
+	parameter N_ADC		= 8,									// number of active adc channels
 	parameter N_OUT		= 8,									// number of output channels
 	parameter W_ADC		= 18,									// width of adc channels
 	parameter W_OSF_CD	= 16,									// width of osf cycle delay signal
