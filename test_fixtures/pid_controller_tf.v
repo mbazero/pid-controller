@@ -1,28 +1,13 @@
 `timescale 1ns / 1ps
 
-////////////////////////////////////////////////////////////////////////////////
-// Company:
-// Engineer:
-//
-// Create Date:   14:32:40 12/15/2014
-// Design Name:   pid_controller
-// Module Name:   Y:/Documents/MIST/pid_controller/pid_controller_tf.v
-// Project Name:  pid_controller
-// Target Device:
-// Tool versions:
-// Description:
-//
-// Verilog Test Fixture created by ISE for module: pid_controller
-//
-// Dependencies:
-//
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-////////////////////////////////////////////////////////////////////////////////
+// pid_controller_tf -- mba 2015
+// PID controller test fixture.
 
 module pid_controller_tf;
+	// Includes
+	`include "ep_map.vh"
+	`include "ok_sim/okHostCalls.v"
+
 	// Parameters
 	localparam	W_DATA	= 18;
 	localparam 	N_CHAN	= 8;
@@ -157,48 +142,6 @@ module pid_controller_tf;
 	// serial data channels
 	assign adc_data_a_in = data_a_tx[TX_LEN-1];
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
-
-	// endpoint params
-	parameter adc_os_owi					= 8'h01;
-	parameter adc_cstart_ti				= 8'h53;
-
-	parameter osf_activate_owi			= 8'h15;
-	parameter osf_cycle_delay_owi		= 8'h02;
-	parameter osf_log_ovr_owi			= 8'h03;
-	parameter osf_update_en_owi		= 8'h04;
-
-	parameter pid_clear_ti				= 8'h55;
-	parameter pid_lock_en_owi			= 8'h17;
-	parameter pid_setpoint_owi			= 8'h04;
-	parameter pid_p_coef_owi			= 8'h05;
-	parameter pid_i_coef_owi			= 8'h06;
-	parameter pid_d_coef_owi			= 8'h07;
-	parameter pid_update_en_owi		= 8'h08;
-
-	parameter rtr_src_sel_owi			= 8'h09;
-	parameter rtr_dest_sel_owi			= 8'h0a;
-	parameter rtr_output_active_owi	= 8'h16;
-
-	parameter opp_init_owi0				= 8'h0b;
-	parameter opp_init_owi1				= 8'h0c;
-	parameter opp_init_owi2				= 8'h0d;
-	parameter opp_min_owi0				= 8'h0e;
-	parameter opp_min_owi1				= 8'h0f;
-	parameter opp_min_owi2				= 8'h10;
-	parameter opp_max_owi0				= 8'h11;
-	parameter opp_max_owi1				= 8'h12;
-	parameter opp_max_owi2				= 8'h13;
-	parameter opp_update_en_owi		= 8'h14;
-
-	parameter dac_ref_set_ti			= 8'h56;
-
-	parameter module_update_ti			= 8'h57;
-
-	parameter sys_reset_ti				= 8'h58;
-
-	parameter osf_bulk_data_opo		= 8'ha3;
-
-	parameter mask							= 32'hffffffff;
 
 	// set channel values
 	initial begin
@@ -375,6 +318,4 @@ module pid_controller_tf;
 
 	end
 
-	`include "Z:/Users/mba13/pidc/ok_sim/okHostCalls.v"
-
-	endmodule
+endmodule

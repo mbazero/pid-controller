@@ -82,6 +82,12 @@ module frontpanel_interface #(
    );
 
 //////////////////////////////////////////
+// includes
+//////////////////////////////////////////
+
+`include "ep_map.vh"
+
+//////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
@@ -92,7 +98,8 @@ localparam N_PIPES = 2; // number of opal kelly pipes
 wire 						ticlk;
 wire	[30:0]			ok1;
 wire	[16:0] 			ok2;
-wire	[17*(N_ADC+N_PIPES)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of bulk update pipes
+//wire	[17*(N_ADC+N_PIPES)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of bulk update pipes
+wire	[17*(N_ADC+1)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of bulk update pipes
 
 /* adc controller */
 wire	[15:0] 		adc_os_wire;
@@ -213,7 +220,8 @@ okHost hostIf (
 	.ok2				(ok2)
 	);
 
-okWireOR # (.N(N_ADC+N_PIPES)) wireOR (.ok2(ok2), .ok2s(ok2x));
+//okWireOR # (.N(N_ADC+N_PIPES)) wireOR (.ok2(ok2), .ok2s(ok2x));
+okWireOR # (.N(N_ADC+1)) wireOR (.ok2(ok2), .ok2s(ok2x));
 
 /* oversample filter data pipe */
 wire osf_pipe_read;
@@ -222,7 +230,7 @@ wire [15:0] osf_pipe_dout;
 okPipeOut osf_pipe (
 		.ok1			(ok1),
 		.ok2			(ok2x[N_ADC*17 +: 17]),
-		.ep_addr		(8'ha3),
+		.ep_addr		(osf_bulk_data_pep),
 		.ep_datain	(osf_pipe_dout),
 		.ep_read		(osf_pipe_read)
 		);
@@ -238,26 +246,26 @@ pipe_tx_fifo osf_pipe_fifo (
 		);
 
 /* dac opp data pipe */
-wire opp_pipe_read;
-wire [15:0] opp_pipe_dout;
+//wire opp_pipe_read;
+//wire [15:0] opp_pipe_dout;
 
-okPipeOut opp_pipe (
-		.ok1			(ok1),
-		.ok2			(ok2x[(N_ADC+1)*17 +: 17]),
-		.ep_addr		(8'ha4),
-		.ep_datain	(opp_pipe_dout),
-		.ep_read		(opp_pipe_read)
-		);
+//okPipeOut opp_pipe (
+		//.ok1			(ok1),
+		//.ok2			(ok2x[(N_ADC+1)*17 +: 17]),
+		//.ep_addr		(8'ha4),
+		//.ep_datain	(opp_pipe_dout),
+		//.ep_read		(opp_pipe_read)
+		//);
 
-pipe_tx_fifo opp_pipe_fifo (
-		.ti_clk_in		(ticlk),
-		.sys_clk_in		(clk50_in),
-		.reset_in		(sys_reset_out),
-		.data_valid_in	(opp_dac_data_valid_in[0]),	//DEBUG
-		.data_in			(opp_dac_data0_in),	//DEBUG
-		.pipe_read_in	(opp_pipe_read),
-		.data_out		(opp_pipe_dout)
-		);
+//pipe_tx_fifo opp_pipe_fifo (
+		//.ti_clk_in		(ticlk),
+		//.sys_clk_in		(clk50_in),
+		//.reset_in		(sys_reset_out),
+		//.data_valid_in	(opp_dac_data_valid_in[0]),	//DEBUG
+		//.data_in			(opp_dac_data0_in),	//DEBUG
+		//.pipe_read_in	(opp_pipe_read),
+		//.data_out		(opp_pipe_dout)
+		//);
 
 /* adc continous update wire outs */
 genvar j;
@@ -266,7 +274,7 @@ generate
 		okWireOut adc_data_owo (
 			.ok1				(ok1),
 			.ok2				(ok2x[j*17 +: 17]),
-			.ep_addr			(32 + j),
+			.ep_addr			(osf_data0_owep + j[7:0]),
 			.ep_datain		(adc_data[j][17:2])
 			);
 	end
@@ -275,13 +283,13 @@ endgenerate
 /* adc controller */
 okWireIn adc_os_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h01),
+	.ep_addr			(adc_os_wep),
 	.ep_dataout		(adc_os_wire)
 	);
 
 okTriggerIn adc_cstart_ti (
 	.ok1				(ok1),
-	.ep_addr			(8'h53),
+	.ep_addr			(adc_cstart_tep),
 	.ep_clk			(clk17_in),
 	.ep_trigger		(adc_cstart_trig)
 	);
@@ -289,156 +297,156 @@ okTriggerIn adc_cstart_ti (
 /* oversample filter */
 okWireIn osf_activate_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h15),
+	.ep_addr			(osf_activate_wep),
 	.ep_dataout		(osf_activate_wire)
 	);
 
 okWireIn osf_cycle_delay_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h02),
+	.ep_addr			(osf_cycle_delay_wep),
 	.ep_dataout		(osf_cycle_delay_wire)
 	);
 
 okWireIn osf_osm_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h03),
+	.ep_addr			(osf_osm_wep),
 	.ep_dataout		(osf_osm_wire)
 	);
 
 okWireIn osf_update_en_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h04),
+	.ep_addr			(osf_update_en_wep),
 	.ep_dataout		(osf_update_en_wire)
 	);
 
 /* pid core */
 okTriggerIn pid_clear_ti (
 	.ok1				(ok1),
-	.ep_addr			(8'h55),
+	.ep_addr			(pid_clear_tep),
 	.ep_clk			(clk50_in),
 	.ep_trigger		(pid_clear_trig)
 	);
 
 okWireIn pid_lock_en_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h17),
+	.ep_addr			(pid_lock_en_wep),
 	.ep_dataout		(pid_lock_en_wire)
 	);
 
 okWireIn pid_setpoint_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h04),
+	.ep_addr			(pid_setpoint_wep),
 	.ep_dataout		(pid_setpoint_wire)
 	);
 
 okWireIn pid_p_coef_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h05),
+	.ep_addr			(pid_p_coef_wep),
 	.ep_dataout		(pid_p_coef_wire)
 	);
 
 okWireIn pid_i_coef_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h06),
+	.ep_addr			(pid_i_coef_wep),
 	.ep_dataout		(pid_i_coef_wire)
 	);
 
 okWireIn pid_d_coef_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h07),
+	.ep_addr			(pid_d_coef_wep),
 	.ep_dataout		(pid_d_coef_wire)
 	);
 
 okWireIn pid_update_en_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h08),
+	.ep_addr			(pid_update_en_wep),
 	.ep_dataout		(pid_update_en_wire)
 	);
 
 /* router */
 okWireIn rtr_src_sel_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h09),
+	.ep_addr			(rtr_src_sel_wep),
 	.ep_dataout		(rtr_src_sel_wire)
 	);
 
 okWireIn rtr_dest_sel_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h0A),
+	.ep_addr			(rtr_dest_sel_wep),
 	.ep_dataout		(rtr_dest_sel_wire)
 	);
 
 okWireIn rtr_output_active_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h16),
+	.ep_addr			(rtr_output_active_wep),
 	.ep_dataout		(rtr_output_active_wire)
 	);
 
 /* output preprocessor */
-okWireIn opp_init_owi0 (
+okWireIn opp_init0_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h0B),
+	.ep_addr			(opp_init0_wep),
 	.ep_dataout		(opp_init_wire[0])
 	);
 
-okWireIn opp_init_owi1 (
+okWireIn opp_init1_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h0C),
+	.ep_addr			(opp_init1_wep),
 	.ep_dataout		(opp_init_wire[1])
 	);
 
-okWireIn opp_init_owi2 (
+okWireIn opp_init2_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h0D),
+	.ep_addr			(opp_init2_wep),
 	.ep_dataout		(opp_init_wire[2])
 	);
 
-okWireIn opp_min_owi0 (
+okWireIn opp_min0_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h0E),
+	.ep_addr			(opp_min0_wep),
 	.ep_dataout		(opp_min_wire[0])
 	);
 
-okWireIn opp_min_owi1 (
+okWireIn opp_min1_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h0F),
+	.ep_addr			(opp_min1_wep),
 	.ep_dataout		(opp_min_wire[1])
 	);
 
-okWireIn opp_min_owi2 (
+okWireIn opp_min2_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h10),
+	.ep_addr			(opp_min2_wep),
 	.ep_dataout		(opp_min_wire[2])
 	);
 
-okWireIn opp_max_owi0 (
+okWireIn opp_max0_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h11),
+	.ep_addr			(opp_max0_wep),
 	.ep_dataout		(opp_max_wire[0])
 	);
 
-okWireIn opp_max_owi1 (
+okWireIn opp_max1_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h12),
+	.ep_addr			(opp_max1_wep),
 	.ep_dataout		(opp_max_wire[1])
 	);
 
-okWireIn opp_max_owi2 (
+okWireIn opp_max2_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h13),
+	.ep_addr			(opp_max2_wep),
 	.ep_dataout		(opp_max_wire[2])
 	);
 
 okWireIn opp_update_en_owi (
 	.ok1				(ok1),
-	.ep_addr			(8'h14),
+	.ep_addr			(opp_update_en_wep),
 	.ep_dataout		(opp_update_en_wire)
 	);
 
 /* dac controller */
 okTriggerIn dac_ref_set_ti (
 	.ok1				(ok1),
-	.ep_addr			(8'h56),
+	.ep_addr			(dac_ref_set_tep),
 	.ep_clk			(clk50_in),
 	.ep_trigger		(dac_ref_set_trig)
 	);
@@ -446,14 +454,14 @@ okTriggerIn dac_ref_set_ti (
 /* all modules */
 okTriggerIn module_update_ti (
 	.ok1				(ok1),
-	.ep_addr			(8'h57),
+	.ep_addr			(module_update_tep),
 	.ep_clk			(clk50_in),
 	.ep_trigger		(module_update_trig)
 	);
 
-okTriggerIn syst_reset_ti (
+okTriggerIn sys_reset_ti (
 	.ok1				(ok1),
-	.ep_addr			(8'h58),
+	.ep_addr			(sys_reset_tep),
 	.ep_clk			(clk17_in),
 	.ep_trigger		(sys_reset_trig)
 	);
