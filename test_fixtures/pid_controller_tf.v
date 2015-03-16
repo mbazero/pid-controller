@@ -4,9 +4,8 @@
 // PID controller test fixture.
 
 module pid_controller_tf;
-	// Includes
+	// Endpoint map
 	`include "ep_map.vh"
-	`include "ok_sim/okHostCalls.v"
 
 	// Parameters
 	localparam	W_DATA	= 18;
@@ -182,22 +181,22 @@ module pid_controller_tf;
 		FrontPanelReset;
 
 		// System reset
-		ActivateTriggerIn(sys_reset_ti, 0);
+		ActivateTriggerIn(sys_reset_tep, 0);
 
 		// Set ADC oversampling mode
-		SetWireInValue(adc_os_owi, 0, mask);	// os = 0
+		SetWireInValue(adc_os_wep, 0, mask);	// os = 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(module_update_ti, 0);
+		ActivateTriggerIn(module_update_tep, 0);
 
 		// Set OSF ratio and activate channel 0
-		SetWireInValue(osf_activate_owi, 16'd1, mask); // set OSF[0] activation
-		SetWireInValue(osf_cycle_delay_owi, 16'd0, mask); // cycle delay = 0
-		SetWireInValue(osf_log_ovr_owi, 16'd0, mask); // log ovr = 0
-		SetWireInValue(osf_update_en_owi, 16'd1, mask); // sensitize OSF channel 0
+		SetWireInValue(osf_activate_wep, 16'd1, mask); // set OSF[0] activation
+		SetWireInValue(osf_cycle_delay_wep, 16'd0, mask); // cycle delay = 0
+		SetWireInValue(osf_osm_wep, 16'd0, mask); // log ovr = 0
+		SetWireInValue(osf_update_en_wep, 16'd1, mask); // sensitize OSF channel 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(module_update_ti, 0);
+		ActivateTriggerIn(module_update_tep, 0);
 
 
 		// Set channel 0 PID params
@@ -205,45 +204,45 @@ module pid_controller_tf;
 		p_coef = 10;
 		i_coef = 3;
 		d_coef = 2;
-		SetWireInValue(pid_setpoint_owi, setpoint, mask);	// setpoint = 3
-		SetWireInValue(pid_p_coef_owi, p_coef, mask);	// p = 10
-		SetWireInValue(pid_i_coef_owi, i_coef, mask);	// i = 3
-		SetWireInValue(pid_d_coef_owi, d_coef, mask);	// d = 0
-		SetWireInValue(pid_update_en_owi, 16'd1, mask);	// sensitize PID channel 0
+		SetWireInValue(pid_setpoint_wep, setpoint, mask);	// setpoint = 3
+		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
+		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
+		SetWireInValue(pid_d_coef_wep, d_coef, mask);	// d = 0
+		SetWireInValue(pid_update_en_wep, 16'd1, mask);	// sensitize PID channel 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(module_update_ti, 0);
+		ActivateTriggerIn(module_update_tep, 0);
 
 		// Route input channel 0 to output channel 0 and activate output 0
-		SetWireInValue(rtr_src_sel_owi, 16'd0, mask);	// router source
-		SetWireInValue(rtr_dest_sel_owi, 16'd0, mask);	// router destination
-		SetWireInValue(rtr_output_active_owi, 16'd1, mask);	// activate channel 0
+		SetWireInValue(rtr_src_sel_wep, 16'd0, mask);	// router source
+		SetWireInValue(rtr_dest_sel_wep, 16'd0, mask);	// router destination
+		SetWireInValue(rtr_output_active_wep, 16'd1, mask);	// activate channel 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(module_update_ti, 0);
+		ActivateTriggerIn(module_update_tep, 0);
 
 		// Set channel 0 OPP params
 		output_init = 500;
 		output_min = 99;
 		output_max = 1111;
-		SetWireInValue(opp_init_owi0, output_init, mask); // set output init
-		SetWireInValue(opp_min_owi0, output_min, mask); // set output min
-		SetWireInValue(opp_max_owi0, output_max, mask); // set output max
-		SetWireInValue(opp_update_en_owi, 16'd1, mask);	// sensitize OPP channel 0
+		SetWireInValue(opp_init0_wep, output_init, mask); // set output init
+		SetWireInValue(opp_min0_wep, output_min, mask); // set output min
+		SetWireInValue(opp_max0_wep, output_max, mask); // set output max
+		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
 
 		UpdateWireIns;
-		ActivateTriggerIn(module_update_ti, 0);
+		ActivateTriggerIn(module_update_tep, 0);
 
 		// activate pid lock 0
-		SetWireInValue(pid_lock_en_owi, 16'd1, mask);
+		SetWireInValue(pid_lock_en_wep, 16'd1, mask);
 		UpdateWireIns;
 
 		// activate adc channel 0
-		SetWireInValue(osf_activate_owi, 16'd1, mask);
+		SetWireInValue(osf_activate_wep, 16'd1, mask);
 		UpdateWireIns;
 
 		// trigger adc cstart
-		ActivateTriggerIn(adc_cstart_ti, 0);
+		ActivateTriggerIn(adc_cstart_tep, 0);
 
 		fork
 
@@ -317,5 +316,7 @@ module pid_controller_tf;
 		$stop;
 
 	end
+	
+	`include "ok_sim/okHostCalls.v"
 
 endmodule
