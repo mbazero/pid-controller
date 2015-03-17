@@ -535,6 +535,8 @@ fp_io (
 	.adc_os_out				(adc_os),
 	.opp_dac_data_valid_in (opp_dac_data_valid),
 	.opp_dac_data0_in		(opp_dac_data[0]),
+	.diq_data_valid_in	(diq_data_valid),
+	.diq_data_in			(diq_data),
 	.osf_cycle_delay_out	(osf_cycle_delay),
 	.osf_osm_out			(osf_osm),
 	.osf_activate_out		(osf_activate),

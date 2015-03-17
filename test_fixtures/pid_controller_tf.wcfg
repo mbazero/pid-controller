@@ -3,14 +3,14 @@
    <wave_state>
    </wave_state>
    <db_ref_list>
-      <db_ref path="tle.wdb" id="1" type="auto">
+      <db_ref path="tle1.wdb" id="1" type="auto">
          <top_modules>
             <top_module name="glbl" />
             <top_module name="pid_controller_tf" />
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="51" />
+   <WVObjectSize size="57" />
    <wvobject fp_name="/pid_controller_tf/uut/sys_reset" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">sys_reset</obj_property>
       <obj_property name="ObjectShortName">sys_reset</obj_property>
@@ -250,6 +250,34 @@
    <wvobject fp_name="/pid_controller_tf/r_data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">r_data[15:0]</obj_property>
       <obj_property name="ObjectShortName">r_data[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider52" type="divider">
+      <obj_property name="label">PIPE</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/ti_clk_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ti_clk_in</obj_property>
+      <obj_property name="ObjectShortName">ti_clk_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/data_valid_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_valid_in</obj_property>
+      <obj_property name="ObjectShortName">data_valid_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/data_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_in[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data_in[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/pipe_read_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pipe_read_in</obj_property>
+      <obj_property name="ObjectShortName">pipe_read_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_out[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data_out[15:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
 </wave_config>

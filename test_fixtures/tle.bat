@@ -10,6 +10,7 @@ fuse -intstyle ise ^
      -lib unimacro_ver ^
      -lib xilinxcorelib_ver ^
      -i ../ok_sim ^
+     -i ../../pidc ^
      -o tle.exe ^
      -prj tle.prj ^
      work.pid_controller_tf work.glbl

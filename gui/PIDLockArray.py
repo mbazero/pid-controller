@@ -264,7 +264,8 @@ class PIDChannel:
 
 			# map raw adc data to voltage
 			# TODO: extract map ranges to stored values
-			self.error_data = [self.map_val(d, [-2**15, 2**15-1], [-5, 5]) for d in data_raw]
+			# self.error_data = [self.map_val(d, [-2**15, 2**15-1], [-5, 5]) for d in data_raw] #DEBUG change this back to adc range
+			self.error_data = [self.map_val(d, [0, 2**16-1], [0, 5]) for d in data_raw]
 
 	def uint16_to_int32(self, uint):
 		if uint >= 2**15 :

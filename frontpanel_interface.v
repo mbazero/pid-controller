@@ -32,6 +32,10 @@ module frontpanel_interface #(
 	input wire				[N_DAC-1:0]			opp_dac_data_valid_in,
 	input wire				[W_DAC-1:0]			opp_dac_data0_in,
 
+	// inputs <- dac instruction queue
+	input wire										diq_data_valid_in,
+	input wire				[W_DAC-1:0]			diq_data_in,
+
 	// outputs -> adc controller
 	output wire				[2:0]					adc_os_out,						// dm
 	output wire										adc_cstart_out, 				// dm
@@ -240,8 +244,8 @@ pipe_tx_fifo osf_pipe_fifo (
 		.ti_clk_in		(ticlk),
 		.sys_clk_in		(clk50_in),
 		.reset_in		(sys_reset_out),
-		.data_valid_in	(adc_data_valid_in[0]),	//DEBUG
-		.data_in			(adc_data_a_in[17:2]),	//DEBUG
+		.data_valid_in	(opp_dac_data_valid_in[0]),		//DEBUG adc_data_valid_in[0]
+		.data_in			(opp_dac_data0_in),				//DEBUG adc_data_a_in[17:2]
 		.pipe_read_in	(osf_pipe_read),
 		.data_out		(osf_pipe_dout)
 		);

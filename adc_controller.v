@@ -49,7 +49,7 @@ module adc_controller #(
 
 /* parameters */
 localparam RD_LENGTH		= W_OUT*(N_CHAN/2);		// bits of data to be read per serial port in a single cycle
-localparam OS_MIN			= 3'b1;						// set minimum oversampling ratio of 2^1 to support 8 channels
+localparam OS_MIN			= 3'b0;						// set minimum oversampling ratio of 2^1 to support 8 channels //DEBUG set back to 1 after testing
 
 /* registers */
 reg	[2:0]					os_cur;			// active oversampling mode

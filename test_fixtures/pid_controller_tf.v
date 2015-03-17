@@ -162,14 +162,19 @@ module pid_controller_tf;
 
 	reg signed [15:0] setpoint = 0, p_coef = 0, i_coef = 0, d_coef = 0;
 	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
+	integer i;
+	reg [15:0] pipeOutWord;
 
 	// dac received data
 	reg [31:0] r_instr;
 	wire [15:0] r_data;
 	wire [3:0] r_prefix, r_control, r_address, r_feature;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
+	
+	// simulation params
+	localparam REPS = 10;
 
-	initial begin
+	initial begin : main
 		// Initialize Inputs
 		clk50_in = 0;
 		clk17_in = 0;
@@ -244,11 +249,11 @@ module pid_controller_tf;
 
 		// trigger adc cstart
 		ActivateTriggerIn(adc_cstart_tep, 0);
-
-		fork
+		
+		fork : sim
 
 			// transmission simulation
-			forever begin
+			repeat(REPS) begin
 				// wait for convst_out to pulse and then assert busy
 				@(posedge adc_convst_out) begin
 					@(posedge clk17_in) adc_busy_in = 1;
@@ -280,7 +285,7 @@ module pid_controller_tf;
 			end
 
 			// check pid value
-			forever begin
+			repeat(REPS) begin
 				@(posedge pid_dv) begin
 					pid_data_reg = pid_data;
 					e_count = e_count + 1;
@@ -300,8 +305,8 @@ module pid_controller_tf;
 				end
 			end
 
-			// adc data receive
-			forever begin
+			// simulate received dac data
+			repeat(REPS) begin
 				@(negedge dac_nsync_out) begin
 					repeat(32) begin
 						@(negedge dac_sclk_out) begin
@@ -313,6 +318,14 @@ module pid_controller_tf;
 			end
 
 		join
+
+		// read pipe data
+		ReadFromPipeOut(osf_bulk_data_pep, 1024);
+		for(i = 0; i < REPS; i = i + 1) begin
+			pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
+			#1;
+			$display("%d: Pipe out val -- %d", i, pipeOutWord);
+		end
 
 		$stop;
 
