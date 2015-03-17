@@ -81,7 +81,7 @@ assign feature = 4'b0000;
 assign data_instr = {prefix, control, address, data, feature};
 
 /* dac control signals */
-assign nsync_out = ~( (cur_state == ST_SYNC_DATA) | (cur_state == ST_SYNC_REF) | (cur_state == ST_TX) );
+assign nsync_out = ~( (cur_state == ST_SYNC_DATA) | (cur_state == ST_SYNC_REF) | (cur_state == ST_TX) | (cur_state == ST_DAC_DONE) );
 assign sclk_out = clk_in | ~(cur_state == ST_TX);
 assign din_out = tx_data[31];
 
