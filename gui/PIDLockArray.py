@@ -233,7 +233,7 @@ class PIDChannel:
 	# get new error data from wire outs (continuous transfer)
 	def update_error_data(self):
 		if self.rtr_src_sel >= 0 :
-			osf_data_owep = osf_data0_owep + self.rtr_src_sel
+			osf_data_owep = epm.osf_data0_owep + self.rtr_src_sel
 
 			print 'Getting adc channel ' + str(self.rtr_src_sel) + ' data at address: ' + str(osf_data_owep)
 
