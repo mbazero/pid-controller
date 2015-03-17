@@ -144,11 +144,11 @@ class GlobalParams(QGroupBox):
 		self.adc_os_wgt.currentIndexChanged.connect(pla.handle_adc_os)
 
 		#################### num_locks #######################
-		self.locks_dec = range(1, self.num_out_chans)
-		self.locks = [str(dec) for dec in self.locks_dec]
-		self.lock = QComboBox(self)
-		self.lock.addItems(self.locks)
-		self.form_layout.addRow('Set Active Locks: ', self.lock)
+		#self.locks_dec = range(1, self.num_out_chans)
+		#self.locks = [str(dec) for dec in self.locks_dec]
+		#self.lock = QComboBox(self)
+		#self.lock.addItems(self.locks)
+		#self.form_layout.addRow('Set Active Locks: ', self.lock)
 
 		#################### poll period #######################
 		self.poll_period_wgt = QLineEdit(self)
@@ -165,7 +165,7 @@ class GlobalParams(QGroupBox):
 		self.layout.addLayout(self.form_layout)
 
 		# connect signal to slot
-		self.poll_period_wgt.editingFinished.connect(lambda: pla.handle_poll_period(self.poll_period_wgt.text()))
+		self.poll_period_wgt.textChanged.connect(lambda: pla.handle_poll_period(self.poll_period_wgt.text()))
 
 		#################### bulk_transfer #######################
 		self.bulk_update = QPushButton('Bulk Update Mode', self)
@@ -282,7 +282,7 @@ class InputWidget(QGroupBox):
 		self.form_layout = QFormLayout()
 
 		#################### rtr_src_sel #######################
-		self.rtr_src_sel_ops = ['No Input'] + ['ADC Channel ' + str(count) for count in range(6)]
+		self.rtr_src_sel_ops = ['No Input'] + ['ADC Channel ' + str(count) for count in range(8)]
 
 		# create and fill source channel combo box
 		self.rtr_src_sel_wgt = QComboBox(self)
@@ -293,6 +293,9 @@ class InputWidget(QGroupBox):
 
 		# connect rtr_src_sel signal to handler
 		self.rtr_src_sel_wgt.currentIndexChanged.connect(pid.handle_rtr_src_sel)
+
+		#DEBUG set initial for channel 0
+		if(pid.channel_no == 0): self.rtr_src_sel_wgt.setCurrentIndex(1)
 
 		#################### osf_ovr #######################
 		self.osf_ovr_ops = ['Off',
@@ -313,6 +316,9 @@ class InputWidget(QGroupBox):
 		# connect osf_ovr signal to handler
 		self.osf_ovr_wgt.currentIndexChanged.connect(pid.handle_osf_ovr)
 
+		#DEBUG set initial
+		self.osf_ovr_wgt.setCurrentIndex(0);
+
 		#################### osf_cycle_delay #######################
 		self.osf_cycle_delay_wgt = QLineEdit(self)
 
@@ -328,7 +334,10 @@ class InputWidget(QGroupBox):
 		self.layout.addLayout(self.form_layout)
 
 		# connect signal to slot
-		self.osf_cycle_delay_wgt.editingFinished.connect(lambda: pid.handle_osf_cycle_delay(self.osf_cycle_delay_wgt.text()))
+		self.osf_cycle_delay_wgt.textChanged.connect(lambda: pid.handle_osf_cycle_delay(self.osf_cycle_delay_wgt.text()))
+
+		#DEBUG set initial
+		self.osf_cycle_delay_wgt.setText('0');
 
 		#################### osf_activate_out #######################
 		self.osf_activate_wgt = QPushButton('Activate Channel', self)
@@ -366,7 +375,10 @@ class PIDWidget(QGroupBox):
 		self.form_layout.addRow('Setpoint:', self.pid_setpoint_wgt)
 
 		# handler
-		self.pid_setpoint_wgt.editingFinished.connect(lambda: pid.handle_pid_setpoint(self.pid_setpoint_wgt.text()))
+		self.pid_setpoint_wgt.textChanged.connect(lambda: pid.handle_pid_setpoint(self.pid_setpoint_wgt.text()))
+
+		#DEBUG set initial
+		self.pid_setpoint_wgt.setText('0');
 
 		#################### pid_p_coef #######################
 		self.pid_p_coef_wgt = QLineEdit(self)
@@ -379,7 +391,10 @@ class PIDWidget(QGroupBox):
 		self.form_layout.addRow('P Coef:', self.pid_p_coef_wgt)
 
 		# handler
-		self.pid_p_coef_wgt.editingFinished.connect(lambda: pid.handle_pid_p_coef(self.pid_p_coef_wgt.text()))
+		self.pid_p_coef_wgt.textChanged.connect(lambda: pid.handle_pid_p_coef(self.pid_p_coef_wgt.text()))
+
+		#DEBUG set initial
+		self.pid_p_coef_wgt.setText('10');
 
 		#################### pid_i_coef #######################
 		self.pid_i_coef_wgt = QLineEdit(self)
@@ -391,7 +406,10 @@ class PIDWidget(QGroupBox):
 		self.form_layout.addRow('I Coef:', self.pid_i_coef_wgt)
 
 		# handler
-		self.pid_i_coef_wgt.editingFinished.connect(lambda: pid.handle_pid_i_coef(self.pid_i_coef_wgt.text()))
+		self.pid_i_coef_wgt.textChanged.connect(lambda: pid.handle_pid_i_coef(self.pid_i_coef_wgt.text()))
+
+		#DEBUG set initial
+		self.pid_i_coef_wgt.setText('3');
 
 		#################### pid_d_coef #######################
 		self.pid_d_coef_wgt = QLineEdit(self)
@@ -403,13 +421,16 @@ class PIDWidget(QGroupBox):
 		self.form_layout.addRow('D Coef:', self.pid_d_coef_wgt)
 
 		# handle
-		self.pid_d_coef_wgt.editingFinished.connect(lambda: pid.handle_pid_d_coef(self.pid_d_coef_wgt.text()))
+		self.pid_d_coef_wgt.textChanged.connect(lambda: pid.handle_pid_d_coef(self.pid_d_coef_wgt.text()))
 
 		# add form layout to main layout
 		self.layout.addLayout(self.form_layout)
 
 		# create HBox to hold enable and clear controls
 		self.eb_box = QHBoxLayout()
+
+		#DEBUG set initial
+		self.pid_d_coef_wgt.setText('0');
 
 		#################### opp_lock_en #######################
 		self.opp_lock_en_wgt = QCheckBox('Enable PID Lock', self)
@@ -470,24 +491,49 @@ class OutputWidget(QGroupBox):
 		self.opp_init_wgt = QLineEdit(self)
 
 		# create and apply input validator
-		init_validator = QIntValidator(0, 5)
+		init_validator = QDoubleValidator(0.0, 5.0, 2)
 		self.opp_init_wgt.setValidator(init_validator)
 
 		self.opp_init_wgt.setPlaceholderText('0 to 5V')
 		self.form_layout.addRow('Initial Output:', self.opp_init_wgt)
 
 		# handler
-		self.opp_init_wgt.editingFinished.connect(lambda: pid.handle_opp_init(self.opp_init_wgt.text()))
+		self.opp_init_wgt.textChanged.connect(lambda: pid.handle_opp_init(self.opp_init_wgt.text()))
+
+		#DEBUG set initial
+		self.opp_init_wgt.setText('3.0');
 
 		#################### opp_max #######################
 		self.opp_max_wgt = QLineEdit(self)
+
+		# create and apply input validator
+		max_validator = QDoubleValidator(0.0, 5.0, 2)
+		self.opp_max_wgt.setValidator(max_validator)
+
 		self.opp_max_wgt.setPlaceholderText('0 to 5V')
 		self.form_layout.addRow('Max Output:', self.opp_max_wgt)
 
+		# handler
+		self.opp_max_wgt.textChanged.connect(lambda: pid.handle_opp_max(self.opp_max_wgt.text()))
+
+		#DEBUG set initial
+		self.opp_max_wgt.setText('4.0');
+
 		#################### opp_min #######################
 		self.opp_min_wgt = QLineEdit(self)
+
+		# create and apply input validator
+		min_validator = QDoubleValidator(0.0, 5.0, 2)
+		self.opp_min_wgt.setValidator(min_validator)
+
 		self.opp_min_wgt.setPlaceholderText('0 to 5V')
 		self.form_layout.addRow('Min Output:', self.opp_min_wgt)
+
+		# handler
+		self.opp_min_wgt.textChanged.connect(lambda: pid.handle_opp_min(self.opp_min_wgt.text()))
+
+		#DEBUG set initial
+		self.opp_min_wgt.setText('1.0');
 
 		#################### opp_multiplier #######################
 		self.opp_multiplier_wgt = QLineEdit(self)

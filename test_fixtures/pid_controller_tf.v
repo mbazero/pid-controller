@@ -249,7 +249,7 @@ module pid_controller_tf;
 
 		// trigger adc cstart
 		ActivateTriggerIn(adc_cstart_tep, 0);
-		
+
 		fork : sim
 
 			// transmission simulation

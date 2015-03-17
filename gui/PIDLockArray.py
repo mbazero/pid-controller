@@ -314,9 +314,6 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		if (osf_cycle_delay_old == self.osf_cycle_delay) :
-			return
-
 		self.okc.SetAndUpdateWireIn(epm.osf_cycle_delay_wep, self.osf_cycle_delay)
 		self.okc.SetWireInValue(epm.osf_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
@@ -348,9 +345,6 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		if (pid_setpoint_old == self.pid_setpoint) :
-			return
-
 		pid_setpoint_norm = int(self.map_val(self.pid_setpoint, [-5, 5], [-2**15, 2**15-1]))
 
 		self.okc.SetWireInValue(epm.pid_setpoint_wep, pid_setpoint_norm)
@@ -369,9 +363,6 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		if (pid_p_coef_old == self.pid_p_coef):
-			return
-
 		self.okc.SetWireInValue(epm.pid_p_coef_wep, self.pid_p_coef)
 		self.okc.SetWireInValue(epm.pid_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
@@ -387,9 +378,6 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		if (pid_i_coef_old == self.pid_i_coef):
-			return
-
 		self.okc.SetWireInValue(epm.pid_i_coef_wep, self.pid_i_coef)
 		self.okc.SetWireInValue(epm.pid_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
@@ -403,9 +391,6 @@ class PIDChannel:
 		try:
 			self.pid_d_coef = int(text)
 		except ValueError:
-			return
-
-		if (pid_d_coef_old == self.pid_d_coef):
 			return
 
 		self.okc.SetWireInValue(epm.pid_d_coef_wep, self.pid_d_coef)
@@ -435,11 +420,8 @@ class PIDChannel:
 		opp_init_old = self.opp_init
 
 		try:
-			self.opp_init = int(text)
+			self.opp_init = float(text)
 		except ValueError:
-			return
-
-		if (opp_init_old == self.opp_init):
 			return
 
 		opp_init_norm = int(self.map_val(self.opp_init, [0, 5], [0, 2**16-1]))
@@ -455,14 +437,11 @@ class PIDChannel:
 		opp_min_old = self.opp_min
 
 		try:
-			self.opp_min = int(text)
+			self.opp_min = float(text)
 		except ValueError:
 			return
 
-		if (opp_min_old == self.opp_min):
-			return
-
-		opp_min_norm = int(self.map_val(self.opp_min, [0, 5], [0, 2**18-1]))
+		opp_min_norm = int(self.map_val(self.opp_min, [0, 5], [0, 2**16-1]))
 
 		self.okc.SetWireInValue(epm.opp_min0_wep, opp_min_norm)
 		self.okc.SetWireInValue(epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
@@ -474,14 +453,11 @@ class PIDChannel:
 		opp_max_old = self.opp_max
 
 		try:
-			self.opp_max = int(text)
+			self.opp_max = float(text)
 		except ValueError:
 			return
 
-		if (opp_max_old == self.opp_max):
-			return
-
-		opp_max_norm = int(self.map_val(self.opp_max, [0, 5], [0, 2**18-1]))
+		opp_max_norm = int(self.map_val(self.opp_max, [0, 5], [0, 2**16-1]))
 
 		self.okc.SetWireInValue(epm.opp_max0_wep, opp_max_norm)
 		self.okc.SetWireInValue(epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
