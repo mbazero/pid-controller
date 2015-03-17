@@ -37,5 +37,3 @@ parameter module_update_tep		= 8'h57;
 parameter sys_reset_tep				= 8'h58;
 
 parameter osf_bulk_data_pep		= 8'ha3;
-
-parameter mask							= 32'hffffffff;

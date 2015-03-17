@@ -6,6 +6,7 @@
 module pid_controller_tf;
 	// Endpoint map
 	`include "ep_map.vh"
+	`include "parameters.vh"
 
 	// Parameters
 	localparam	W_DATA	= 18;
