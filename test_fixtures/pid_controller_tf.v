@@ -164,6 +164,7 @@ module pid_controller_tf;
 	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
 	integer i;
 	reg [15:0] pipeOutWord;
+	reg signed [15:0] wireOutValue;
 
 	// dac received data
 	reg [31:0] r_instr;
@@ -190,7 +191,7 @@ module pid_controller_tf;
 		ActivateTriggerIn(sys_reset_tep, 0);
 
 		// Set ADC oversampling mode
-		SetWireInValue(adc_os_wep, 0, mask);	// os = 0
+		SetWireInValue(adc_os_wep, 4, mask);	// os = 0
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
@@ -252,7 +253,7 @@ module pid_controller_tf;
 
 		fork : sim
 
-			// transmission simulation
+			// adc data transmission simulation
 			repeat(REPS) begin
 				// wait for convst_out to pulse and then assert busy
 				@(posedge adc_convst_out) begin
@@ -284,6 +285,15 @@ module pid_controller_tf;
 
 			end
 
+			// simulate pipe continuous read
+			repeat(REPS) begin
+				@(posedge pid_dv) begin
+					UpdateWireOuts;
+					wireOutValue = GetWireOutValue(osf_data0_owep);
+					$display("Wire out val: %d", wireOutValue);
+				end
+			end
+
 			// check pid value
 			repeat(REPS) begin
 				@(posedge pid_dv) begin
@@ -298,9 +308,9 @@ module pid_controller_tf;
 					error_prev = error;
 					#1;
 					if(u_expected == pid_data_reg) begin
-						$display("PID Success\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+						//$display("PID Success\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
 					end else begin
-						$display("PID Failure\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+						//$display("PID Failure\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
 					end
 				end
 			end
