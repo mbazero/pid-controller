@@ -280,7 +280,7 @@ generate
 			.ok1				(ok1),
 			.ok2				(ok2x[j*17 +: 17]),
 			.ep_addr			(osf_data0_owep + j[7:0]),
-			.ep_datain		(adc_data[j][17:2])
+			.ep_datain		(adc_data[j][W_ADC-1 :- W_DAC])
 			);
 	end
 endgenerate
