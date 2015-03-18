@@ -42,8 +42,8 @@ class OpalKellyController:
 		self.pll.SetPLLParameters(0, 400, 48, True) # set PLL[0] to 400MHz
 		self.pll.SetOutputSource(0, ok.PLL22393.ClkSrc_PLL0_0) # map SYSCLK1 to PLL[0]
 		self.pll.SetOutputSource(1, ok.PLL22393.ClkSrc_PLL0_0) # map SYSCLK2 to PLL[0]
-		self.pll.SetOutputDivider(0, 8) # set SYSCLK1 divider to 8
-		self.pll.SetOutputDivider(1, 24) # set SYSCLK2 divider to 24
+		self.pll.SetOutputDivider(0, 8) # set SYSCLK1 divider to 1
+		self.pll.SetOutputDivider(1, 24) # set SYSCLK2 divider to 1
 		self.pll.SetOutputEnable(0, True) # enable SYSCLK1
 		self.pll.SetOutputEnable(1, True) # enable SYSCLK2
 
@@ -90,13 +90,13 @@ class OpalKellyController:
 	def SetWireInValue(self, ep, val):
 		self.xemLock.acquire()
 		set_error = self.xem.SetWireInValue(ep, val, 0xffffffff)
-		print 'Set Wire In Error: ' + str(set_error)
+		if(set_error != 0): print 'Set Wire In Error: ' + str(set_error)
 		self.xemLock.release()
 
 	def SetAndUpdateWireIn(self, ep, val):
 		self.xemLock.acquire()
 		set_error = self.xem.SetWireInValue(ep, val, 0xffffffff)
-		print 'Set Wire In Error: ' + str(set_error)
+		if(set_error != 0): print 'Set Wire In Error: ' + str(set_error)
 		self.xem.UpdateWireIns()
 		self.xemLock.release()
 

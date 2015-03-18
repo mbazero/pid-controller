@@ -11,7 +11,7 @@
 CONFIG VCCAUX = "3.3"; //Required for Spartan-6
 
 ############################################################################
-## FrontPanel Host Interface pins                                                       
+## FrontPanel Host Interface pins
 ############################################################################
 NET "hi_in<0>"      LOC="Y12"  | IOSTANDARD="LVCMOS33";
 NET "hi_in<1>"      LOC="AB20" | IOSTANDARD="LVCMOS33";
@@ -61,14 +61,14 @@ NET "hi_in<6>" OFFSET = IN 13.33 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
 NET "hi_in<7>" OFFSET = IN 13.33 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
 
 ############################################################################
-## System Clocks                                                        
+## System Clocks
 ############################################################################
 NET "clk50_in"   LOC="AB13"  | IOSTANDARD="LVCMOS33";
 NET "clk17_in"   LOC="Y11"   | IOSTANDARD="LVCMOS33";
 #NET "clk3"   LOC="AB11"  | IOSTANDARD="LVCMOS33";
 
 ############################################################################
-## Peripherals                                                          
+## Peripherals
 ############################################################################
 NET "n_out_buf_en"	LOC="K19"	| IOSTANDARD=LVCMOS33;
 
@@ -102,13 +102,11 @@ NET "adc_os_out[2]"	LOC="B16"	| IOSTANDARD=LVCMOS33;
 NET "adc_reset_out"	LOC="C9"		| IOSTANDARD=LVCMOS33;
 NET "adc_sclk_out"	LOC="A7"		| IOSTANDARD=LVCMOS33;
 
-## DAC DEBUG ################################################################
-#NET "sclk_dac_db"	LOC="T21"	| IOSTANDARD=LVCMOS33;
-#NET "nsync_db"		LOC="T22"	| IOSTANDARD=LVCMOS33;
-#NET "din_db"		LOC="P21"	| IOSTANDARD=LVCMOS33;
-#NET "dac_state[2]"		LOC="P22"	| IOSTANDARD=LVCMOS33;
-#NET "dac_state[1]"		LOC="M21"	| IOSTANDARD=LVCMOS33;
-#NET "dac_state[0]"		LOC="M22"	| IOSTANDARD=LVCMOS33;
+# DAC DEBUG ################################################################
+NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;
+NET "dac_nsync_db"	LOC="T22"	| IOSTANDARD=LVCMOS33;
+NET "dac_din_db"		LOC="P21"	| IOSTANDARD=LVCMOS33;
+NET "dac_nldac_db"	LOC="P22"	| IOSTANDARD=LVCMOS33;
 
 ## ADC DEBUG ################################################################
 #NET "adc_n_cs_db"		LOC="A13"		| IOSTANDARD=LVCMOS33;
