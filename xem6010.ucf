@@ -103,10 +103,16 @@ NET "adc_reset_out"	LOC="C9"		| IOSTANDARD=LVCMOS33;
 NET "adc_sclk_out"	LOC="A7"		| IOSTANDARD=LVCMOS33;
 
 # DAC DEBUG ################################################################
-NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;
-NET "dac_nsync_db"	LOC="T22"	| IOSTANDARD=LVCMOS33;
-NET "dac_din_db"		LOC="P21"	| IOSTANDARD=LVCMOS33;
-NET "dac_nldac_db"	LOC="P22"	| IOSTANDARD=LVCMOS33;
+NET "dac_sclk_db"		LOC="H20"	| IOSTANDARD=LVCMOS33;
+NET "dac_nsync_db"	LOC="H19"	| IOSTANDARD=LVCMOS33;
+NET "dac_din_db"		LOC="F20"	| IOSTANDARD=LVCMOS33;
+NET "dac_nldac_db"	LOC="G17"	| IOSTANDARD=LVCMOS33;
+
+# DAC DEBUG ################################################################
+#NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nsync_db"	LOC="T22"	| IOSTANDARD=LVCMOS33;
+#NET "dac_din_db"		LOC="P21"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nldac_db"	LOC="P22"	| IOSTANDARD=LVCMOS33;
 
 ## ADC DEBUG ################################################################
 #NET "adc_n_cs_db"		LOC="A13"		| IOSTANDARD=LVCMOS33;

@@ -56,6 +56,8 @@ reg	[31:0]	tx_data;
 reg	[7:0]		counter;
 reg	[2:0]		cur_state;
 reg	[2:0]		next_state;
+reg				state_is_tx_reg;
+reg				state_is_idle_reg;
 
 /* state parameters */
 localparam	ST_IDLE			= 3'd0,	// idle state: wait for new data
@@ -81,11 +83,11 @@ assign feature = 4'b0000;
 assign data_instr = {prefix, control, address, data, feature};
 
 /* dac control signals */
-assign nsync_out = ~( (cur_state == ST_SYNC_DATA) | (cur_state == ST_SYNC_REF) | (cur_state == ST_TX) | (cur_state == ST_DAC_DONE) );
-assign sclk_out = clk_in | ~(cur_state == ST_TX);
+assign nsync_out = state_is_tx_idle;
+assign sclk_out = (state_is_tx_reg) ? clk_in : 1'b1;
 assign din_out = tx_data[31];
 
-/* reference set instruction */
+/* reference set instruction (mode: internal reference always on) */
 assign ref_set_instr = {4'b0000, 4'b1001, 4'b0000, 4'b1010, 16'b0};
 
 /* loop control flow */
@@ -99,9 +101,20 @@ assign channel_out = address[W_CHS-1:0];
 // sequential logic
 //////////////////////////////////////////
 
+/* dac sclk gate cell */
+always @( posedge clk_in ) begin
+	if ( reset_in == 1 ) begin
+		state_is_tx_reg <= 1'b0;
+		state_is_idle_reg <= 1'b1;
+	end else begin
+		state_is_tx_reg <= ( cur_state == ST_TX );
+		state_is_idle_reg <= ( cur_state == ST_IDLE );
+	end
+end
+
 /* latch dac write data */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1) begin
+	if ( reset_in == 1 ) begin
 		data		<= 0;
 		address	<= 0;
 	end else if (( cur_state == ST_IDLE ) & ( data_valid_in == 1)) begin
