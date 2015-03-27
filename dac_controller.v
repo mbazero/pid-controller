@@ -52,6 +52,9 @@ wire	[31:0] ref_set_instr; // parallel data instruction
 /* data transfer register */
 reg	[31:0]	tx_data;
 
+/* dac sclk enable */
+reg				dac_sclk_en;
+
 /* state registers */
 reg	[7:0]		counter;
 reg	[2:0]		cur_state;
@@ -83,8 +86,8 @@ assign feature = 4'b0000;
 assign data_instr = {prefix, control, address, data, feature};
 
 /* dac control signals */
-assign nsync_out = state_is_tx_idle;
-assign sclk_out = (state_is_tx_reg) ? clk_in : 1'b1;
+assign nsync_out = ( cur_state == ST_IDLE );
+assign sclk_out = ( dac_sclk_en ) ? clk_in : 1'b1;
 assign din_out = tx_data[31];
 
 /* reference set instruction (mode: internal reference always on) */
@@ -104,11 +107,11 @@ assign channel_out = address[W_CHS-1:0];
 /* dac sclk gate cell */
 always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
-		state_is_tx_reg <= 1'b0;
-		state_is_idle_reg <= 1'b1;
-	end else begin
-		state_is_tx_reg <= ( cur_state == ST_TX );
-		state_is_idle_reg <= ( cur_state == ST_IDLE );
+		dac_sclk_en <= 1'b0;
+	end else if (( cur_state == ST_SYNC_DATA ) || ( cur_state == ST_SYNC_REF )) begin
+		dac_sclk_en <= 1'b1;
+	end else if (( cur_state == ST_TX ) && ( counter == 31 )) begin
+		dac_sclk_en <= 1'b0;
 	end
 end
 
