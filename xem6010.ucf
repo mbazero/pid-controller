@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------
 # XEM6010 - Xilinx constraints file
 #
-# Pin mappings for the XEM6010.  Use this as a template and comment out 
+# Pin mappings for the XEM6010.  Use this as a template and comment out
 # the pins that are not used in your design.  (By default, map will fail
 # if this file contains constraints for signals not in your design).
 #
@@ -83,16 +83,16 @@ NET "n_out_buf_en"	LOC="K19"	| IOSTANDARD=LVCMOS33;
 #NET "led[7]"     LOC="AB10"   | IOSTANDARD=LVCMOS33;
 
 ## DAC (OLD) ################################################################
-#NET "dac_nldac_out"		LOC="B14"	| IOSTANDARD=LVCMOS33;
-#NET "dac_nsync_out"		LOC="A14"	| IOSTANDARD=LVCMOS33;
-#NET "dac_sclk_out"		LOC="B18"	| IOSTANDARD=LVCMOS33;
-#NET "dac_din_out"			LOC="A16"	| IOSTANDARD=LVCMOS33;
+NET "dac_nldac_out"		LOC="B14"	| IOSTANDARD=LVCMOS33;
+NET "dac_nsync_out"		LOC="A14"	| IOSTANDARD=LVCMOS33;
+NET "dac_sclk_out"		LOC="B18"	| IOSTANDARD=LVCMOS33;
+NET "dac_din_out"			LOC="A16"	| IOSTANDARD=LVCMOS33;
 
 ## DAC (HOTWIRE) ################################################################
-NET "dac_nldac_out"		LOC="A13"	| IOSTANDARD=LVCMOS33;
-NET "dac_nsync_out"		LOC="C15"	| IOSTANDARD=LVCMOS33;
-NET "dac_sclk_out"		LOC="A15"	| IOSTANDARD=LVCMOS33;
-NET "dac_din_out"			LOC="C17"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nldac_out"		LOC="A13"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nsync_out"		LOC="C15"	| IOSTANDARD=LVCMOS33;
+#NET "dac_sclk_out"		LOC="A15"	| IOSTANDARD=LVCMOS33;
+#NET "dac_din_out"			LOC="C17"	| IOSTANDARD=LVCMOS33;
 
 ## ADC ################################################################
 NET "adc_n_cs_out"	LOC="C7"		| IOSTANDARD=LVCMOS33;

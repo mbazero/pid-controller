@@ -239,6 +239,9 @@ module pid_controller_tf;
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
+		
+		// trigger adc reference set
+		ActivateTriggerIn(dac_ref_set_tep, 0);
 
 		// activate pid lock 0
 		SetWireInValue(pid_lock_en_wep, 16'd1, mask);

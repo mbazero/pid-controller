@@ -52,9 +52,6 @@ wire	[31:0] ref_set_instr; // parallel data instruction
 /* data transfer register */
 reg	[31:0]	tx_data;
 
-/* dac sclk enable */
-reg				dac_sclk_en;
-
 /* state registers */
 reg	[7:0]		counter;
 reg	[2:0]		cur_state;
@@ -75,7 +72,7 @@ localparam	ST_IDLE			= 3'd0,	// idle state: wait for new data
 
 /* dac control signals */
 assign nclr_out = 1'b1;
-assign nldac_out = 1'b0;	// LDAC not used in synchronous update mode
+assign nldac_out = 1'b0;	// LDAC must be grounded in synchronous update mode
 
 /* static dac instruction componenets */
 assign prefix = 4'b0000;
@@ -86,8 +83,8 @@ assign feature = 4'b0000;
 assign data_instr = {prefix, control, address, data, feature};
 
 /* dac control signals */
-assign nsync_out = ( cur_state == ST_IDLE );
-assign sclk_out = ( dac_sclk_en ) ? clk_in : 1'b1;
+assign nsync_out = ~( cur_state == ST_SYNC_DATA | cur_state == ST_SYNC_REF | cur_state == ST_TX | cur_state == ST_DAC_DONE );
+assign sclk_out = clk_in | ~(cur_state == ST_TX);
 assign din_out = tx_data[31];
 
 /* reference set instruction (mode: internal reference always on) */
@@ -103,17 +100,6 @@ assign channel_out = address[W_CHS-1:0];
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
-
-/* dac sclk gate cell */
-always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
-		dac_sclk_en <= 1'b0;
-	end else if (( cur_state == ST_SYNC_DATA ) || ( cur_state == ST_SYNC_REF )) begin
-		dac_sclk_en <= 1'b1;
-	end else if (( cur_state == ST_TX ) && ( counter == 31 )) begin
-		dac_sclk_en <= 1'b0;
-	end
-end
 
 /* latch dac write data */
 always @( posedge clk_in ) begin
