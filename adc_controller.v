@@ -129,8 +129,8 @@ ODDR2 #(
 	.CE				(1'b1),
 	.D0				(1'b1), // VCC
 	.D1				(1'b0), // GND
-	.R					(reset_in | ~n_cs_out),
-	.S					(1'b0)
+	.R					(reset_in),
+	.S					(n_cs_out)
 );
 
 /*

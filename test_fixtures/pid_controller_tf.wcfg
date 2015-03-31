@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="50" />
+   <WVObjectSize size="52" />
    <wvobject fp_name="/pid_controller_tf/uut/sys_reset" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">sys_reset</obj_property>
       <obj_property name="ObjectShortName">sys_reset</obj_property>
@@ -20,6 +20,14 @@
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/adc_sclk_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">adc_sclk_out</obj_property>
+      <obj_property name="ObjectShortName">adc_sclk_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/adc_n_cs_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">adc_n_cs_out</obj_property>
+      <obj_property name="ObjectShortName">adc_n_cs_out</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/adc_convst_out" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">adc_convst_out</obj_property>

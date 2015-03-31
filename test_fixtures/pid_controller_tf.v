@@ -293,7 +293,7 @@ module pid_controller_tf;
 				@(posedge pid_dv) begin
 					UpdateWireOuts;
 					wireOutValue = GetWireOutValue(osf_data0_owep);
-					$display("Wire out val: %d", wireOutValue);
+					//$display("Wire out val: %d", wireOutValue);
 				end
 			end
 
@@ -311,9 +311,9 @@ module pid_controller_tf;
 					error_prev = error;
 					#1;
 					if(u_expected == pid_data_reg) begin
-						//$display("PID Success\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+						$display("PID Success\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
 					end else begin
-						//$display("PID Failure\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+						$display("PID Failure\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
 					end
 				end
 			end
@@ -337,7 +337,7 @@ module pid_controller_tf;
 		for(i = 0; i < REPS; i = i + 1) begin
 			pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
 			#1;
-			$display("%d: Pipe out val -- %d", i, pipeOutWord);
+			//$display("%d: Pipe out val -- %d", i, pipeOutWord);
 		end
 
 		$stop;
