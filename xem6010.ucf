@@ -114,8 +114,6 @@ NET "dac_nsync_db"	LOC="H19"	| IOSTANDARD=LVCMOS33;
 NET "dac_din_db"		LOC="F20"	| IOSTANDARD=LVCMOS33;
 NET "dac_nldac_db"	LOC="G17"	| IOSTANDARD=LVCMOS33;
 
-NET "pid_lock_en_db"	LOC="G19"	| IOSTANDARD=LVCMOS33;
-
 # DAC DEBUG ################################################################
 #NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;
 #NET "dac_nsync_db"	LOC="T22"	| IOSTANDARD=LVCMOS33;
