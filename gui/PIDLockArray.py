@@ -24,6 +24,7 @@ Bulk Update Todo
 
 '''
 Todo
+- window close down procedure (shut shit down)
 - figure out why adc os update isn't working
 - proper channel activation wire in value (currently it just activates channel 1)
 - implement init_params method
