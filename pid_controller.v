@@ -92,7 +92,9 @@ module pid_controller #(
 	output wire [15:0] opp_data_out,
 	output wire opp_dv_out,
 
-	// outputs -> DAC - DAC8568
+	output wire pid_lock_en_db,
+
+	//DAC DEBUG
 	output wire							dac_nldac_db,
 	output wire							dac_nsync_db,
 	output wire							dac_sclk_db,
@@ -104,6 +106,7 @@ assign dac_nldac_db = dac_nldac_out;
 assign dac_nsync_db = dac_nsync_out;
 assign dac_sclk_db = clk50_in;
 assign dac_din_db = dac_din_out;
+assign pid_lock_en_db = pid_lock_en;
 
 //////////////////////////////////////////
 // internal structures

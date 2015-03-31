@@ -171,7 +171,7 @@ module pid_controller_tf;
 	wire [15:0] r_data;
 	wire [3:0] r_prefix, r_control, r_address, r_feature;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
-	
+
 	// simulation params
 	localparam REPS = 10;
 
@@ -229,9 +229,9 @@ module pid_controller_tf;
 		ActivateTriggerIn(module_update_tep, 0);
 
 		// Set channel 0 OPP params
-		output_init = 500;
-		output_min = 99;
-		output_max = 1111;
+		output_init = 5000;
+		output_min = 1111;
+		output_max = 9999;
 		SetWireInValue(opp_init0_wep, output_init, mask); // set output init
 		SetWireInValue(opp_min0_wep, output_min, mask); // set output min
 		SetWireInValue(opp_max0_wep, output_max, mask); // set output max
@@ -239,7 +239,7 @@ module pid_controller_tf;
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
-		
+
 		// trigger adc reference set
 		ActivateTriggerIn(dac_ref_set_tep, 0);
 
@@ -264,7 +264,7 @@ module pid_controller_tf;
 				end
 
 				// set random chan[0] value
-				chan[0] = $random % 1000;
+				chan[0] = 6000;
 
 				// simulate serial transmission from adc to fpga
 				@(negedge adc_n_cs_out) begin
@@ -343,7 +343,7 @@ module pid_controller_tf;
 		$stop;
 
 	end
-	
+
 	`include "ok_sim/okHostCalls.v"
 
 endmodule

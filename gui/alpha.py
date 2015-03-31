@@ -165,7 +165,7 @@ class GlobalParams(QGroupBox):
 		self.layout.addLayout(self.form_layout)
 
 		# connect signal to slot
-		self.poll_period_wgt.textChanged.connect(lambda: pla.handle_poll_period(self.poll_period_wgt.text()))
+		self.poll_period_wgt.editingFinished.connect(lambda: pla.handle_poll_period(self.poll_period_wgt.text()))
 
 		#################### bulk_transfer #######################
 		self.bulk_update = QPushButton('Bulk Update Mode', self)
