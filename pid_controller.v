@@ -102,7 +102,7 @@ module pid_controller #(
 //DEBUG
 assign dac_nldac_db = dac_nldac_out;
 assign dac_nsync_db = dac_nsync_out;
-assign dac_sclk_db = dac_sclk_out;
+assign dac_sclk_db = 1'b0; // not strictly accurate here...
 assign dac_din_db = dac_din_out;
 
 //////////////////////////////////////////

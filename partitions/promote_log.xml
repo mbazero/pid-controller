@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<PromoteLog Version="1" Minor="2">
+	<Run Name="synth_1">
+	</Run>
+	<Partitions Names="dac_cntrl|adc_cont">
+	</Partitions>
+	<UserNote Text="">
+	</UserNote>
+</PromoteLog>
+

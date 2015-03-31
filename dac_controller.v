@@ -84,7 +84,6 @@ assign data_instr = {prefix, control, address, data, feature};
 
 /* dac control signals */
 assign nsync_out = ~( cur_state == ST_SYNC_DATA | cur_state == ST_SYNC_REF | cur_state == ST_TX | cur_state == ST_DAC_DONE );
-assign sclk_out = clk_in | ~(cur_state == ST_TX);
 assign din_out = tx_data[31];
 
 /* reference set instruction (mode: internal reference always on) */
@@ -129,6 +128,26 @@ always @( posedge clk_in ) begin
 		end
 	endcase
 end
+
+//////////////////////////////////////////
+// modules
+//////////////////////////////////////////
+
+/* dac sclk forwarding buffer */
+ODDR2 #(
+	.DDR_ALIGNMENT	("NONE"),
+	.INIT				(1'b1),
+	.SRTYPE			("SYNC")
+) dac_clk_fwd (
+	.Q					(sclk_out),
+	.C0				(clk_in),
+	.C1				(~clk_in),
+	.CE				(1'b1),
+	.D0				(1'b1), // VCC
+	.D1				(1'b0), // GND
+	.R					(reset_in),
+	.S					( ~(cur_state == ST_TX ) )
+);
 
 //////////////////////////////////////////
 // state machine

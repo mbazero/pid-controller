@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<Project Name="synth_1" FileVersion="1.2" ProjectVersion="2.0">
+	<Partition Name="/pid_controller" State="implement" ImportLocation="NONE">
+		<Partition Name="/pid_controller/dac_cntrl" State="implement" ImportLocation="NONE" Reconfigurable="false">
+		</Partition>
+		<Partition Name="/pid_controller/adc_cont" State="implement" ImportLocation="NONE" Reconfigurable="false">
+		</Partition>
+	</Partition>
+</Project>
+

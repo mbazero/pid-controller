@@ -80,7 +80,6 @@ localparam	RD_ST_IDLE		= 3'd1,		// wait for busy signal to begin read
 /* adc control */
 assign os_out 				= os_cur;
 assign reset_out 			= reset_in;
-assign sclk_out			= n_cs_out | clk_in;	// only pass serial clock to adc when chip select goes low
 
 /* data valid out */
 genvar i;
@@ -113,6 +112,26 @@ always @( posedge clk_in ) begin
 		data_b_out <= {data_b_out[W_OUT-2:0], data_b_in};
 	end
 end
+
+//////////////////////////////////////////
+// modules
+//////////////////////////////////////////
+
+/* adc sclk forwarding buffer */
+ODDR2 #(
+	.DDR_ALIGNMENT	("NONE"),
+	.INIT				(1'b0),
+	.SRTYPE			("SYNC")
+) adc_clk_fwd (
+	.Q					(sclk_out),
+	.C0				(clk_in),
+	.C1				(~clk_in),
+	.CE				(1'b1),
+	.D0				(1'b1), // VCC
+	.D1				(1'b0), // GND
+	.R					(reset_in | ~n_cs_out),
+	.S					(1'b0)
+);
 
 /*
 * Data reading and conversion must happen concurrently in order to acheive
