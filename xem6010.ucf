@@ -88,11 +88,13 @@ NET "n_out_buf_en"	LOC="K19"	| IOSTANDARD=LVCMOS33;
 #NET "led[6]"     LOC="AA10"   | IOSTANDARD=LVCMOS33;
 #NET "led[7]"     LOC="AB10"   | IOSTANDARD=LVCMOS33;
 
-## DAC (OLD) ################################################################
+## DAC ################################################################
 NET "dac_nldac_out"		LOC="B14"	| IOSTANDARD=LVCMOS33;
 NET "dac_nsync_out"		LOC="A14"	| IOSTANDARD=LVCMOS33;
 NET "dac_sclk_out"		LOC="B18"	| IOSTANDARD=LVCMOS33;
 NET "dac_din_out"			LOC="A16"	| IOSTANDARD=LVCMOS33;
+
+NET "dac_din_out" OFFSET = OUT 7 ns AFTER "dac_sclk_out" HIGH; # a bit faster than actually necessary
 
 ## DAC (HOTWIRE) ################################################################
 #NET "dac_nldac_out"		LOC="A13"	| IOSTANDARD=LVCMOS33;
@@ -114,11 +116,14 @@ NET "adc_os_out[2]"	LOC="B16"	| IOSTANDARD=LVCMOS33;
 NET "adc_reset_out"	LOC="C9"		| IOSTANDARD=LVCMOS33;
 NET "adc_sclk_out"	LOC="A7"		| IOSTANDARD=LVCMOS33;
 
+NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_sclk_out" HIGH; # not sure if these vals are correct...
+NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_sclk_out" HIGH; # not sure if these vals are correct...
+
 # DAC DEBUG ################################################################
-NET "dac_sclk_db"		LOC="H20"	| IOSTANDARD=LVCMOS33;
-NET "dac_nsync_db"	LOC="H19"	| IOSTANDARD=LVCMOS33;
-NET "dac_din_db"		LOC="F20"	| IOSTANDARD=LVCMOS33;
-NET "dac_nldac_db"	LOC="G17"	| IOSTANDARD=LVCMOS33;
+# NET "dac_sclk_db"		LOC="H20"	| IOSTANDARD=LVCMOS33;
+# NET "dac_nsync_db"	LOC="H19"	| IOSTANDARD=LVCMOS33;
+# NET "dac_din_db"		LOC="F20"	| IOSTANDARD=LVCMOS33;
+# NET "dac_nldac_db"	LOC="G17"	| IOSTANDARD=LVCMOS33;
 
 # DAC DEBUG ################################################################
 #NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;
