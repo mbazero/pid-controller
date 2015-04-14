@@ -67,6 +67,12 @@ NET "clk50_in"   LOC="AB13"  | IOSTANDARD="LVCMOS33";
 NET "clk17_in"   LOC="Y11"   | IOSTANDARD="LVCMOS33";
 #NET "clk3"   LOC="AB11"  | IOSTANDARD="LVCMOS33";
 
+NET "clk50_in" TNM_NET = "clk50_group";
+NET "clk17_in" TNM_NET = "clk17_group";
+
+TIMESPEC "TS_clk50" = PERIOD "clk50_group" 20 ns HIGH 50%;
+TIMESPEC "TS_clk17" = PERIOD "clk17_group" 60 ns HIGH 50%;
+
 ############################################################################
 ## Peripherals
 ############################################################################

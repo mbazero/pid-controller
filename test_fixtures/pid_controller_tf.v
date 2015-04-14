@@ -264,7 +264,7 @@ module pid_controller_tf;
 				end
 
 				// set random chan[0] value
-				chan[0] = 6000;
+				chan[0] = $random % 100;
 
 				// simulate serial transmission from adc to fpga
 				@(negedge adc_n_cs_out) begin
