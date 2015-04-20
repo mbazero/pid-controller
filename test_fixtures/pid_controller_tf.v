@@ -145,7 +145,7 @@ module pid_controller_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = -22222;
+		chan[0] = 22222;
 		//chan[1] = 2222;
 		//chan[2] = 3333;
 		//chan[3] = 4444;

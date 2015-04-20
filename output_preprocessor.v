@@ -2,6 +2,9 @@
 
 // output_preprocessor -- mba 2014
 
+// TODO
+// - clean up overflow checking
+
 module output_preprocessor #(
 	// parameters
 	parameter W_IN				= 18,								// width of input data bus
@@ -76,16 +79,17 @@ localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
 /* stage 0: multiply lock data by specified factor */
 assign proc_stage_pre[0] = lock_data_raw * multiplier;
 
-assign proc_stage_clamped[0] = (lock_data_raw[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT:
+assign proc_stage_clamped[0] = (lock_data_raw[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
 assign overflow[0] = lock_data_raw[W_OUT-1] != proc_stage_pre[0][W_OUT-1];
-assign proc_stage[0] = (overflow[0]) ? proc_stage_clamped[0] : proc_state[0];
+assign proc_stage[0] = (overflow[0]) ? proc_stage_clamped[0] : proc_stage_pre[0];
 
 /* stage 1: add lock data to previous outputed data value */
 assign proc_stage_pre[1] = proc_stage[0] + data_out_prev;
 
-assign proc_stage_clamped[0] = (lock_data_raw[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT:
-assign overflow[0] = lock_data_raw[W_OUT-1] != proc_stage_pre[0][W_OUT-1];
-assign proc_stage[0] = (overflow[0]) ? proc_stage_clamped[0] : proc_state[0];
+assign proc_stage_clamped[1] = (data_out_prev[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign overflow[1] = (proc_stage[0][W_OUT-1] == data_out_prev[W_OUT-1])
+						&& (proc_stage_pre[1][W_OUT-1] != proc_stage[0]);
+assign proc_stage[1] = (overflow[1]) ? proc_stage_clamped[1] : proc_stage_pre[1];
 
 /* stage 2: select output init value if lock is not enabled */
 assign proc_stage[2] = ( lock_en_in == 1 ) ? proc_stage[1] : output_init;
