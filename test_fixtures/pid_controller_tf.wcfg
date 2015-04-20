@@ -3,18 +3,14 @@
    <wave_state>
    </wave_state>
    <db_ref_list>
-      <db_ref path="tle1.wdb" id="1" type="auto">
+      <db_ref path="tle.wdb" id="1" type="auto">
          <top_modules>
             <top_module name="glbl" />
             <top_module name="pid_controller_tf" />
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="52" />
-   <wvobject fp_name="/pid_controller_tf/uut/sys_reset" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">sys_reset</obj_property>
-      <obj_property name="ObjectShortName">sys_reset</obj_property>
-   </wvobject>
+   <WVObjectSize size="49" />
    <wvobject fp_name="divider139" type="divider">
       <obj_property name="label">ADC INPUT</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -131,6 +127,24 @@
       <obj_property name="ObjectShortName">pid_data[0,17:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /overflow" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">overflow</obj_property>
+      <obj_property name="ObjectShortName">overflow</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /u_cur_clamped" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">u_cur_clamped[17:0]</obj_property>
+      <obj_property name="ObjectShortName">u_cur_clamped[17:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /u_prev" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">u_prev[17:0]</obj_property>
+      <obj_property name="ObjectShortName">u_prev[17:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /lock_en_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lock_en_in</obj_property>
+      <obj_property name="ObjectShortName">lock_en_in</obj_property>
+   </wvobject>
    <wvobject fp_name="divider81" type="divider">
       <obj_property name="label">ROUTER OUTPUT</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -168,34 +182,6 @@
       <obj_property name="ElementShortName">[0,15:0]</obj_property>
       <obj_property name="ObjectShortName">opp_dac_data[0,15:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="divider64" type="divider">
-      <obj_property name="label">DAC IQUEUE OUTPUT</obj_property>
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="BkColor">128 128 255</obj_property>
-      <obj_property name="TextColor">230 230 230</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/clk50_in" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">clk50_in</obj_property>
-      <obj_property name="ObjectShortName">clk50_in</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/diq_data_valid" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">diq_data_valid</obj_property>
-      <obj_property name="ObjectShortName">diq_data_valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/diq_chan" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">diq_chan[2:0]</obj_property>
-      <obj_property name="ObjectShortName">diq_chan[2:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/diq_data" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">diq_data[15:0]</obj_property>
-      <obj_property name="ObjectShortName">diq_data[15:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/dac_iq/rd_ack_in" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">rd_ack_in</obj_property>
-      <obj_property name="ObjectShortName">rd_ack_in</obj_property>
    </wvobject>
    <wvobject fp_name="divider71" type="divider">
       <obj_property name="label">DAC OUTPUT</obj_property>

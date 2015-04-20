@@ -2,6 +2,9 @@
 
 // pid_core -- mba 2014
 
+// TODO
+// - figure out lock enable/disable behavior...curently it is no good
+
 module pid_core #(
 	// parameters
 	parameter W_IN				= 18,							// input data width
@@ -35,8 +38,16 @@ module pid_core #(
 // internal structures
 //////////////////////////////////////////
 
+/* interal params */
+localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
+localparam MIN_OUTPUT = ~MAX_OUTPUT;
+
 /* input data */
 reg signed	[W_OUT-1:0]	data;					// active input data
+
+/* overflow signal */
+wire 					overflow;
+wire [W_OUT-1:0]	u_cur_clamped;
 
 /* pid parameters */
 reg signed	[W_OUT-1:0]	setpoint;			// active lock setpoint
@@ -84,8 +95,12 @@ assign k3					= d_coef;
 assign delta_u				= k1*e_cur + k2*e_prev[0] + k3*e_prev[1];
 assign u_cur				= delta_u + u_prev;
 
+/* overflow checking */
+assign overflow 			= (e_cur[W_OUT-1] == u_prev[W_OUT-1])  && (u_prev[W_OUT-1] != u_cur[W_OUT-1]);
+assign u_cur_clamped		= (u_prev[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+
 /* data out */
-assign data_out			= u_cur;
+assign data_out			= (overflow) ? u_cur_clamped : u_cur;
 assign data_valid_out	= ( cur_state == ST_SEND );
 
 //////////////////////////////////////////
@@ -115,7 +130,7 @@ always @( posedge clk_in ) begin
 		e_prev[0] 	<= 0;
 		e_prev[1]	<= 0;
 	end else if ( cur_state == ST_DONE ) begin
-		u_prev		<= u_cur;
+		u_prev		<= data_out;
 		e_prev[0]	<= e_cur;
 		e_prev[1]	<= e_prev[0];
 	end

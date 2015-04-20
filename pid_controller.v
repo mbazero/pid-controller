@@ -3,6 +3,7 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - compartmentalize PID pipeline for easy swapping of ADC/DAC controllers
 // - only support integer PID coefficients (is that good or bad?)
 // - maybe add functionality to support simultenous update of all dac channels (nLDAC pin control)
 // - consistency with frontpanel param updating (some modules update on posedge of update signal, some on posedge of clock)

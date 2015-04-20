@@ -145,14 +145,14 @@ module pid_controller_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = 10;
-		chan[1] = 2222;
-		chan[2] = 3333;
-		chan[3] = 4444;
-		chan[4] = 5555;
-		chan[5] = 6666;
-		chan[6] = 7777;
-		chan[7] = 8888;
+		chan[0] = -22222;
+		//chan[1] = 2222;
+		//chan[2] = 3333;
+		//chan[3] = 4444;
+		//chan[4] = 5555;
+		//chan[5] = 6666;
+		//chan[6] = 7777;
+		//chan[7] = 8888;
 	end
 
 	// misc structures
@@ -264,7 +264,7 @@ module pid_controller_tf;
 				end
 
 				// set random chan[0] value
-				chan[0] = $random % 100;
+				//chan[0] = $random % 100;
 
 				// simulate serial transmission from adc to fpga
 				@(negedge adc_n_cs_out) begin
