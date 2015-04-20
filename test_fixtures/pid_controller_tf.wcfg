@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="49" />
+   <WVObjectSize size="55" />
    <wvobject fp_name="divider139" type="divider">
       <obj_property name="label">ADC INPUT</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -181,6 +181,36 @@
    <wvobject fp_name="/pid_controller_tf/uut/opp_dac_data[0]" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">[0,15:0]</obj_property>
       <obj_property name="ObjectShortName">opp_dac_data[0,15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /lock_data_raw" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lock_data_raw[15:0]</obj_property>
+      <obj_property name="ObjectShortName">lock_data_raw[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage[0]" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">[0,15:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage[0,15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage[1]" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">[1,15:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage[1,15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage[2]" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">[2,15:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage[2,15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage[3]" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">[3,15:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage[3,15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage[4]" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">[4,15:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage[4,15:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider71" type="divider">

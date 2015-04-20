@@ -20,7 +20,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_max_in,		// output lower bound
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
-	input wire signed		[7:0]			multiplier_in,		// output multiplication factor
+	input wire unsigned	[7:0]			multiplier_in,		// output multiplication factor
 	input wire								lock_en_in,			// lock enable signal, opp outputs constant value if lock disables
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
@@ -35,11 +35,21 @@ module output_preprocessor #(
 // internal structures
 //////////////////////////////////////////
 
+/* interal params */
+localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
+localparam MIN_OUTPUT = ~MAX_OUTPUT;
+
 /* data registers */
 reg signed	[W_OUT-1:0] data_out_prev;					// previous outputed data
-reg signed	[W_OUT-1:0] lock_data_raw;	 				// raw lock data
+reg signed	[W_OUT-1:0] lock_data_raw = 0;			// raw lock data
 
+/* processing stage */
 wire signed	[W_OUT-1:0] proc_stage [0:4];				// data processing stages
+
+/* overflow handling */
+wire signed [W_OUT-1:0] proc_stage_pre [0:1];		// processing stage pre overflow check
+wire signed [W_OUT-1:0] proc_stage_clamped [0:1];	// clamped processing stage
+wire							overflow	[0:1];				// overflow indicator
 
 /* pid parameter registers */
 reg signed 	[W_OUT-1:0] output_max; 					// active output upper bound
@@ -64,10 +74,18 @@ localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
 
 //// lock data processing ////
 /* stage 0: multiply lock data by specified factor */
-assign proc_stage[0] = lock_data_raw * multiplier;
+assign proc_stage_pre[0] = lock_data_raw * multiplier;
+
+assign proc_stage_clamped[0] = (lock_data_raw[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT:
+assign overflow[0] = lock_data_raw[W_OUT-1] != proc_stage_pre[0][W_OUT-1];
+assign proc_stage[0] = (overflow[0]) ? proc_stage_clamped[0] : proc_state[0];
 
 /* stage 1: add lock data to previous outputed data value */
-assign proc_stage[1] = proc_stage[0] + data_out_prev;
+assign proc_stage_pre[1] = proc_stage[0] + data_out_prev;
+
+assign proc_stage_clamped[0] = (lock_data_raw[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT:
+assign overflow[0] = lock_data_raw[W_OUT-1] != proc_stage_pre[0][W_OUT-1];
+assign proc_stage[0] = (overflow[0]) ? proc_stage_clamped[0] : proc_state[0];
 
 /* stage 2: select output init value if lock is not enabled */
 assign proc_stage[2] = ( lock_en_in == 1 ) ? proc_stage[1] : output_init;

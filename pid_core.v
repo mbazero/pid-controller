@@ -45,9 +45,9 @@ localparam MIN_OUTPUT = ~MAX_OUTPUT;
 /* input data */
 reg signed	[W_OUT-1:0]	data;					// active input data
 
-/* overflow signal */
-wire 					overflow;
-wire [W_OUT-1:0]	u_cur_clamped;
+/* overflow handling */
+wire 							overflow;
+wire signed [W_OUT-1:0]	u_cur_clamped;
 
 /* pid parameters */
 reg signed	[W_OUT-1:0]	setpoint;			// active lock setpoint
