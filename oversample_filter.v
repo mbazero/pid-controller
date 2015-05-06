@@ -24,7 +24,7 @@ module oversample_filter #(
 	input wire				[15:0]		cycle_delay_in,	// delay period in adc cycles
 	input wire				[W_OSM-1:0]	osm_in,				// oversample mode (log base 2 of the oversample ratio)
 	input wire								activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
-	input wire								update_en_in,		// sensistizes module to update signal
+	input wire								update_en_in,		// sensitizes module to update signal
 	input wire								update_in,			// pulse triggers update of frontpanel parameters
 
 	// outputs -> clk sync
