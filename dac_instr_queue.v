@@ -18,20 +18,20 @@ module dac_instr_queue #(
 	parameter N_CHAN		= 8		// number of DAC channels
 	)(
 	// inputs <-- top level entity
-	input wire								clk_in,			// system clock
-	input wire								reset_in,		// system reset
+	input wire								clk_in,				// system clock
+	input wire								reset_in,			// system reset
 
 	// inputs <-- DAC output preprocessor
-	input wire [W_DATA*N_CHAN-1:0]	data_bus_in,	// input channels on a single bus
-	input wire [N_CHAN-1:0]				data_valid_in,	// data valid signal
+	input wire [W_DATA*N_CHAN-1:0]	data_packed_in,	// input channels packed on a single bus
+	input wire [N_CHAN-1:0]				data_valid_in,		// data valid signal
 
 	// inputs <-- dac controller
-	input wire								rd_ack_in,		// read acknowledge causes next data word to be presented (if one exists)
+	input wire								rd_ack_in,			// read acknowledge causes next data word to be presented (if one exists)
 
 	// outputs <-- dac controller
-	output wire [W_DATA-1:0]			data_out,		// output data
-	output wire	[W_CHS-1:0]				chan_out,		// dac channel associated with output data
-	output wire								data_valid_out	// output data valid signal
+	output wire [W_DATA-1:0]			data_out,			// output data
+	output wire	[W_CHS-1:0]				chan_out,			// dac channel associated with output data
+	output wire								data_valid_out		// output data valid signal
 	);
 
 
@@ -43,12 +43,12 @@ module dac_instr_queue #(
 localparam W_DINS = W_DATA + W_CHS;							// width of dac write instruction
 
 /* upper split data */
-wire [W_DATA*N_CHAN/2-1:0] data_bus_upper;				// upper half of input data bus
+wire [W_DATA*N_CHAN/2-1:0] data_packed_upper;			// upper half of input data bus
 wire [N_CHAN/2-1:0]			dv_upper; 						// upper half of data valid bus
 wire								dv_rdc_upper;					// reduction OR of upper data valid bus
 
 /* lower split data */
-wire [W_DATA*N_CHAN/2-1:0]	data_bus_lower;				// lower half of input data bus
+wire [W_DATA*N_CHAN/2-1:0]	data_packed_lower;			// lower half of input data bus
 wire [N_CHAN/2-1:0]			dv_lower; 						// lower half of data valid bus
 wire								dv_rdc_lower;					// reduction OR of lower data valid bus
 
@@ -78,8 +78,8 @@ wire fifo_data_valid;
 //////////////////////////////////////////
 
 /* split input data bus into upper and lower halfs */
-assign data_bus_upper = data_bus_in[W_DATA*N_CHAN-1:W_DATA*N_CHAN/2];
-assign data_bus_lower = data_bus_in[W_DATA*N_CHAN/2-1:0];
+assign data_packed_upper = data_packed_in[W_DATA*N_CHAN-1:W_DATA*N_CHAN/2];
+assign data_packed_lower = data_packed_in[W_DATA*N_CHAN/2-1:0];
 
 /* split data valid input into upper and lower half */
 assign dv_upper = data_valid_in[N_CHAN-1:N_CHAN/2];
@@ -131,7 +131,7 @@ mux_n_chan #(
 	.W_SEL				(W_CHS),
 	.N_IN					(N_CHAN/2))
 mux_upper (
-	.data_bus_in		(data_bus_upper),
+	.data_packed_in	(data_packed_upper),
 	.chan_select_in	(mux_sel_upper),
 	.data_out			(mux_dout_upper)
 	);
@@ -142,7 +142,7 @@ mux_n_chan #(
 	.W_SEL				(W_CHS),
 	.N_IN					(N_CHAN/2))
 mux_lower (
-	.data_bus_in		(data_bus_lower),
+	.data_packed_in	(data_packed_lower),
 	.chan_select_in	(mux_sel_lower),
 	.data_out			(mux_dout_lower)
 	);

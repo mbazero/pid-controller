@@ -9,7 +9,7 @@ module mux_n_chan #(
 	parameter N_IN 	= 8									// number of input channels
 	)(
 	// inputs
-	input wire[W_CHAN*N_IN-1:0]	data_bus_in,		// input channels on a single bus
+	input wire[W_CHAN*N_IN-1:0]	data_packed_in,	// input channels packed on a single bus
 	input wire[W_SEL-1:0]			chan_select_in,	// channel select
 
 	// outputs
@@ -31,7 +31,7 @@ wire	[W_CHAN-1:0]	channel	[0:N_IN-1];
 genvar i;
 generate
 	for ( i = 0; i < N_IN; i = i+1 ) begin : chan_array
-		assign channel[i] = data_bus_in[ i*W_CHAN +: W_CHAN ];
+		assign channel[i] = data_packed_in[ i*W_CHAN +: W_CHAN ];
 	end
 endgenerate
 

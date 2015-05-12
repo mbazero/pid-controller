@@ -10,7 +10,9 @@ module oversample_filter #(
 	// parameters
 	parameter W_IN		= 18,										// width of input data
 	parameter W_OUT	= 18,										// width of output data
-	parameter W_OSM	= 4										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
+	parameter W_OSM	= 4,										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
+	parameter OSM_INIT 	= 0,									// initial oversample mode
+	parameter CDLY_INIT	= 0									// initial cycle delay
 	)(
 	// inputs <- top level entity
 	input wire								clk_in,				// system clock
@@ -45,9 +47,9 @@ wire	idle;
 wire	osf_reset;	// local reset signal which is activated by system reset or channel deactive
 
 /* registers */
-reg	[15:0]		cycle_delay;
+reg	[15:0]		cycle_delay = CDLY_INIT;
 reg	[MAX_OS:0]	sample_counter;
-reg	[W_OSM-1:0]	osm_cur;
+reg	[W_OSM-1:0]	osm_cur = OSM_INIT;
 reg	[W_SUM-1:0]	sum;
 
 /* state registers */

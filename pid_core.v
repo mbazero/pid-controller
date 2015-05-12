@@ -3,13 +3,17 @@
 // pid_core -- mba 2014
 
 // TODO
-// - figure out lock enable/disable behavior...curently it is no good
+// - remove lock enable from here and top level
 
 module pid_core #(
 	// parameters
 	parameter W_IN				= 18,							// input data width
 	parameter W_OUT 			= 18,							// output data width
-	parameter COMP_LATENCY	= 1							// pid computation latency in clock cycles
+	parameter COMP_LATENCY	= 1,							// pid computation latency in clock cycles
+	parameter SETPOINT_INIT	= 0,							// initial setpoint
+	parameter P_COEF_INIT	= 10,							// initial p coefficient
+	parameter I_COEF_INIT	= 3,							// initial i coefficient
+	parameter D_COEF_INIT	= 0							// initial d coefficient
 	)(
 	// inputs <- top level entity
 	input wire								clk_in,			// system clock
@@ -24,7 +28,7 @@ module pid_core #(
 	input wire signed 	[15:0] 		p_coef_in,		// proportional coefficient
 	input wire signed 	[15:0] 		i_coef_in,		// integral coefficient
 	input wire signed 	[15:0] 		d_coef_in,		// derivative coefficient
-	input wire								lock_en_in,		// enables pid filter
+	input wire								lock_en_in,		// DEBUG not used anymore
 	input wire								clear_in,		// clears pid memory
 	input wire								update_en_in,	// sensitizes module to update signal
 	input wire								update_in, 		// pulse triggers update of frontpanel parameters
@@ -50,10 +54,10 @@ wire 							overflow;
 wire signed [W_OUT-1:0]	u_cur_clamped;
 
 /* pid parameters */
-reg signed	[W_OUT-1:0]	setpoint;			// active lock setpoint
-reg signed 	[W_OUT-1:0]	p_coef;				// active proportional coefficient
-reg signed	[W_OUT-1:0]	i_coef;				// active integral coefficient
-reg signed	[W_OUT-1:0]	d_coef;				// active derivative coefficient
+reg signed	[W_OUT-1:0]	setpoint = SETPOINT_INIT;	// active lock setpoint
+reg signed 	[W_OUT-1:0]	p_coef = P_COEF_INIT;		// active proportional coefficient
+reg signed	[W_OUT-1:0]	i_coef = I_COEF_INIT;		// active integral coefficient
+reg signed	[W_OUT-1:0]	d_coef = D_COEF_INIT;		// active derivative coefficient
 
 /* error signals */
 wire signed	[W_OUT-1:0]	e_cur;				// current error signal
@@ -116,7 +120,7 @@ end
 
 /* data register */
 always @ ( posedge clk_in ) begin
-	if (( reset_in == 1 ) | ( lock_en_in == 0 )) begin
+	if ( reset_in == 1 ) begin
 		data <= 0;
 	end else if (( data_valid_in == 1 ) & ( cur_state == ST_IDLE )) begin
 		data <= data_in;
@@ -125,7 +129,7 @@ end
 
 /* previous error and output registers */
 always @( posedge clk_in ) begin
-	if (( reset_in == 1 ) | ( lock_en_in == 0 ) | ( clear_in == 1 )) begin
+	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
 		u_prev		<= 0;
 		e_prev[0] 	<= 0;
 		e_prev[1]	<= 0;

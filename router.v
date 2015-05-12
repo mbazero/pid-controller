@@ -7,10 +7,11 @@ module router #(
 	parameter W_CHAN	= 16,										// width of input channels
 	parameter W_SEL	= 4,										// width of select signals
 	parameter N_IN		= 8,										// number of input channels
-	parameter N_OUT	= 8										// number of output channels
+	parameter N_OUT	= 8,										// number of output channels
+	parameter ACTV_INIT = 1										// initial output activation
 	)(
 	// inputs <- pid core
-	input wire	[W_CHAN*N_IN-1:0]		data_bus_in,		// input channels on a single bus
+	input wire	[W_CHAN*N_IN-1:0]		data_packed_in,	// input channels packed on a single bus
 
 	// inputs <- frontpanel controller
 	input wire	[W_SEL-1:0]				src_select_in,		// source channel select
@@ -19,14 +20,14 @@ module router #(
 	input wire								update_in,			// update frontpanel params
 
 	// outputs -> output preprocessor
-	output wire	[W_CHAN*N_OUT-1:0]	data_bus_out		// output channels on a single bus
+	output wire	[W_CHAN*N_OUT-1:0]	data_packed_out	// output channels packed on a single bus
    );
 
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 reg	[W_SEL-1:0]		src_select		[0:N_OUT-1];		// registered source channels
-reg	[N_OUT-1:0]		output_active;							// registed output channel activations
+reg	[N_OUT-1:0]		output_active = ACTV_INIT;			// registed output channel activations
 wire	[W_CHAN-1:0]	mux_data_out	[0:N_OUT-1]; 		// mux output channels
 wire	[W_CHAN-1:0]	data_out			[0:N_OUT-1]; 		// final output channels
 
@@ -36,7 +37,7 @@ wire	[W_CHAN-1:0]	data_out			[0:N_OUT-1]; 		// final output channels
 genvar i;
 generate
 	for ( i = 0; i < N_OUT; i = i+1 ) begin : out_array
-		assign data_bus_out[ i*W_CHAN +: W_CHAN ] = data_out[i];
+		assign data_packed_out[ i*W_CHAN +: W_CHAN ] = data_out[i];
 	end
 endgenerate
 
@@ -53,7 +54,7 @@ generate
 			.W_SEL				(W_SEL),
 			.N_IN					(N_IN))
 		mux_inst (
-			.data_bus_in		(data_bus_in),
+			.data_packed_in	(data_packed_in),
 			.chan_select_in	(src_select[j]),
 			.data_out			(mux_data_out[j])
 			);

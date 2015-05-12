@@ -4,7 +4,6 @@
 
 // TODO
 // - compartmentalize PID pipeline for easy swapping of ADC/DAC controllers
-// - only support integer PID coefficients (is that good or bad?)
 // - maybe add functionality to support simultenous update of all dac channels (nLDAC pin control)
 // - consistency with frontpanel param updating (some modules update on posedge of update signal, some on posedge of clock)
 // - consistency with frontpanel param reseting (
@@ -27,7 +26,7 @@
 // - adc controller clock disparity
 
 module pid_controller #(
-	// parameters
+	// config parameters
 	parameter N_ADC			= 8,	// number of adc channels
 	parameter N_DAC			= 8,	// number of dac channels
 	parameter N_DDS			= 0,	// number of dds channels
@@ -40,7 +39,22 @@ module pid_controller #(
 	parameter W_DDS_AMP 		= 10, // width of dds amplitude instruction
 	parameter W_DAC_DATA		= 16,	// width of dac data input
 	parameter W_DAC_CHS		= 3,	// width of dac channel input
-	parameter T_ADC_CYCLE	= 85	// adc conversion cycle time in number of adc clock cycles
+	parameter T_ADC_CYCLE	= 85,	// adc conversion cycle time in number of adc clock cycles
+
+	// initial values
+	parameter ADC_OS_INIT	= 0,
+	parameter OSF_OSM_INIT	= 0,
+	parameter OSF_CDLY_INIT	= 0,
+	parameter PID_SETP_INIT = 0,
+	parameter PID_PCF_INIT	= 10,
+	parameter PID_ICF_INIT	= 3,
+	parameter PID_DCF_INIT	= 0,
+	parameter RTR_ACTV_INIT	= 1,
+	parameter OPP_OMAX_INIT = 9999,
+	parameter OPP_OMIN_INIT = 1111,
+	parameter OPP_OIN_INIT	= 5000,
+	parameter OPP_MLT_INIT	= 1
+
 	)(
 	// inputs <- OPAL KELLY PLL
 	input wire							clk50_in,				// 50MHz system clock
@@ -84,6 +98,9 @@ module pid_controller #(
 	output wire							i2c_sda,
 	output wire							i2c_scl,
 	output wire							hi_muxsel,
+
+	// inputs <- test fixture
+	input wire							adc_cstart_tf_in,
 
 	//DEBUG
 	output wire [17:0] cs_data_out,
@@ -159,8 +176,8 @@ wire	[N_ADC-1:0]				pid_lock_en;
 wire	[W_RTR_SEL-1:0]		rtr_src_sel;
 wire	[W_RTR_SEL-1:0]		rtr_dest_sel;
 wire	[N_OUT-1:0]				rtr_output_active;
-wire	[W_PIDV*N_ADC-1:0]	rtr_input_bus;
-wire	[W_PIDV*N_OUT-1:0]	rtr_output_bus;
+wire	[W_PIDV*N_ADC-1:0]	rtr_input_packed;
+wire	[W_PIDV*N_OUT-1:0]	rtr_output_packed;
 wire	[W_PID-1:0]				rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
 wire	[N_OUT-1:0]				rtr_lock_en;
@@ -181,7 +198,7 @@ wire	[N_DDS-1:0]				opp_phase_data_valid;
 wire	[N_DDS-1:0]				opp_amp_data_valid;
 
 /* dac instruction queue */
-wire	[W_DAC_DATA*N_DAC-1:0]	diq_input_bus;
+wire	[W_DAC_DATA*N_DAC-1:0]	diq_input_packed;
 wire	[W_DAC_DATA-1:0]			diq_data;
 wire	[W_DAC_CHS-1:0]			diq_chan;
 wire									diq_data_valid;
@@ -210,29 +227,29 @@ assign opp_dv_out = opp_dac_data_valid[0];
 /* output buffer enable */
 assign n_out_buf_en = 1'b0;
 
-/* concatinate pid data and valid signals to single data bus for presentation to router */
+/* pack pid data and valid signals to single data vector for presentation to router */
 genvar i;
 generate
 	for ( i = 0; i < N_ADC; i = i + 1 ) begin : rtr_in_arr
-		assign rtr_input_bus[ i*W_PIDV +: W_PIDV ] = {pid_lock_en[i], pid_data_valid[i], pid_data[i]};
+		assign rtr_input_packed[ i*W_PIDV +: W_PIDV ] = {pid_lock_en[i], pid_data_valid[i], pid_data[i]};
 	end
 endgenerate
 
-/* split router output data bus to seperate channels */
+/* split router output data vector to seperate channels */
 genvar j;
 generate
 	for ( j = 0; j < N_OUT; j = j + 1 ) begin : rtr_out_arr
-		assign rtr_data[j] 			= rtr_output_bus[ j*W_PIDV +: W_PID ];
-		assign rtr_data_valid[j]	= rtr_output_bus[ j*W_PIDV + W_PID ];
-		assign rtr_lock_en[j]		= rtr_output_bus[ j*W_PIDV + W_PID + 1];
+		assign rtr_data[j] 			= rtr_output_packed[ j*W_PIDV +: W_PID ];
+		assign rtr_data_valid[j]	= rtr_output_packed[ j*W_PIDV + W_PID ];
+		assign rtr_lock_en[j]		= rtr_output_packed[ j*W_PIDV + W_PID + 1];
 	end
 endgenerate
 
-/* concatinate dac output channels to single data bus for presentation to dac instruction queue */
+/* pack dac output channels to single data vector for presentation to dac instruction queue */
 genvar k;
 generate
 	for ( k = 0; k < N_DAC; k = k + 1 ) begin : diq_in_arr
-		assign diq_input_bus[ k*W_DAC_DATA +: W_DAC_DATA ] = opp_dac_data[k];
+		assign diq_input_packed[ k*W_DAC_DATA +: W_DAC_DATA ] = opp_dac_data[k];
 	end
 endgenerate
 
@@ -253,7 +270,7 @@ adc_cont (
 	.data_b_in			(adc_data_b_in),
 	.os_in				(adc_os),
 	.update_in			(module_update),
-	.cstart_in			(adc_cstart),
+	.cstart_in			(adc_cstart | adc_cstart_tf_in),
 	.os_out				(adc_os_out),
 	.convst_out			(adc_convst_out),
 	.reset_out			(adc_reset_out),
@@ -357,12 +374,12 @@ router #(
 	.N_IN					(N_ADC),
 	.N_OUT				(N_OUT))
 rtr (
-	.data_bus_in		(rtr_input_bus),
+	.data_packed_in	(rtr_input_packed),
 	.src_select_in		(rtr_src_sel),
 	.output_active_in	(rtr_output_active),
 	.dest_select_in	(rtr_dest_sel),
 	.update_in			(module_update),
-	.data_bus_out		(rtr_output_bus)
+	.data_packed_out	(rtr_output_packed)
 	);
 
 /* OUTPUT CHANNEL MAPPINGS
@@ -405,7 +422,7 @@ dac_instr_queue #(
 dac_iq (
 	.clk_in				(clk50_in),
 	.reset_in			(sys_reset),
-	.data_bus_in		(diq_input_bus),
+	.data_packed_in	(diq_input_packed),
 	.data_valid_in		(opp_dac_data_valid),
 	.rd_ack_in			(dac_done),
 	.data_out			(diq_data),

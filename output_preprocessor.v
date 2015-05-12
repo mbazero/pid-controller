@@ -9,7 +9,11 @@ module output_preprocessor #(
 	// parameters
 	parameter W_IN				= 18,								// width of input data bus
 	parameter W_OUT			= 16,								// width of output data bus
-	parameter COMP_LATENCY	= 3								// computation latency in clock cycles
+	parameter COMP_LATENCY	= 3,								// computation latency in clock cycles
+	parameter OMAX_INIT		= 9999,							// initial output upper bound
+	parameter OMIN_INIT		= 1111,							// initial output lower bound
+	parameter OINIT_INIT		= 5000,							// initial output starting value
+	parameter MULT_INIT		= 1								// initial output multiplier
 	)(
 	// inputs <-- top level entity
 	input wire								clk_in,				// system clock
@@ -18,13 +22,13 @@ module output_preprocessor #(
 	// inputs <-- mux
 	input wire signed		[W_IN-1:0]	data_in,				// input data bus
 	input wire								data_valid_in,		// data valid signal
+	input wire								lock_en_in,			// lock enable signal, opp outputs constant value if lock disables
 
 	// inputs <-- frontpanel controller
 	input wire signed		[W_OUT-1:0]	output_max_in,		// output lower bound
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
 	input wire unsigned	[7:0]			multiplier_in,		// output multiplication factor
-	input wire								lock_en_in,			// lock enable signal, opp outputs constant value if lock disables
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
@@ -55,10 +59,10 @@ wire signed [W_OUT-1:0] proc_stage_clamped [0:1];	// clamped processing stage
 wire							overflow	[0:1];				// overflow indicator
 
 /* pid parameter registers */
-reg signed 	[W_OUT-1:0] output_max; 					// active output upper bound
-reg signed	[W_OUT-1:0] output_min;						// active output lower bound
-reg signed	[W_OUT-1:0] output_init;					// active output initial value
-reg signed	[W_OUT-1:0]	multiplier; 					// active output multiplication factor
+reg signed 	[W_OUT-1:0] output_max = OMAX_INIT;		// active output upper bound
+reg signed	[W_OUT-1:0] output_min = OMAX_INIT;		// active output lower bound
+reg signed	[W_OUT-1:0] output_init = OINIT_INIT;	// active output initial value
+reg signed	[W_OUT-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
 
 /* state registers */
 reg			[7:0]			counter; 						// intrastate counter
