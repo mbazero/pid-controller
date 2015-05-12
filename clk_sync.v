@@ -34,8 +34,8 @@ wire 					data_valid_rdc;
 reg	[N_ADC-1:0]	data_valid;
 
 /* state registers */
-reg	[2:0] 				cur_state;	// state machine current state
-reg	[2:0] 				next_state;	// state machine next state
+reg	[2:0] 		cur_state;		// state machine current state
+reg	[2:0] 		next_state;		// state machine next state
 
 /* state parameters */
 localparam	ST_WAIT_PE	= 3'd0,	// wait for data_valid_rdc to go high
