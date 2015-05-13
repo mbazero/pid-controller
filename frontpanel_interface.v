@@ -107,13 +107,43 @@ wire	[16:0] 			ok2;
 wire	[17*(N_ADC+1)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of bulk update pipes
 
 /* adc controller */
+wire	[15:0] 		adc_os_wire;
+wire	[15:0] 		adc_cstart_trig;
 reg	[W_ADC-1:0]	adc_data[0:N_ADC-1];
 
-/* frontpanel links */
-wire	[47:0]		data_wire;
-wire	[15:0]		addr_wire;
-wire	[15:0]		clk17_trig;
-wire	[15:0]		clk50_trig;
+/* oversample filter */
+wire	[15:0]	osf_activate_wire;
+wire	[15:0]	osf_update_en_wire;
+wire	[15:0]	osf_cycle_delay_wire;
+wire	[15:0]	osf_osm_wire;
+
+/* pid core */
+wire	[15:0] 	pid_clear_trig;
+wire	[15:0]	pid_lock_en_wire;
+wire	[15:0] 	pid_setpoint_wire;
+wire	[15:0] 	pid_p_coef_wire;
+wire	[15:0] 	pid_i_coef_wire;
+wire	[15:0] 	pid_d_coef_wire;
+wire	[15:0] 	pid_update_en_wire;
+
+/* router */
+wire	[15:0]	rtr_src_sel_wire;
+wire	[15:0]	rtr_dest_sel_wire;
+wire	[15:0]	rtr_output_active_wire;
+
+/* dds preprocessor */
+wire	[15:0]	opp_max_wire[0:3];
+wire	[15:0]	opp_min_wire[0:3];
+wire	[15:0] 	opp_init_wire[0:3];
+wire	[15:0] 	opp_update_en_wire;
+
+/* dac controller */
+wire	[15:0]	dac_ref_set_trig;
+
+/* all modules */
+wire	[15:0] 	module_update_trig;
+wire	[15:0]	sys_reset_trig;
+
 
 //////////////////////////////////////////
 // combinational logic
@@ -255,47 +285,190 @@ generate
 	end
 endgenerate
 
-/* data wire ins */
-okWireIn data0_owi (
+/* adc controller */
+okWireIn adc_os_owi (
 	.ok1				(ok1),
-	.ep_addr			(data0_wep),
-	.ep_dataout		(data_wire[15:0])
+	.ep_addr			(adc_os_wep),
+	.ep_dataout		(adc_os_wire)
 	);
 
-okWireIn data1_owi (
+okTriggerIn adc_cstart_ti (
 	.ok1				(ok1),
-	.ep_addr			(data1_wep),
-	.ep_dataout		(data_wire[31:16])
-	);
-
-okWireIn data2_owi (
-	.ok1				(ok1),
-	.ep_addr			(data2_wep),
-	.ep_dataout		(data_wire[47:32])
-	);
-
-/* address wire in */
-okWireIn addr_owi (
-	.ok1				(ok1),
-	.ep_addr			(addr_wep),
-	.ep_dataout		(addr_wire)
-	);
-
-/* trigger wire ins */
-okTriggerIn clk17_tep (
-	.ok1				(ok1),
-	.ep_addr			(clk17_tep),
+	.ep_addr			(adc_cstart_tep),
 	.ep_clk			(clk17_in),
-	ep_trigger		(clk17_trig)
+	.ep_trigger		(adc_cstart_trig)
 	);
 
-okTriggerIn clk50_ti (
+/* oversample filter */
+okWireIn osf_activate_owi (
 	.ok1				(ok1),
-	.ep_addr			(clk50_tep),
-	.ep_clk			(clk50_in),
-	.ep_trigger		(clk50_trig)
+	.ep_addr			(osf_activate_wep),
+	.ep_dataout		(osf_activate_wire)
 	);
 
+okWireIn osf_cycle_delay_owi (
+	.ok1				(ok1),
+	.ep_addr			(osf_cycle_delay_wep),
+	.ep_dataout		(osf_cycle_delay_wire)
+	);
 
+okWireIn osf_osm_owi (
+	.ok1				(ok1),
+	.ep_addr			(osf_osm_wep),
+	.ep_dataout		(osf_osm_wire)
+	);
+
+okWireIn osf_update_en_owi (
+	.ok1				(ok1),
+	.ep_addr			(osf_update_en_wep),
+	.ep_dataout		(osf_update_en_wire)
+	);
+
+/* pid core */
+okTriggerIn pid_clear_ti (
+	.ok1				(ok1),
+	.ep_addr			(pid_clear_tep),
+	.ep_clk			(clk50_in),
+	.ep_trigger		(pid_clear_trig)
+	);
+
+okWireIn pid_lock_en_owi (
+	.ok1				(ok1),
+	.ep_addr			(pid_lock_en_wep),
+	.ep_dataout		(pid_lock_en_wire)
+	);
+
+okWireIn pid_setpoint_owi (
+	.ok1				(ok1),
+	.ep_addr			(pid_setpoint_wep),
+	.ep_dataout		(pid_setpoint_wire)
+	);
+
+okWireIn pid_p_coef_owi (
+	.ok1				(ok1),
+	.ep_addr			(pid_p_coef_wep),
+	.ep_dataout		(pid_p_coef_wire)
+	);
+
+okWireIn pid_i_coef_owi (
+	.ok1				(ok1),
+	.ep_addr			(pid_i_coef_wep),
+	.ep_dataout		(pid_i_coef_wire)
+	);
+
+okWireIn pid_d_coef_owi (
+	.ok1				(ok1),
+	.ep_addr			(pid_d_coef_wep),
+	.ep_dataout		(pid_d_coef_wire)
+	);
+
+okWireIn pid_update_en_owi (
+	.ok1				(ok1),
+	.ep_addr			(pid_update_en_wep),
+	.ep_dataout		(pid_update_en_wire)
+	);
+
+/* router */
+okWireIn rtr_src_sel_owi (
+	.ok1				(ok1),
+	.ep_addr			(rtr_src_sel_wep),
+	.ep_dataout		(rtr_src_sel_wire)
+	);
+
+okWireIn rtr_dest_sel_owi (
+	.ok1				(ok1),
+	.ep_addr			(rtr_dest_sel_wep),
+	.ep_dataout		(rtr_dest_sel_wire)
+	);
+
+okWireIn rtr_output_active_owi (
+	.ok1				(ok1),
+	.ep_addr			(rtr_output_active_wep),
+	.ep_dataout		(rtr_output_active_wire)
+	);
+
+/* output preprocessor */
+okWireIn opp_init0_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_init0_wep),
+	.ep_dataout		(opp_init_wire[0])
+	);
+
+okWireIn opp_init1_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_init1_wep),
+	.ep_dataout		(opp_init_wire[1])
+	);
+
+okWireIn opp_init2_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_init2_wep),
+	.ep_dataout		(opp_init_wire[2])
+	);
+
+okWireIn opp_min0_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_min0_wep),
+	.ep_dataout		(opp_min_wire[0])
+	);
+
+okWireIn opp_min1_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_min1_wep),
+	.ep_dataout		(opp_min_wire[1])
+	);
+
+okWireIn opp_min2_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_min2_wep),
+	.ep_dataout		(opp_min_wire[2])
+	);
+
+okWireIn opp_max0_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_max0_wep),
+	.ep_dataout		(opp_max_wire[0])
+	);
+
+okWireIn opp_max1_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_max1_wep),
+	.ep_dataout		(opp_max_wire[1])
+	);
+
+okWireIn opp_max2_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_max2_wep),
+	.ep_dataout		(opp_max_wire[2])
+	);
+
+okWireIn opp_update_en_owi (
+	.ok1				(ok1),
+	.ep_addr			(opp_update_en_wep),
+	.ep_dataout		(opp_update_en_wire)
+	);
+
+/* dac controller */
+okTriggerIn dac_ref_set_ti (
+	.ok1				(ok1),
+	.ep_addr			(dac_ref_set_tep),
+	.ep_clk			(clk50_in),
+	.ep_trigger		(dac_ref_set_trig)
+	);
+
+/* all modules */
+okTriggerIn module_update_ti (
+	.ok1				(ok1),
+	.ep_addr			(module_update_tep),
+	.ep_clk			(clk50_in),
+	.ep_trigger		(module_update_trig)
+	);
+
+okTriggerIn sys_reset_ti (
+	.ok1				(ok1),
+	.ep_addr			(sys_reset_tep),
+	.ep_clk			(clk17_in),
+	.ep_trigger		(sys_reset_trig)
+	);
 
 endmodule
