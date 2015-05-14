@@ -24,6 +24,15 @@ module clk_sync #(
 	);
 
 //////////////////////////////////////////
+// local parameters
+//////////////////////////////////////////
+
+/* state parameters */
+localparam	ST_WAIT_PE	= 3'd0,	// wait for data_valid_rdc to go high
+				ST_SEND		= 3'd1,	// assert data_valid_out synchronous with 50MHz clock
+				ST_WAIT_NE	= 3'd2;	// wait for data_valid_in to go low
+
+//////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
@@ -34,13 +43,8 @@ wire 					data_valid_rdc;
 reg	[N_ADC-1:0]	data_valid = 0;
 
 /* state registers */
-reg	[2:0] 		cur_state = 0;		// state machine current state
-reg	[2:0] 		next_state = 0;	// state machine next state
-
-/* state parameters */
-localparam	ST_WAIT_PE	= 3'd0,	// wait for data_valid_rdc to go high
-				ST_SEND		= 3'd1,	// assert data_valid_out synchronous with 50MHz clock
-				ST_WAIT_NE	= 3'd2;	// wait for data_valid_in to go low
+reg	[2:0] 		cur_state = ST_WAIT_PE;		// state machine current state
+reg	[2:0] 		next_state = ST_WAIT_PE;	// state machine next state
 
 //////////////////////////////////////////
 // combinational logic
