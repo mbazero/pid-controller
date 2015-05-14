@@ -124,10 +124,9 @@ assign dac_sclk_db = clk50_in;
 assign dac_din_db = dac_din_out;
 
 //////////////////////////////////////////
-// internal structures
+// local parameters
 //////////////////////////////////////////
 
-/* parameters */
 localparam N_OUT 					= N_DAC + 3*N_DDS;	// total number of output channels; each dds has three output channels (phase, freq, and amp)
 localparam W_PIDV 				= W_PID + 2;			// width of pid data bus with data valid and lock enable signals
 localparam W_RTR_SEL 			= 4;						// width of router select signal (must be log2(N_DAC) + 1...MSB stores channel activation state)
@@ -136,6 +135,10 @@ localparam W_OSF_OSM				= 6;						// width of oversample mode signal
 localparam W_OSF_CD				= 16;						// width of osf cycle delay signal
 localparam PID_COMP_LATENCY	= 1;						// pid core computation latency
 localparam OPP_COMP_LATENCY	= 1;						// output preprocessor compuation latency
+
+//////////////////////////////////////////
+// internal structures
+//////////////////////////////////////////
 
 /* all modules */
 wire								sys_reset;

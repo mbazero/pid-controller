@@ -4,7 +4,7 @@
 
 /*
 TODO
-- add phase and amp update functionality
+- add phase and amplitude update functionality
 */
 
 module dds_controller(

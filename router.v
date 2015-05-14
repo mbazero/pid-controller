@@ -66,19 +66,19 @@ end
 //////////////////////////////////////////
 
 /* mux array */
-genvar j;
+genvar k;
 generate
-	for ( j = 0; j < N_OUT; j = j+1 ) begin : mux_array
+	for ( k = 0; k < N_OUT; k = k+1 ) begin : mux_array
 		mux_n_chan #(
 			.W_CHAN				(W_CHAN),
 			.W_SEL				(W_SEL),
 			.N_IN					(N_IN))
 		mux_inst (
 			.data_packed_in	(data_packed_in),
-			.chan_select_in	(src_select[j]),
-			.data_out			(mux_data_out[j])
+			.chan_select_in	(src_select[k]),
+			.data_out			(mux_data_out[k])
 			);
-		assign data_out[j] = (output_active[j] == 1) ? mux_data_out[j] : {W_CHAN{1'b0}}; // only pass mux output if output channel is activated
+		assign data_out[k] = (output_active[k] == 1) ? mux_data_out[k] : {W_CHAN{1'b0}}; // only pass mux output if output channel is activated
 	end
 endgenerate
 
