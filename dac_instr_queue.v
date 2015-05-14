@@ -34,7 +34,6 @@ module dac_instr_queue #(
 	output wire								data_valid_out		// output data valid signal
 	);
 
-
 //////////////////////////////////////////
 // local parameters
 //////////////////////////////////////////

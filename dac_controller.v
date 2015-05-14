@@ -37,27 +37,8 @@ module dac_controller #(
 	);
 
 //////////////////////////////////////////
-// internal structures
+// local parameters
 //////////////////////////////////////////
-
-/* dac instruction structures */
-wire	[3:0]	 prefix;
-wire	[3:0]	 control;
-reg	[3:0]	 address;
-reg	[15:0] data;
-wire	[3:0]	 feature;
-wire	[31:0] data_instr;
-wire	[31:0] ref_set_instr; // parallel data instruction
-
-/* data transfer register */
-reg	[31:0]	tx_data;
-
-/* state registers */
-reg	[7:0]		counter;
-reg	[2:0]		cur_state;
-reg	[2:0]		next_state;
-reg				state_is_tx_reg;
-reg				state_is_idle_reg;
 
 /* state parameters */
 localparam	ST_IDLE			= 3'd0,	// idle state: wait for new data
@@ -65,6 +46,27 @@ localparam	ST_IDLE			= 3'd0,	// idle state: wait for new data
 				ST_SYNC_REF		= 3'd2,	// ref set sync state: prepare dac for reference set
 				ST_TX				= 3'd3,	// transmit state: transmit dac update instruction
 				ST_DAC_DONE		= 3'd4;	// dac done state: pusle dac_done signal to indicate operation completion
+
+//////////////////////////////////////////
+// internal structures
+//////////////////////////////////////////
+
+/* dac instruction structures */
+wire	[3:0]	 prefix;
+wire	[3:0]	 control;
+reg	[3:0]	 address = 0;
+reg	[15:0] data = 0;
+wire	[3:0]	 feature;
+wire	[31:0] data_instr;
+wire	[31:0] ref_set_instr; // parallel data instruction
+
+/* data transfer register */
+reg	[31:0]	tx_data = 0;
+
+/* state registers */
+reg	[7:0]		counter = 0;
+reg	[2:0]		cur_state = ST_IDLE;
+reg	[2:0]		next_state = ST_IDLE;
 
 //////////////////////////////////////////
 // combinational logic
@@ -152,14 +154,6 @@ ODDR2 #(
 //////////////////////////////////////////
 // state machine
 //////////////////////////////////////////
-
-/* initial assignments */
-initial begin
-	tx_data		= 0;
-	counter		= 0;
-	cur_state	= ST_IDLE;
-	next_state	= ST_IDLE;
-end
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
