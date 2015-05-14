@@ -45,24 +45,12 @@ module adc_controller #(
    );
 
 //////////////////////////////////////////
-// internal structures
+// local parameters
 //////////////////////////////////////////
 
 /* parameters */
 localparam RD_LENGTH		= W_OUT*(N_CHAN/2);		// bits of data to be read per serial port in a single cycle
 localparam OS_MIN			= 3'b1;						// set minimum oversampling ratio of 2^1 to support 8 channels //DEBUG set back to 1 after testing
-
-/* registers */
-reg	[2:0]					os_cur = OS_INIT;			// active oversampling mode
-
-/* state registers */
-reg	[7:0] 				cv_counter; 	// convert state machine counter
-reg	[2:0] 				cv_cur_state;	// convert state machine current state
-reg	[2:0] 				cv_next_state;	// convert state machine next state
-
-reg	[7:0]					rd_counter;		// read state machine counter
-reg	[2:0]					rd_cur_state;	// read state machine current state
-reg	[2:0]					rd_next_state;	// read state machine next state
 
 /* state parameters */
 localparam	CV_ST_IDLE		= 3'd1,		// wait for module enable signal to begin continuous conversion
@@ -73,6 +61,21 @@ localparam	RD_ST_IDLE		= 3'd1,		// wait for busy signal to begin read
 				RD_ST_READ		= 3'd2,		// read adc data off serial lines
 				RD_ST_WAIT		= 3'd3;		// wait for busy signal to deassert
 
+//////////////////////////////////////////
+// internal structures
+//////////////////////////////////////////
+
+/* registers */
+reg	[2:0]					os_cur = OS_INIT;					// active oversampling mode
+
+/* state registers */
+reg	[7:0] 				cv_counter = 0; 					// convert state machine counter
+reg	[2:0] 				cv_cur_state = CV_ST_IDLE;		// convert state machine current state
+reg	[2:0] 				cv_next_state = CV_ST_IDLE;	// convert state machine next state
+
+reg	[7:0]					rd_counter = 0;					// read state machine counter
+reg	[2:0]					rd_cur_state = RD_ST_IDLE;		// read state machine current state
+reg	[2:0]					rd_next_state = RD_ST_IDLE;	// read state machine next state
 
 //////////////////////////////////////////
 // combinational logic
@@ -195,13 +198,6 @@ assign convst_out = ~( cv_cur_state == CV_ST_CONVST );
 //////////////////////////////////////////
 // read state machine
 //////////////////////////////////////////
-
-/* initial assignments */
-initial begin
-	rd_counter		= 0;
-	rd_cur_state 	= RD_ST_IDLE;
-	rd_next_state 	= RD_ST_IDLE;
-end
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
