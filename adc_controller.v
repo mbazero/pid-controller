@@ -48,18 +48,17 @@ module adc_controller #(
 // local parameters
 //////////////////////////////////////////
 
-/* parameters */
 localparam RD_LENGTH		= W_OUT*(N_CHAN/2);		// bits of data to be read per serial port in a single cycle
 localparam OS_MIN			= 3'b1;						// set minimum oversampling ratio of 2^1 to support 8 channels //DEBUG set back to 1 after testing
 
 /* state parameters */
-localparam	CV_ST_IDLE		= 3'd1,		// wait for module enable signal to begin continuous conversion
-				CV_ST_CONVST 	= 3'd2,		// pulse convert start signal to begin conversion
-				CV_ST_CONV		= 3'd3;		// wait for ADC to finish conversion
+localparam	CV_ST_IDLE		= 3'd0,		// wait for module enable signal to begin continuous conversion
+				CV_ST_CONVST 	= 3'd1,		// pulse convert start signal to begin conversion
+				CV_ST_CONV		= 3'd2;		// wait for ADC to finish conversion
 
-localparam	RD_ST_IDLE		= 3'd1,		// wait for busy signal to begin read
-				RD_ST_READ		= 3'd2,		// read adc data off serial lines
-				RD_ST_WAIT		= 3'd3;		// wait for busy signal to deassert
+localparam	RD_ST_IDLE		= 3'd0,		// wait for busy signal to begin read
+				RD_ST_READ		= 3'd1,		// read adc data off serial lines
+				RD_ST_WAIT		= 3'd2;		// wait for busy signal to deassert
 
 //////////////////////////////////////////
 // internal structures
