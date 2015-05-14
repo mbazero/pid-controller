@@ -95,7 +95,7 @@ module pid_controller_tf;
 	);
 
 	// generate ~17MHz clock
-	always #30 clk17_in = ~clk17_in;
+	//always #30 clk17_in = ~clk17_in;
 
 	// generate 50MHz clock
 	always #10 clk50_in = ~clk50_in;
@@ -115,11 +115,6 @@ module pid_controller_tf;
 		//chan[6] = 7777;
 		//chan[7] = 8888;
 	end
-
-	// misc structures
-	reg [15:0] output_init = 0;
-	reg [15:0] output_min = 0;
-	reg [15:0] output_max = 0;
 
 	reg signed [15:0] setpoint = 0, p_coef = 0, i_coef = 0, d_coef = 0;
 	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
@@ -144,6 +139,12 @@ module pid_controller_tf;
 		data_a_tx = 0;
 		data_b_tx = 0;
 		wire_out = 0;
+		adc_cstart_tf_in = 0;
+
+		// chill out for a bit
+		repeat(4) begin
+			@(posedge clk17_in) #1;
+		end
 
 		// manual trigger adc conversion start
 		@(posedge clk17_in) adc_cstart_tf_in = 1'b1;
@@ -161,7 +162,7 @@ module pid_controller_tf;
 				// set random chan[0] value
 				//chan[0] = $random % 100;
 
-				// simulate serial transmission from adc to fpga
+				// initialize data to be transmitted
 				@(negedge adc_n_cs_out) begin
 					data_a_tx = {chan[0], chan[1], chan[2], chan[3]};
 					data_b_tx = {chan[4], chan[5], chan[6], chan[7]};
@@ -170,7 +171,7 @@ module pid_controller_tf;
 				// wait one cycle before transmitting
 				@(posedge clk17_in);
 
-				// simulate serial data transmission
+				// simulate serial data transmission from adc to fpga
 				repeat (71) begin
 					@(negedge clk17_in)
 					data_a_tx = data_a_tx << 1;

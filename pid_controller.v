@@ -42,7 +42,7 @@ module pid_controller #(
 	parameter T_ADC_CYCLE	= 85,	// adc conversion cycle time in number of adc clock cycles
 
 	// initial values
-	parameter ADC_OS_INIT	= 0,
+	parameter ADC_OS_INIT	= 1,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
 	parameter PID_SETP_INIT = 0,
