@@ -35,12 +35,21 @@ module oversample_filter #(
 	);
 
 //////////////////////////////////////////
-// internal structures
+// local parameters
 //////////////////////////////////////////
 
-/* local params */
 localparam	MAX_OS	= 2^W_OSM - 1;		// maximum log2 oversample ratio
 localparam	W_SUM		= MAX_OS + W_IN;	// width of sum register
+
+/* state parameters */
+localparam	ST_IDLE			= 3'd0,	// wait for channel activation signal
+				ST_DELAY			= 3'd1,	// wait specified number of adc cycles before accepting data (to account for DAC/DDS settling times)
+				ST_SAMPLE		= 3'd2,	// collect adc data and maintain accumulating sum
+				ST_SEND			= 3'd3;	// divide sum by oversample ratio and assert data valid
+
+//////////////////////////////////////////
+// internal structures
+//////////////////////////////////////////
 
 /* wires */
 wire	idle;
@@ -48,20 +57,14 @@ wire	osf_reset;	// local reset signal which is activated by system reset or chan
 
 /* registers */
 reg	[15:0]		cycle_delay = CDLY_INIT;
-reg	[MAX_OS:0]	sample_counter;
+reg	[MAX_OS:0]	sample_counter = 0;
 reg	[W_OSM-1:0]	osm_cur = OSM_INIT;
-reg	[W_SUM-1:0]	sum;
+reg	[W_SUM-1:0]	sum = 0;
 
 /* state registers */
-reg	[15:0]	counter;
-reg	[2:0]		cur_state;
-reg	[2:0]		next_state;
-
-/* state parameters */
-localparam	ST_IDLE			= 3'd0,	// wait for channel activation signal
-				ST_DELAY			= 3'd1,	// wait specified number of adc cycles before accepting data (to account for DAC/DDS settling times)
-				ST_SAMPLE		= 3'd2,	// collect adc data and maintain accumulating sum
-				ST_SEND			= 3'd3;	// divide sum by oversample ratio and assert data valid
+reg	[15:0]	counter = 0;
+reg	[2:0]		cur_state = ST_IDLE;
+reg	[2:0]		next_state = ST_IDLE;
 
 //////////////////////////////////////////
 // combinational logic
@@ -116,13 +119,6 @@ end
 //////////////////////////////////////////
 // state machine
 //////////////////////////////////////////
-
-/* initial assignments */
-initial begin
-	sample_counter	= 0;
-	cur_state		= 0;
-	next_state		= 0;
-end
 
 /* state register */
 always @( posedge clk_in ) begin
