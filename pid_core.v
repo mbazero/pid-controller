@@ -39,15 +39,24 @@ module pid_core #(
    );
 
 //////////////////////////////////////////
-// internal structures
+// local parameters
 //////////////////////////////////////////
 
-/* interal params */
 localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
 localparam MIN_OUTPUT = ~MAX_OUTPUT;
 
+/* state parameters */
+localparam 	ST_IDLE 			= 3'd0,			// module idle, wait for valid data
+				ST_COMPUTE		= 3'd1,			// compute filter output
+				ST_SEND			= 3'd2, 			// send filter data downstream
+				ST_DONE			= 3'd3; 			// cycle complete, latch prev data
+
+//////////////////////////////////////////
+// internal structures
+//////////////////////////////////////////
+
 /* input data */
-reg signed	[W_OUT-1:0]	data;					// active input data
+reg signed	[W_OUT-1:0]	data = 0;					// active input data
 
 /* overflow handling */
 wire 							overflow;
@@ -61,27 +70,22 @@ reg signed	[W_OUT-1:0]	d_coef = D_COEF_INIT;		// active derivative coefficient
 
 /* error signals */
 wire signed	[W_OUT-1:0]	e_cur;				// current error signal
-reg signed	[W_OUT-1:0]	e_prev	[0:1];	// previous two error signals
+reg signed	[W_OUT-1:0]	e_prev_0 = 0;		// most recent previous error signal
+reg signed	[W_OUT-1:0]	e_prev_1 = 0;		// second most recent previous error signal
 
 /* z-transform coefficients */
 wire signed	[W_OUT-1:0]	k1, k2, k3; 		// z-transform coefficients for discrete PID filter
 
 /* control variable (u) cur, prev, and delta vals */
-reg signed	[W_OUT-1:0]	u_prev;				// previous pid filter output
-reg signed	[W_OUT-1:0] u_next; 				// next pid filter output
+reg signed	[W_OUT-1:0]	u_prev = 0;			// previous pid filter output
+reg signed	[W_OUT-1:0] u_next = 0;			// next pid filter output
 wire signed	[W_OUT-1:0] u_cur; 				// current pid filter output
 wire signed	[W_OUT-1:0] delta_u;				// difference between current and previous pid filter outputs
 
 /* state registers */
-reg			[7:0] 		counter; 			// intrastate counter
-reg			[2:0] 		cur_state;			// current state
-reg			[2:0] 		next_state; 		// next state
-
-/* state parameters */
-localparam 	ST_IDLE 			= 3'd0,			// module idle, wait for valid data
-				ST_COMPUTE		= 3'd1,			// compute filter output
-				ST_SEND			= 3'd2, 			// send filter data downstream
-				ST_DONE			= 3'd3; 			// cycle complete, latch prev data
+reg			[7:0] 		counter = 0; 				// intrastate counter
+reg			[2:0] 		cur_state = ST_IDLE;		// current state
+reg			[2:0] 		next_state = ST_IDLE; 	// next state
 
 //////////////////////////////////////////
 // combinational logic
@@ -96,7 +100,7 @@ assign k2					= -p_coef - 2*d_coef;
 assign k3					= d_coef;
 
 /* delta u */
-assign delta_u				= k1*e_cur + k2*e_prev[0] + k3*e_prev[1];
+assign delta_u				= k1*e_cur + k2*e_prev_0 + k3*e_prev_1;
 assign u_cur				= delta_u + u_prev;
 
 /* overflow checking */
@@ -111,13 +115,6 @@ assign data_valid_out	= ( cur_state == ST_SEND );
 // sequential logic
 //////////////////////////////////////////
 
-/* initial values */
-initial begin
-	e_prev[0]	= 0;
-	e_prev[1]	= 0;
-	u_prev		= 0;
-end
-
 /* data register */
 always @ ( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
@@ -131,12 +128,12 @@ end
 always @( posedge clk_in ) begin
 	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
 		u_prev		<= 0;
-		e_prev[0] 	<= 0;
-		e_prev[1]	<= 0;
+		e_prev_0 	<= 0;
+		e_prev_1		<= 0;
 	end else if ( cur_state == ST_DONE ) begin
 		u_prev		<= data_out;
-		e_prev[0]	<= e_cur;
-		e_prev[1]	<= e_prev[0];
+		e_prev_0	<= e_cur;
+		e_prev_1	<= e_prev_0;
 	end
 end
 
@@ -158,13 +155,6 @@ end
 //////////////////////////////////////////
 // state machine
 //////////////////////////////////////////
-
-/* initial assignments */
-initial begin
-	counter		= 0;
-	cur_state 	= ST_IDLE;
-	next_state 	= ST_IDLE;
-end
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
