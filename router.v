@@ -26,6 +26,7 @@ module router #(
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
+
 reg	[W_SEL-1:0]		src_select		[0:N_OUT-1];		// registered source channels
 reg	[N_OUT-1:0]		output_active = ACTV_INIT;			// registed output channel activations
 wire	[W_CHAN-1:0]	mux_data_out	[0:N_OUT-1]; 		// mux output channels
@@ -34,12 +35,31 @@ wire	[W_CHAN-1:0]	data_out			[0:N_OUT-1]; 		// final output channels
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
+
 genvar i;
 generate
 	for ( i = 0; i < N_OUT; i = i+1 ) begin : out_array
 		assign data_packed_out[ i*W_CHAN +: W_CHAN ] = data_out[i];
 	end
 endgenerate
+
+//////////////////////////////////////////
+// sequential logic
+//////////////////////////////////////////
+
+/* initial source select assignments */
+genvar j;
+generate
+	for ( j = 0; j < N_OUT; j = j+1 ) begin : src_select_init
+		initial src_select[j] = 0;
+	end
+endgenerate
+
+/* update frontpanel params */
+always @( posedge update_in ) begin
+	src_select[dest_select_in] <= src_select_in;
+	output_active <= output_active_in;
+end
 
 //////////////////////////////////////////
 // modules
@@ -61,15 +81,5 @@ generate
 		assign data_out[j] = (output_active[j] == 1) ? mux_data_out[j] : {W_CHAN{1'b0}}; // only pass mux output if output channel is activated
 	end
 endgenerate
-
-//////////////////////////////////////////
-// sequential logic
-//////////////////////////////////////////
-
-/* update frontpanel params */
-always @( posedge update_in ) begin
-	src_select[dest_select_in] <= src_select_in;
-	output_active <= output_active_in;
-end
 
 endmodule
