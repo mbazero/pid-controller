@@ -36,11 +36,14 @@ module dac_instr_queue #(
 
 
 //////////////////////////////////////////
-// internal structures
+// local parameters
 //////////////////////////////////////////
 
-/* local parameters */
 localparam W_DINS = W_DATA + W_CHS;							// width of dac write instruction
+
+//////////////////////////////////////////
+// internal structures
+//////////////////////////////////////////
 
 /* upper split data */
 wire [W_DATA*N_CHAN/2-1:0] data_packed_upper;			// upper half of input data bus
@@ -65,8 +68,8 @@ wire [W_CHS-1:0] chan_upper, chan_lower;					// upper and lower channel signals
 wire [W_DINS-1:0] dinstr_upper, dinstr_lower;			// dac instruction signals for upper and lower channels
 
 /* upper channel delay registers */
-reg [W_DINS-1:0] dinstr_upper_reg;
-reg dv_rdc_upper_reg;
+reg [W_DINS-1:0] dinstr_upper_reg = 0;
+reg dv_rdc_upper_reg = 0;
 
 /* fifo wires */
 wire [W_DINS-1:0] fifo_din, fifo_dout;
