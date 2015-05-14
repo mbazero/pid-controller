@@ -3,6 +3,7 @@
 // output_preprocessor -- mba 2014
 
 // TODO
+// - change to pipelined version
 // - clean up overflow checking
 
 module output_preprocessor #(
@@ -28,7 +29,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_max_in,		// output lower bound
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
-	input wire [7:0]			            multiplier_in,		// output multiplication factor
+	input wire 				[7:0]       multiplier_in,		// output multiplication factor
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
@@ -37,17 +38,25 @@ module output_preprocessor #(
 	output wire								data_valid_out		// output data valid signal
    );
 
+//////////////////////////////////////////
+// local parameters
+//////////////////////////////////////////
+
+localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
+localparam MIN_OUTPUT = ~MAX_OUTPUT;
+
+/* state parameters */
+localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
+				ST_COMPUTE		= 3'd1,						// compute filter output
+				ST_SEND			= 3'd2, 						// send filter data downstream
+				ST_DONE			= 3'd3; 						// cycle complete, latch prev data
 
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
-/* interal params */
-localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
-localparam MIN_OUTPUT = ~MAX_OUTPUT;
-
 /* data registers */
-reg signed	[W_OUT-1:0] data_out_prev;					// previous outputed data
+reg signed	[W_OUT-1:0] data_out_prev = 0;			// previous outputed data
 reg signed	[W_OUT-1:0] lock_data_raw = 0;			// raw lock data
 
 /* processing stage */
@@ -65,15 +74,9 @@ reg signed	[W_OUT-1:0] output_init = OINIT_INIT;	// active output initial value
 reg signed	[W_OUT-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
 
 /* state registers */
-reg			[7:0]			counter; 						// intrastate counter
-reg			[2:0]			cur_state;						// current state
-reg			[2:0]			next_state; 					// next state
-
-/* state parameters */
-localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
-				ST_COMPUTE		= 3'd1,						// compute filter output
-				ST_SEND			= 3'd2, 						// send filter data downstream
-				ST_DONE			= 3'd3; 						// cycle complete, latch prev data
+reg			[7:0]			counter = 0; 					// intrastate counter
+reg			[2:0]			cur_state = ST_IDLE;			// current state
+reg			[2:0]			next_state = ST_IDLE;		// next state
 
 //////////////////////////////////////////
 // combinational logic
@@ -152,13 +155,6 @@ end
 //////////////////////////////////////////
 // state machine
 //////////////////////////////////////////
-
-/* initial assignments */
-initial begin
-	counter		= 0;
-	cur_state 	= ST_IDLE;
-	next_state 	= ST_IDLE;
-end
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
