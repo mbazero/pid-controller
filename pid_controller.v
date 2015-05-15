@@ -198,8 +198,6 @@ wire									diq_data_valid;
 /* dac controller */
 wire								dac_ref_set;
 wire								dac_done;
-wire	[W_DAC_DATA-1:0]		dac_data;
-wire	[2:0]						dac_chan;
 
 /* dds controller */
 wire	[N_DDS-1:0]				dds_done;
@@ -441,8 +439,8 @@ dac_cntrl (
 	.din_out				(dac_din_out),
 	.nclr_out			(dac_nclr_out),
 	.dac_done_out		(dac_done),
-	.data_out			(dac_data),
-	.channel_out		(dac_chan)
+	.data_out			(),
+	.channel_out		()
 	);
 
 /* dds preprocessor array */
