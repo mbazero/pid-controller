@@ -138,7 +138,7 @@ end
 /* dac sclk forwarding buffer */
 ODDR2 #(
 	.DDR_ALIGNMENT	("NONE"),
-	.INIT				(1'b1),
+	.INIT				(1'b0),
 	.SRTYPE			("SYNC")
 ) dac_clk_fwd (
 	.Q					(sclk_out),

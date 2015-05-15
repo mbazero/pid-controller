@@ -55,8 +55,6 @@ module pid_controller_tf;
 	wire signed [17:0] pid_data;
 	reg signed [17:0] pid_data_reg;
 	wire pid_dv;
-	wire [15:0] opp_data;
-	wire opp_dv;
 
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
@@ -88,8 +86,6 @@ module pid_controller_tf;
 		//DEBUG
 		.pid_data_out(pid_data),
 		.pid_dv_out(pid_dv),
-		.opp_data_out(opp_data),
-		.opp_dv_out(opp_dv)
 	);
 
 	//------------------------------------------------------------------------
@@ -145,7 +141,7 @@ module pid_controller_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = -22222;
+		chan[0] = 2222;
 		//chan[1] = 2222;
 		//chan[2] = 3333;
 		//chan[3] = 4444;
@@ -173,7 +169,7 @@ module pid_controller_tf;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
 	// simulation params
-	localparam REPS = 10;
+	localparam REPS = 100;
 
 	initial begin : main
 		// Initialize Inputs

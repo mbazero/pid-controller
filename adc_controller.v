@@ -123,7 +123,7 @@ end
 /* adc sclk forwarding buffer */
 ODDR2 #(
 	.DDR_ALIGNMENT	("NONE"),
-	.INIT				(1'b0),
+	.INIT				(1'b1),
 	.SRTYPE			("SYNC")
 ) adc_clk_fwd (
 	.Q					(sclk_out),

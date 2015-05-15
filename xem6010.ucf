@@ -120,10 +120,10 @@ NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_sclk_out" HIGH; # n
 NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_sclk_out" HIGH; # not sure if these vals are correct...
 
 # DAC DEBUG ################################################################
-NET "dac_sclk_db"		LOC="H20"	| IOSTANDARD=LVCMOS33;
-NET "dac_nsync_db"	LOC="H19"	| IOSTANDARD=LVCMOS33;
-NET "dac_din_db"		LOC="F20"	| IOSTANDARD=LVCMOS33;
-NET "dac_nldac_db"	LOC="G17"	| IOSTANDARD=LVCMOS33;
+#NET "dac_sclk_db"		LOC="H20"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nsync_db"	LOC="H19"	| IOSTANDARD=LVCMOS33;
+#NET "dac_din_db"		LOC="F20"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nldac_db"	LOC="G17"	| IOSTANDARD=LVCMOS33;
 
 # DAC DEBUG ################################################################
 #NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;

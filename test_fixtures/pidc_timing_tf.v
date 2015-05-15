@@ -53,11 +53,13 @@ module pidc_timing_tf;
 	wire hi_aa;
 
 	//DEBUG
-	wire signed [17:0] pid_data;
-	reg signed [17:0] pid_data_reg;
+	wire adc_dv;
+	wire cs_dv;
+	wire osf_dv;
 	wire pid_dv;
-	wire [15:0] opp_data;
-	wire opp_dv;
+	wire [17:0] pid_data;
+	wire opp_dac_dv;
+	wire diq_dv;
 
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
@@ -88,10 +90,13 @@ module pidc_timing_tf;
 		.hi_aa(hi_aa),
 		.adc_cstart_tf_in(adc_cstart_tf_in),
 		//DEBUG
-		.pid_data_out(pid_data),
+		.adc_dv_out(adc_dv),
+		.cs_dv_out(cs_dv),
+		.osf_dv_out(osf_dv),
 		.pid_dv_out(pid_dv),
-		.opp_data_out(opp_data),
-		.opp_dv_out(opp_dv)
+		.pid_data_out(pid_data),
+		.opp_dac_dv_out(opp_dac_dv),
+		.diq_dv_out(diq_dv),
 	);
 
 	// generate ~17MHz clock
@@ -106,7 +111,7 @@ module pidc_timing_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = -22222;
+		chan[0] = 2222;
 		//chan[1] = 2222;
 		//chan[2] = 3333;
 		//chan[3] = 4444;

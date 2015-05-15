@@ -102,26 +102,15 @@ module pid_controller #(
 	// inputs <- test fixture
 	input wire							adc_cstart_tf_in,
 
-	//DEBUG
-	output wire [17:0] cs_data_out,
+	// DEBUG
+	output wire adc_dv_out,
 	output wire cs_dv_out,
-	output wire [17:0] pid_data_out,
+	output wire osf_dv_out,
 	output wire pid_dv_out,
-	output wire [15:0] opp_data_out,
-	output wire opp_dv_out,
-
-	//DAC DEBUG
-	output wire							dac_nldac_db,
-	output wire							dac_nsync_db,
-	output wire							dac_sclk_db,
-	output wire							dac_din_db
+	output wire [W_PID-1:0] pid_data_out,
+	output wire opp_dac_dv_out,
+	output wire diq_dv_out
 	);
-
-//DEBUG
-assign dac_nldac_db = dac_nldac_out;
-assign dac_nsync_db = dac_nsync_out;
-assign dac_sclk_db = clk50_in;
-assign dac_din_db = dac_din_out;
 
 //////////////////////////////////////////
 // local parameters
@@ -219,13 +208,14 @@ wire	[N_DDS-1:0]				dds_done;
 // combinational logic
 //////////////////////////////////////////
 
-//DEBUG
-assign cs_data_out = cs_data_a;
+// DEBUG
+assign adc_dv_out = adc_data_valid[0];
 assign cs_dv_out = cs_data_valid[0];
-assign pid_data_out = pid_data[0];
+assign osf_dv_out = osf_data_valid[0];
 assign pid_dv_out = pid_data_valid[0];
-assign opp_data_out = opp_dac_data[0];
-assign opp_dv_out = opp_dac_data_valid[0];
+assign pid_data_out = pid_data[0];
+assign opp_dac_dv_out = opp_dac_data_valid[0];
+assign diq_dv_out = diq_data_valid;
 
 /* output buffer enable */
 assign n_out_buf_en = 1'b0;
