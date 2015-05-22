@@ -56,8 +56,9 @@ module pidc_timing_tf;
 	wire adc_dv;
 	wire cs_dv;
 	wire osf_dv;
+	wire signed [17:0] pid_data;
+	reg signed [17:0] pid_data_reg;
 	wire pid_dv;
-	wire [17:0] pid_data;
 	wire opp_dac_dv;
 	wire diq_dv;
 
@@ -96,7 +97,7 @@ module pidc_timing_tf;
 		.pid_dv_out(pid_dv),
 		.pid_data_out(pid_data),
 		.opp_dac_dv_out(opp_dac_dv),
-		.diq_dv_out(diq_dv),
+		.diq_dv_out(diq_dv)
 	);
 
 	// generate ~17MHz clock

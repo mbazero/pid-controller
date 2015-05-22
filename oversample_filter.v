@@ -8,9 +8,9 @@
 
 module oversample_filter #(
 	// parameters
-	parameter W_IN		= 18,										// width of input data
-	parameter W_OUT	= 18,										// width of output data
-	parameter W_OSM	= 4,										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
+	parameter W_IN			= 18,									// width of input data
+	parameter W_OUT		= 18,									// width of output data
+	parameter W_OSM		= 4,									// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
 	parameter OSM_INIT 	= 0,									// initial oversample mode
 	parameter CDLY_INIT	= 0									// initial cycle delay
 	)(

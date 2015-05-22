@@ -45,6 +45,7 @@ module pid_controller #(
 	parameter ADC_OS_INIT	= 1,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
+	parameter OSF_ACVT_INIT = 1,
 	parameter PID_SETP_INIT = 0,
 	parameter PID_PCF_INIT	= 10,
 	parameter PID_ICF_INIT	= 3,
