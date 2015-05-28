@@ -134,7 +134,7 @@ end
 /* previous data register */
 always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
-		data_out_prev <= 0;
+		data_out_prev <= output_init_in;
 	end else if (( update_in == 1 ) & (update_en_in == 1)) begin
 		data_out_prev <= output_init_in;
 	end else if ( cur_state == ST_DONE ) begin
