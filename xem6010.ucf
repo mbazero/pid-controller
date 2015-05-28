@@ -70,7 +70,7 @@ NET "clk17_in"   LOC="Y11"   | IOSTANDARD="LVCMOS33";
 NET "clk50_in" TNM_NET = "clk50_group";
 NET "clk17_in" TNM_NET = "clk17_group";
 
-TIMESPEC "TS_clk50" = PERIOD "clk50_group" 20 ns HIGH 50%;
+TIMESPEC "TS_clk50" = PERIOD "clk50_group" 33.33 ns HIGH 50%; # 50MHz clock had to be scaled down to 30MHz due to timing issues
 TIMESPEC "TS_clk17" = PERIOD "clk17_group" 60 ns HIGH 50%;
 
 ############################################################################
