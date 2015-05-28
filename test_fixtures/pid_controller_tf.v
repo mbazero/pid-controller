@@ -87,9 +87,9 @@ module pid_controller_tf;
 		.hi_aa(hi_aa),
 		//DEBUG
 		.pid_data_out(pid_data),
-		.pid_dv_out(pid_dv)
+		.pid_dv_out(pid_dv),
 		.opp_dac_data_out(opp_dac_data),
-		.opp_dac_dv(opp_dac_dv)
+		.opp_dac_dv_out(opp_dac_dv)
 	);
 
 	//------------------------------------------------------------------------

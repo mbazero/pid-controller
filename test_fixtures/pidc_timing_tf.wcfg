@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="31" />
+   <WVObjectSize size="32" />
    <wvobject fp_name="/pidc_timing_tf/clk50_in" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk50_in</obj_property>
       <obj_property name="ObjectShortName">clk50_in</obj_property>
@@ -121,6 +121,11 @@
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pidc_timing_tf/opp_dac_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">opp_dac_data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">opp_dac_data[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pidc_timing_tf/opp_dac_dv" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">opp_dac_dv</obj_property>
