@@ -149,7 +149,7 @@ wire	[W_ADC-1:0]				cs_data_b;
 
 /* oversample filter */
 wire	[N_ADC-1:0]				osf_activate;
-wire	[N_ADC-1:0]				osf_activate_dbg = 1;
+wire	[N_ADC-1:0]				osf_activate_dbg = 1; // DEBUG
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
@@ -176,6 +176,7 @@ wire	[W_PIDV*N_OUT-1:0]	rtr_output_packed;
 wire	[W_PID-1:0]				rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
 wire	[N_OUT-1:0]				rtr_lock_en;
+wire	[N_OUT-1:0]				rtr_lock_en_dbg = 1; // DEBUG
 
 /* output preprocessor */
 wire	[N_OUT-1:0]				opp_update_en;
@@ -400,7 +401,7 @@ generate
 			.output_min_in		(opp_min[W_DAC_DATA-1:0]),
 			.output_init_in	(opp_init[W_DAC_DATA-1:0]),
 			.multiplier_in		(opp_multiplier),
-			.lock_en_in			(rtr_lock_en[x]),
+			.lock_en_in			(rtr_lock_en[x] | rtr_lock_en_dbg[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
 			.data_out			(opp_dac_data[x]),
