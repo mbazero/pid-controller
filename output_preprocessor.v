@@ -69,7 +69,7 @@ wire							overflow	[0:1];				// overflow indicator
 
 /* pid parameter registers */
 reg signed 	[W_OUT-1:0] output_max = OMAX_INIT;		// active output upper bound
-reg signed	[W_OUT-1:0] output_min = OMAX_INIT;		// active output lower bound
+reg signed	[W_OUT-1:0] output_min = OMIN_INIT;		// active output lower bound
 reg signed	[W_OUT-1:0] output_init = OINIT_INIT;	// active output initial value
 reg signed	[W_OUT-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
 
