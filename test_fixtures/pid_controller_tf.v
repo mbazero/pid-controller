@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+//`timescale 1ns / 1ps
 
 // pid_controller_tf -- mba 2015
 // PID controller test fixture.
@@ -55,6 +55,8 @@ module pid_controller_tf;
 	wire signed [17:0] pid_data;
 	reg signed [17:0] pid_data_reg;
 	wire pid_dv;
+	wire signed [15:0] opp_dac_data;
+	wire opp_dac_dv;
 
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
@@ -85,7 +87,9 @@ module pid_controller_tf;
 		.hi_aa(hi_aa),
 		//DEBUG
 		.pid_data_out(pid_data),
-		.pid_dv_out(pid_dv),
+		.pid_dv_out(pid_dv)
+		.opp_dac_data_out(opp_dac_data),
+		.opp_dac_dv(opp_dac_dv)
 	);
 
 	//------------------------------------------------------------------------
@@ -141,14 +145,14 @@ module pid_controller_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = 2222;
-		//chan[1] = 2222;
-		//chan[2] = 3333;
-		//chan[3] = 4444;
-		//chan[4] = 5555;
-		//chan[5] = 6666;
-		//chan[6] = 7777;
-		//chan[7] = 8888;
+		chan[0] = 20;
+		chan[1] = 0;
+		chan[2] = 0;
+		chan[3] = 0;
+		chan[4] = 0;
+		chan[5] = 0;
+		chan[6] = 0;
+		chan[7] = 0;
 	end
 
 	// misc structures
@@ -156,7 +160,7 @@ module pid_controller_tf;
 	reg [15:0] output_min = 0;
 	reg [15:0] output_max = 0;
 
-	reg signed [15:0] setpoint = 0, p_coef = 0, i_coef = 0, d_coef = 0;
+	reg signed [15:0] setpoint = 0, p_coef = 10, i_coef = 3, d_coef = 0;
 	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
 	integer i;
 	reg [15:0] pipeOutWord;
@@ -183,71 +187,72 @@ module pid_controller_tf;
 		// Frontpanel reset
 		FrontPanelReset;
 
-		// System reset
-		ActivateTriggerIn(sys_reset_tep, 0);
-
-		// Set ADC oversampling mode
-		SetWireInValue(adc_os_wep, 4, mask);	// os = 0
-
-		UpdateWireIns;
-		ActivateTriggerIn(module_update_tep, 0);
-
-		// Set OSF ratio and activate channel 0
-		SetWireInValue(osf_activate_wep, 16'd1, mask); // set OSF[0] activation
-		SetWireInValue(osf_cycle_delay_wep, 16'd0, mask); // cycle delay = 0
-		SetWireInValue(osf_osm_wep, 16'd0, mask); // log ovr = 0
-		SetWireInValue(osf_update_en_wep, 16'd1, mask); // sensitize OSF channel 0
-
-		UpdateWireIns;
-		ActivateTriggerIn(module_update_tep, 0);
-
-
-		// Set channel 0 PID params
-		setpoint = 0;
-		p_coef = 10;
-		i_coef = 3;
-		d_coef = 2;
-		SetWireInValue(pid_setpoint_wep, setpoint, mask);	// setpoint = 3
-		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
-		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
-		SetWireInValue(pid_d_coef_wep, d_coef, mask);	// d = 0
-		SetWireInValue(pid_update_en_wep, 16'd1, mask);	// sensitize PID channel 0
-
-		UpdateWireIns;
-		ActivateTriggerIn(module_update_tep, 0);
-
-		// Route input channel 0 to output channel 0 and activate output 0
-		SetWireInValue(rtr_src_sel_wep, 16'd0, mask);	// router source
-		SetWireInValue(rtr_dest_sel_wep, 16'd0, mask);	// router destination
-		SetWireInValue(rtr_output_active_wep, 16'd1, mask);	// activate channel 0
-
-		UpdateWireIns;
-		ActivateTriggerIn(module_update_tep, 0);
-
-		// Set channel 0 OPP params
-		output_init = 5000;
-		output_min = 1111;
-		output_max = 9999;
-		SetWireInValue(opp_init0_wep, output_init, mask); // set output init
-		SetWireInValue(opp_min0_wep, output_min, mask); // set output min
-		SetWireInValue(opp_max0_wep, output_max, mask); // set output max
-		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
-
-		UpdateWireIns;
-		ActivateTriggerIn(module_update_tep, 0);
-
-		// trigger adc reference set
-		ActivateTriggerIn(dac_ref_set_tep, 0);
-
-		// activate pid lock 0
-		SetWireInValue(pid_lock_en_wep, 16'd1, mask);
-		UpdateWireIns;
-
-		// activate adc channel 0
-		SetWireInValue(osf_activate_wep, 16'd1, mask);
-		UpdateWireIns;
-
+//		// System reset
+//		ActivateTriggerIn(sys_reset_tep, 0);
+//
+//		// Set ADC oversampling mode
+//		SetWireInValue(adc_os_wep, 4, mask);	// os = 0
+//
+//		UpdateWireIns;
+//		ActivateTriggerIn(module_update_tep, 0);
+//
+//		// Set OSF ratio and activate channel 0
+//		SetWireInValue(osf_activate_wep, 16'd1, mask); // set OSF[0] activation
+//		SetWireInValue(osf_cycle_delay_wep, 16'd0, mask); // cycle delay = 0
+//		SetWireInValue(osf_osm_wep, 16'd0, mask); // log ovr = 0
+//		SetWireInValue(osf_update_en_wep, 16'd1, mask); // sensitize OSF channel 0
+//
+//		UpdateWireIns;
+//		ActivateTriggerIn(module_update_tep, 0);
+//
+//
+//		// Set channel 0 PID params
+//		setpoint = 0;
+//		p_coef = 10;
+//		i_coef = 3;
+//		d_coef = 2;
+//		SetWireInValue(pid_setpoint_wep, setpoint, mask);	// setpoint = 3
+//		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
+//		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
+//		SetWireInValue(pid_d_coef_wep, d_coef, mask);	// d = 0
+//		SetWireInValue(pid_update_en_wep, 16'd1, mask);	// sensitize PID channel 0
+//
+//		UpdateWireIns;
+//		ActivateTriggerIn(module_update_tep, 0);
+//
+//		// Route input channel 0 to output channel 0 and activate output 0
+//		SetWireInValue(rtr_src_sel_wep, 16'd0, mask);	// router source
+//		SetWireInValue(rtr_dest_sel_wep, 16'd0, mask);	// router destination
+//		SetWireInValue(rtr_output_active_wep, 16'd1, mask);	// activate channel 0
+//
+//		UpdateWireIns;
+//		ActivateTriggerIn(module_update_tep, 0);
+//
+//		// Set channel 0 OPP params
+//		output_init = 5000;
+//		output_min = 1111;
+//		output_max = 9999;
+//		SetWireInValue(opp_init0_wep, output_init, mask); // set output init
+//		SetWireInValue(opp_min0_wep, output_min, mask); // set output min
+//		SetWireInValue(opp_max0_wep, output_max, mask); // set output max
+//		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
+//
+//		UpdateWireIns;
+//		ActivateTriggerIn(module_update_tep, 0);
+//
+//		// trigger adc reference set
+//		ActivateTriggerIn(dac_ref_set_tep, 0);
+//
+//		// activate pid lock 0
+//		SetWireInValue(pid_lock_en_wep, 16'd1, mask);
+//		UpdateWireIns;
+//
+//		// activate adc channel 0
+//		SetWireInValue(osf_activate_wep, 16'd1, mask);
+//		UpdateWireIns;
+//
 		// trigger adc cstart
+		#200;
 		ActivateTriggerIn(adc_cstart_tep, 0);
 
 		fork : sim

@@ -110,6 +110,7 @@ module pid_controller #(
 	output wire pid_dv_out,
 	output wire [W_PID-1:0] pid_data_out,
 	output wire opp_dac_dv_out,
+	output wire [W_DAC_DATA-1:0] opp_dac_data_out,
 	output wire diq_dv_out
 	);
 
@@ -215,6 +216,7 @@ assign osf_dv_out = osf_data_valid[0];
 assign pid_dv_out = pid_data_valid[0];
 assign pid_data_out = pid_data[0];
 assign opp_dac_dv_out = opp_dac_data_valid[0];
+assign opp_dac_data_out = opp_dac_data[0];
 assign diq_dv_out = diq_data_valid;
 
 /* output buffer enable */

@@ -57,6 +57,7 @@ module pidc_timing_tf;
 	wire cs_dv;
 	wire osf_dv;
 	wire signed [17:0] pid_data;
+	wire signed [15:0] opp_dac_data;
 	reg signed [17:0] pid_data_reg;
 	wire pid_dv;
 	wire opp_dac_dv;
@@ -89,14 +90,15 @@ module pidc_timing_tf;
 		.hi_out(hi_out),
 		.hi_inout(hi_inout),
 		.hi_aa(hi_aa),
-		.adc_cstart_tf_in(adc_cstart_tf_in),
 		//DEBUG
+		.adc_cstart_tf_in(adc_cstart_tf_in),
 		.adc_dv_out(adc_dv),
 		.cs_dv_out(cs_dv),
 		.osf_dv_out(osf_dv),
 		.pid_dv_out(pid_dv),
 		.pid_data_out(pid_data),
 		.opp_dac_dv_out(opp_dac_dv),
+		.opp_dac_data_out(opp_dac_data),
 		.diq_dv_out(diq_dv)
 	);
 
@@ -112,14 +114,14 @@ module pidc_timing_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = 2222;
-		//chan[1] = 2222;
-		//chan[2] = 3333;
-		//chan[3] = 4444;
-		//chan[4] = 5555;
-		//chan[5] = 6666;
-		//chan[6] = 7777;
-		//chan[7] = 8888;
+		chan[0] = 20;
+		chan[1] = 0;
+		chan[2] = 0;
+		chan[3] = 0;
+		chan[4] = 0;
+		chan[5] = 0;
+		chan[6] = 0;
+		chan[7] = 0;
 	end
 
 	// misc structures
@@ -127,7 +129,7 @@ module pidc_timing_tf;
 	reg [15:0] output_min = 0;
 	reg [15:0] output_max = 0;
 
-	reg signed [15:0] setpoint = 0, p_coef = 0, i_coef = 0, d_coef = 0;
+	reg signed [15:0] setpoint = 0, p_coef = 10, i_coef = 3, d_coef = 0;
 	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
 	integer i;
 	reg [15:0] pipeOutWord;
