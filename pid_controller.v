@@ -45,7 +45,7 @@ module pid_controller #(
 	parameter ADC_OS_INIT	= 1,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
-	parameter OSF_ACVT_INIT = 1,
+	parameter OSF_EN_INIT   = 1,
 	parameter PID_SETP_INIT = 0,
 	parameter PID_PCF_INIT	= 10,
 	parameter PID_ICF_INIT	= 3,
@@ -148,6 +148,7 @@ wire	[W_ADC-1:0]				cs_data_b;
 
 /* oversample filter */
 wire	[N_ADC-1:0]				osf_activate;
+wire	[N_ADC-1:0]				osf_activate_dbg = 1;
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
@@ -304,7 +305,7 @@ generate
 			.data_valid_in		(cs_data_valid[l]),
 			.cycle_delay_in	(osf_cycle_delay),
 			.osm_in				(osf_osm),
-			.activate_in		(osf_activate[l]),
+			.activate_in		(osf_activate[l] | osf_activate_dbg[l]),
 			.update_en_in		(osf_update_en[l]),
 			.update_in			(module_update),
 			.data_out			(osf_data[l]),
