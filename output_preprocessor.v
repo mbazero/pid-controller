@@ -95,7 +95,7 @@ assign proc_stage_pre[1] = proc_stage[0] + data_out_prev;
 
 assign proc_stage_clamped[1] = (data_out_prev[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
 assign overflow[1] = (proc_stage[0][W_OUT-1] == data_out_prev[W_OUT-1])
-						&& (proc_stage_pre[1][W_OUT-1] != proc_stage[0]);
+						&& (proc_stage_pre[1][W_OUT-1] != proc_stage[0][W_OUT-1]);
 assign proc_stage[1] = (overflow[1]) ? proc_stage_clamped[1] : proc_stage_pre[1];
 
 /* stage 2: select output init value if lock is not enabled */
