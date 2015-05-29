@@ -3,6 +3,7 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - consider adding full speed 50MHz DAC/DDS serial clock
 // - compartmentalize PID pipeline for easy swapping of ADC/DAC controllers
 // - maybe add functionality to support simultenous update of all dac channels (nLDAC pin control)
 // - consistency with frontpanel param updating (some modules update on posedge of update signal, some on posedge of clock)

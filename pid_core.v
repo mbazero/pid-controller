@@ -58,10 +58,6 @@ localparam 	ST_IDLE 			= 3'd0,			// module idle, wait for valid data
 /* input data */
 reg signed	[W_OUT-1:0]	data = 0;					// active input data
 
-/* overflow handling */
-wire 							overflow;
-wire signed [W_OUT-1:0]	u_cur_clamped;
-
 /* pid parameters */
 reg signed	[W_OUT-1:0]	setpoint = SETPOINT_INIT;	// active lock setpoint
 reg signed 	[W_OUT-1:0]	p_coef = P_COEF_INIT;		// active proportional coefficient
@@ -76,11 +72,26 @@ reg signed	[W_OUT-1:0]	e_prev_1 = 0;		// second most recent previous error signa
 /* z-transform coefficients */
 wire signed	[W_OUT-1:0]	k1, k2, k3; 		// z-transform coefficients for discrete PID filter
 
-/* control variable (u) cur, prev, and delta vals */
+/* pid products */
+wire signed [W_OUT-1:0] prod1_pre, prod2_pre, prod3_pre;
+wire signed [W_OUT-1:0] prod1_clamped, prod2_clamped, prod3_clamped;
+wire signed [W_OUT-1:0] prod1, prod2, prod3;
+wire							prod1_overflow, prod2_overflow, prod3_overflow;
+
+/* pid sums */
+wire signed [W_OUT-1:0] sum1_pre, sum2_pre;
+wire signed [W_OUT-1:0] sum1_clamped, sum2_clamped;
+wire signed [W_OUT-1:0] sum1, sum2;
+wire							sum1_overflow, sum2_overflow;
+
+/* current pid output */
+wire signed	[W_OUT-1:0] u_cur_pre;
+wire signed [W_OUT-1:0]	u_cur_clamped;
+wire signed [W_OUT-1:0] u_cur;
+wire 							u_cur_overflow;
+
+/* previous pid output */
 reg signed	[W_OUT-1:0]	u_prev = 0;			// previous pid filter output
-reg signed	[W_OUT-1:0] u_next = 0;			// next pid filter output
-wire signed	[W_OUT-1:0] u_cur; 				// current pid filter output
-wire signed	[W_OUT-1:0] delta_u;				// difference between current and previous pid filter outputs
 
 /* state registers */
 reg			[7:0] 		counter = 0; 				// intrastate counter
@@ -99,16 +110,50 @@ assign k1					= p_coef + i_coef + d_coef;
 assign k2					= -p_coef - 2*d_coef;
 assign k3					= d_coef;
 
-/* delta u */
-assign delta_u				= k1*e_cur + k2*e_prev_0 + k3*e_prev_1;
-assign u_cur				= delta_u + u_prev;
+/* compute products */
+assign prod1_pre			= k1 * e_cur;
+assign prod2_pre			= k2 * e_prev_0;
+assign prod3_pre			= k3 * e_prev_1;
 
-/* overflow checking */
-assign overflow 			= (e_cur[W_OUT-1] == u_prev[W_OUT-1])  && (u_prev[W_OUT-1] != u_cur[W_OUT-1]);
+/* overflow check products */
+assign prod1_overflow	= (prod1_pre[W_OUT-1] != e_cur[W_OUT-1]);
+assign prod2_overflow	= (prod2_pre[W_OUT-1] != e_prev_0[W_OUT-1]);
+assign prod3_overflow	= (prod3_pre[W_OUT-1] != e_prev_1[W_OUT-1]);
+
+assign prod1_clamped		= (e_cur[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign prod2_clamped		= (e_prev_0[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign prod3_clamped		= (e_prev_1[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+
+assign prod1 				= (prod1_overflow) ? prod1_clamped : prod1_pre;
+assign prod2				= (prod2_overflow) ? prod2_clamped : prod2_pre;
+assign prod3				= (prod3_overflow) ? prod3_clamped : prod3_pre;
+
+/* compute first pid sum */
+assign sum1_pre			= prod1 + prod2;
+
+/* overflow check first pid sum */
+assign sum1_overflow		= (prod1[W_OUT-1] == prod2[W_OUT-1]) && (sum1_pre[W_OUT-1] != prod1[W_OUT-1]);
+assign sum1_clamped		= (prod1[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign sum1					= (sum1_overflow) ? sum1_clamped : sum1_pre;
+
+/* compute second pid sum */
+assign sum2_pre			= sum1 + prod3;
+
+/* overflow check second pid sum */
+assign sum2_overflow		= (sum1[W_OUT-1] == prod3[W_OUT-1]) && (sum2_pre[W_OUT-1] != sum1[W_OUT-1]);
+assign sum2_clamped		= (sum1[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign sum2					= (sum2_overflow) ? sum2_clamped : sum2_pre;
+
+/* compute new output */
+assign u_cur_pre			= sum2 + u_prev;
+
+/* overflow check new output */
+assign u_cur_overflow 	= (sum2[W_OUT-1] == u_prev[W_OUT-1])  && (u_prev[W_OUT-1] != u_cur_pre[W_OUT-1]);
 assign u_cur_clamped		= (u_prev[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign u_cur				= (u_cur_overflow) ? u_cur_clamped : u_cur_pre;
 
 /* data out */
-assign data_out			= (overflow) ? u_cur_clamped : u_cur;
+assign data_out			= u_cur;
 assign data_valid_out	= ( cur_state == ST_SEND );
 
 //////////////////////////////////////////
@@ -127,11 +172,11 @@ end
 /* previous error and output registers */
 always @( posedge clk_in ) begin
 	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
-		u_prev		<= 0;
-		e_prev_0 	<= 0;
-		e_prev_1		<= 0;
+		u_prev	<= 0;
+		e_prev_0	<= 0;
+		e_prev_1	<= 0;
 	end else if ( cur_state == ST_DONE ) begin
-		u_prev		<= data_out;
+		u_prev	<= data_out;
 		e_prev_0	<= e_cur;
 		e_prev_1	<= e_prev_0;
 	end

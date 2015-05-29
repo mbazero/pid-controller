@@ -11,9 +11,9 @@ module output_preprocessor #(
 	parameter W_IN				= 18,								// width of input data bus
 	parameter W_OUT			= 16,								// width of output data bus
 	parameter COMP_LATENCY	= 3,								// computation latency in clock cycles
-	parameter OMAX_INIT		= 9999,							// initial output upper bound
-	parameter OMIN_INIT		= 1111,							// initial output lower bound
-	parameter OINIT_INIT		= 5000,							// initial output starting value
+	parameter OMAX_INIT		= 52428,							// initial output upper bound
+	parameter OMIN_INIT		= 13107,							// initial output lower bound
+	parameter OUT_INIT		= 39321,							// initial output starting value
 	parameter MULT_INIT		= 1								// initial output multiplier
 	)(
 	// inputs <-- top level entity
@@ -56,7 +56,7 @@ localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
 //////////////////////////////////////////
 
 /* data registers */
-reg signed	[W_OUT-1:0] data_out_prev = OINIT_INIT;// previous outputed data
+reg signed	[W_OUT-1:0] data_out_prev = OUT_INIT;	// previous outputed data
 reg signed	[W_OUT-1:0] lock_data_raw = 0;			// raw lock data
 
 /* processing stage */
@@ -70,7 +70,7 @@ wire							overflow	[0:1];				// overflow indicator
 /* pid parameter registers */
 reg signed 	[W_OUT-1:0] output_max = OMAX_INIT;		// active output upper bound
 reg signed	[W_OUT-1:0] output_min = OMIN_INIT;		// active output lower bound
-reg signed	[W_OUT-1:0] output_init = OINIT_INIT;	// active output initial value
+reg signed	[W_OUT-1:0] output_init = OUT_INIT;		// active output initial value
 reg signed	[W_OUT-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
 
 /* state registers */
