@@ -108,14 +108,7 @@ assign proc_stage[3] = ( proc_stage[2] < output_max ) ? proc_stage[2] : output_m
 assign proc_stage[4] = ( proc_stage[3] > output_min ) ? proc_stage[3] : output_min;
 
 /* data output */
-always @( * ) begin
-	/* convert input data to output width */
-	if ( W_OUT < W_IN ) begin
-		data_out = proc_stage[4][W_IN-1 -: W_OUT]; // discard LSB if output width < input width
-	end else begin
-		data_out = proc_stage[4]; // sign automatically if output width > input width
-	end
-end
+assign data_out = proc_stage[4];
 
 /* data output valid signal */
 assign data_valid_out = ( cur_state == ST_SEND );
@@ -129,7 +122,7 @@ always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		lock_data_raw <= 0;
 	end else if ( ( data_valid_in == 1 ) & ( cur_state == ST_IDLE ) ) begin
-		lock_data_raw <= data_in; // sign automatically if output width > input width
+		lock_data_raw <= data_in >>> (W_IN - W_OUT); // arithmetic right shift input data difference between W_IN and W_OUT
 	end
 end
 
