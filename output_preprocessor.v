@@ -56,7 +56,7 @@ localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
 //////////////////////////////////////////
 
 /* data registers */
-reg signed	[W_OUT-1:0] data_out_prev = 0;			// previous outputed data
+reg signed	[W_OUT-1:0] data_out_prev = OINIT_INIT;// previous outputed data
 reg signed	[W_OUT-1:0] lock_data_raw = 0;			// raw lock data
 
 /* processing stage */
@@ -134,7 +134,7 @@ end
 /* previous data register */
 always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
-		data_out_prev <= output_init_in;
+		data_out_prev <= output_init;
 	end else if (( update_in == 1 ) & (update_en_in == 1)) begin
 		data_out_prev <= output_init_in;
 	end else if ( cur_state == ST_DONE ) begin

@@ -13,7 +13,7 @@ module output_preprocessor #(
 	parameter COMP_LATENCY	= 3,								// computation latency in clock cycles
 	parameter OMAX_INIT		= 9999,							// initial output upper bound
 	parameter OMIN_INIT		= 1111,							// initial output lower bound
-	parameter OINIT_INIT		= 5000,							// initial output starting value
+	parameter OUT_INIT		= 5000,							// initial output starting value
 	parameter MULT_INIT		= 1								// initial output multiplier
 	)(
 	// inputs <-- top level entity
@@ -64,7 +64,7 @@ wire							overflow	[0:1];				// overflow indicator
 /* pid parameter registers */
 reg signed 	[W_OUT-1:0] output_max = OMAX_INIT;		// active output upper bound
 reg signed	[W_OUT-1:0] output_min = OMIN_INIT;		// active output lower bound
-reg signed	[W_OUT-1:0] output_init = OINIT_INIT;	// active output initial value
+reg signed	[W_OUT-1:0] output_init = OUT_INIT;	// active output initial value
 reg signed	[W_OUT-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
 
 //////////////////////////////////////////

@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="55" />
+   <WVObjectSize size="56" />
    <wvobject fp_name="divider139" type="divider">
       <obj_property name="label">ADC INPUT</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -173,6 +173,11 @@
    <wvobject fp_name="/pid_controller_tf/uut/clk50_in" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk50_in</obj_property>
       <obj_property name="ObjectShortName">clk50_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /data_out_prev" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_out_prev[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data_out_prev[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/opp_dac_data_valid[0]" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">[0]</obj_property>
