@@ -114,7 +114,7 @@ module pidc_timing_tf;
 
 	// set channel values
 	initial begin
-		chan[0] = -26214;
+		chan[0] = -655;
 		chan[1] = 0;
 		chan[2] = 0;
 		chan[3] = 0;

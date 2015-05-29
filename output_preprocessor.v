@@ -56,22 +56,22 @@ localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
 //////////////////////////////////////////
 
 /* data registers */
-reg signed	[W_OUT-1:0] data_out_prev = OUT_INIT;	// previous outputed data
-reg signed	[W_OUT-1:0] lock_data_raw = 0;			// raw lock data
+reg signed	[W_IN-1:0] data_out_prev = OUT_INIT;	// previous outputed data
+reg signed	[W_IN-1:0] lock_data_raw = 0;			// raw lock data
 
 /* processing stage */
-wire signed	[W_OUT-1:0] proc_stage [0:4];				// data processing stages
+wire signed	[W_IN-1:0] proc_stage [0:4];				// data processing stages
 
 /* overflow handling */
-wire signed [W_OUT-1:0] proc_stage_pre [0:1];		// processing stage pre overflow check
-wire signed [W_OUT-1:0] proc_stage_clamped [0:1];	// clamped processing stage
+wire signed [W_IN-1:0] proc_stage_pre [0:1];		// processing stage pre overflow check
+wire signed [W_IN-1:0] proc_stage_clamped [0:1];	// clamped processing stage
 wire							overflow	[0:1];				// overflow indicator
 
 /* pid parameter registers */
-reg signed 	[W_OUT-1:0] output_max = OMAX_INIT;		// active output upper bound
-reg signed	[W_OUT-1:0] output_min = OMIN_INIT;		// active output lower bound
-reg signed	[W_OUT-1:0] output_init = OUT_INIT;		// active output initial value
-reg signed	[W_OUT-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
+reg signed 	[W_IN-1:0] output_max = OMAX_INIT;		// active output upper bound
+reg signed	[W_IN-1:0] output_min = OMIN_INIT;		// active output lower bound
+reg signed	[W_IN-1:0] output_init = OUT_INIT;		// active output initial value
+reg signed	[W_IN-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
 
 /* state registers */
 reg			[7:0]			counter = 0; 					// intrastate counter
@@ -108,7 +108,14 @@ assign proc_stage[3] = ( proc_stage[2] < output_max ) ? proc_stage[2] : output_m
 assign proc_stage[4] = ( proc_stage[3] > output_min ) ? proc_stage[3] : output_min;
 
 /* data output */
-assign data_out = proc_stage[4];
+always @( * ) begin
+	/* convert input data to output width */
+	if ( W_OUT < W_IN ) begin
+		data_out = proc_stage[4][W_IN-1 -: W_OUT]; // discard LSB if output width < input width
+	end else begin
+		data_out = proc_stage[4]; // sign automatically if output width > input width
+	end
+end
 
 /* data output valid signal */
 assign data_valid_out = ( cur_state == ST_SEND );
@@ -122,12 +129,7 @@ always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		lock_data_raw <= 0;
 	end else if ( ( data_valid_in == 1 ) & ( cur_state == ST_IDLE ) ) begin
-		/* convert input data to output width */
-		if ( W_OUT < W_IN ) begin
-			lock_data_raw <= data_in[W_IN-1 -: W_OUT]; // discard LSB if output width < input width
-		end else begin
-			lock_data_raw <= data_in; // sign automatically if output width > input width
-		end
+		lock_data_raw <= data_in; // sign automatically if output width > input width
 	end
 end
 
