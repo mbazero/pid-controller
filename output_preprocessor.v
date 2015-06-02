@@ -133,7 +133,7 @@ always @( posedge clk_in ) begin
 	end else if (( update_in == 1 ) & (update_en_in == 1)) begin
 		data_out_prev <= output_init_in;
 	end else if ( cur_state == ST_DONE ) begin
-		data_out_prev <= data_out;
+		data_out_prev <= proc_stage[4];
 	end
 end
 
