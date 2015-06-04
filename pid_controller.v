@@ -32,8 +32,7 @@ module pid_controller #(
 	parameter N_DAC			= 8,	// number of dac channels
 	parameter N_DDS			= 0,	// number of dds channels
 	parameter W_ADC			= 18, // width of adc channels
-	parameter W_OSF			= 18, // width of oversample filter output
-	parameter W_PID			= 18, // width of pid core output
+	parameter W_COMP			= 64, // width of computation registers
 	parameter W_DAC_INST		= 32, // width of dac update instruction
 	parameter W_DDS_FREQ		= 48, // width of dds frequency word
 	parameter W_DDS_PHASE	= 14,	// width of dds phase word
@@ -108,9 +107,9 @@ module pid_controller #(
 	output wire cs_dv_out,
 	output wire osf_dv_out,
 	output wire pid_dv_out,
-	output wire [W_PID-1:0] pid_data_out,
+	output wire [15:0] pid_data_out,
 	output wire opp_dac_dv_out,
-	output wire [W_DAC_DATA-1:0] opp_dac_data_out,
+	output wire [15:0] opp_dac_data_out,
 	output wire diq_dv_out
 	);
 
@@ -119,7 +118,7 @@ module pid_controller #(
 //////////////////////////////////////////
 
 localparam N_OUT 					= N_DAC + 3*N_DDS;	// total number of output channels; each dds has three output channels (phase, freq, and amp)
-localparam W_PIDV 				= W_PID + 2;			// width of pid data bus with data valid and lock enable signals
+localparam W_COMPV 				= W_COMP + 2;			// width of computation data bus with data valid and lock enable signals
 localparam W_RTR_SEL 			= 4;						// width of router select signal (must be log2(N_DAC) + 1...MSB stores channel activation state)
 localparam PIPE_LATENCY 		= 5;						// latency in clock cycles of pipeline
 localparam W_OSF_OSM				= 6;						// width of oversample mode signal
@@ -163,7 +162,7 @@ wire	[15:0]					pid_setpoint;
 wire	[15:0]					pid_p_coef;
 wire	[15:0]					pid_i_coef;
 wire	[15:0]					pid_d_coef;
-wire	[W_PID-1:0]				pid_data[0:N_ADC-1];
+wire	[W_COMP-1:0]			pid_data[0:N_ADC-1];
 wire	[N_ADC-1:0]				pid_data_valid;
 wire	[N_ADC-1:0]				pid_lock_en;
 
@@ -171,9 +170,9 @@ wire	[N_ADC-1:0]				pid_lock_en;
 wire	[W_RTR_SEL-1:0]		rtr_src_sel;
 wire	[W_RTR_SEL-1:0]		rtr_dest_sel;
 wire	[N_OUT-1:0]				rtr_output_active;
-wire	[W_PIDV*N_ADC-1:0]	rtr_input_packed;
-wire	[W_PIDV*N_OUT-1:0]	rtr_output_packed;
-wire	[W_PID-1:0]				rtr_data[0:N_OUT-1];
+wire	[W_COMPV*N_ADC-1:0]	rtr_input_packed;
+wire	[W_COMPV*N_OUT-1:0]	rtr_output_packed;
+wire	[W_COMP-1:0]			rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
 wire	[N_OUT-1:0]				rtr_lock_en;
 wire	[N_OUT-1:0]				rtr_lock_en_dbg = 1; // DEBUG
@@ -227,7 +226,7 @@ assign n_out_buf_en = 1'b0;
 genvar i;
 generate
 	for ( i = 0; i < N_ADC; i = i + 1 ) begin : rtr_in_arr
-		assign rtr_input_packed[ i*W_PIDV +: W_PIDV ] = {pid_lock_en[i], pid_data_valid[i], pid_data[i]};
+		assign rtr_input_packed[ i*W_COMPV +: W_COMPV ] = {pid_lock_en[i], pid_data_valid[i], pid_data[i]};
 	end
 endgenerate
 
@@ -235,9 +234,9 @@ endgenerate
 genvar j;
 generate
 	for ( j = 0; j < N_OUT; j = j + 1 ) begin : rtr_out_arr
-		assign rtr_data[j] 			= rtr_output_packed[ j*W_PIDV +: W_PID ];
-		assign rtr_data_valid[j]	= rtr_output_packed[ j*W_PIDV + W_PID ];
-		assign rtr_lock_en[j]		= rtr_output_packed[ j*W_PIDV + W_PID + 1];
+		assign rtr_data[j] 			= rtr_output_packed[ j*W_COMPV +: W_COMP ];
+		assign rtr_data_valid[j]	= rtr_output_packed[ j*W_COMPV + W_COMP ];
+		assign rtr_lock_en[j]		= rtr_output_packed[ j*W_COMPV + W_COMP + 1];
 	end
 endgenerate
 
@@ -299,8 +298,7 @@ generate
 	for ( l = 0; l < N_ADC/2; l = l + 1 ) begin : osf_array
 		/* osf bank a: draws from adc channel a */
 		oversample_filter #(
-			.W_IN					(W_ADC),
-			.W_OUT				(W_OSF),
+			.W_DATA				(W_ADC),
 			.W_OSM				(W_OSF_OSM),
 			.OSM_INIT			(OSF_OSM_INIT),
 			.CDLY_INIT			(OSF_CDLY_INIT))
@@ -320,9 +318,10 @@ generate
 
 		/* osf bank b: draws from adc channel b */
 		oversample_filter #(
-			.W_IN					(W_ADC),
-			.W_OUT				(W_OSF),
-			.W_OSM				(W_OSF_OSM))
+			.W_DATA				(W_ADC),
+			.W_OSM				(W_OSF_OSM),
+			.OSM_INIT			(OSF_OSM_INIT),
+			.CDLY_INIT			(OSF_CDLY_INIT))
 		ovr_inst_b (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -344,7 +343,7 @@ genvar m;
 generate
 	for ( m = 0; m < N_ADC; m = m + 1 ) begin : pid_array
 		pid_core #(
-			.W_IN					(W_OSF),
+			.W_IN					(W_ADC),
 			.W_COMP				(W_COMP),
 			.COMP_LATENCY		(PID_COMP_LATENCY),
 			.SETPOINT_INIT		(PID_SETP_INIT),
@@ -372,7 +371,7 @@ endgenerate
 
 /* router */
 router #(
-	.W_CHAN				(W_PIDV),
+	.W_CHAN				(W_COMPV),
 	.W_SEL				(W_RTR_SEL),
 	.N_IN					(N_ADC),
 	.N_OUT				(N_OUT))
@@ -396,7 +395,7 @@ genvar x;
 generate
 	for ( x = 0; x < N_DAC; x = x + 1 ) begin : dac_opp_array
 		output_preprocessor #(
-			.W_IN 				(W_PID),
+			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DAC_DATA), // data truncation happens in opp
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		dac_opp (
@@ -466,7 +465,7 @@ generate
 
 		/* frequency output preprocessor */
 		output_preprocessor #(
-			.W_IN 				(W_PID),
+			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_FREQ),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		freq_opp (
@@ -487,7 +486,7 @@ generate
 
 		/* phase output preprocessor */
 		output_preprocessor #(
-			.W_IN 				(W_PID),
+			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_PHASE),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		phase_opp (
@@ -508,7 +507,7 @@ generate
 
 		/* amplitude output preprocessor */
 		output_preprocessor #(
-			.W_IN 				(W_PID),
+			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_AMP),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		amp_opp (
