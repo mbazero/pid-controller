@@ -343,8 +343,12 @@ generate
 	for ( m = 0; m < N_ADC; m = m + 1 ) begin : pid_array
 		pid_core #(
 			.W_IN					(W_OSF),
-			.W_OUT				(W_PID),
-			.COMP_LATENCY		(PID_COMP_LATENCY))
+			.W_COMP				(W_COMP),
+			.COMP_LATENCY		(PID_COMP_LATENCY),
+			.SETPOINT_INIT		(PID_SETP_INIT),
+			.P_COEF_INIT		(PID_PCF_INIT),
+			.D_COEF_INIT		(PID_DCF_INIT),
+			.I_COEF_INIT		(PID_ICF_INIT))
 		pid_inst (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),

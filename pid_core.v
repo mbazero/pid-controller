@@ -8,7 +8,7 @@
 module pid_core #(
 	// parameters
 	parameter W_IN				= 18,							// input data width
-	parameter W_OUT 			= 18,							// output data width
+	parameter W_COMP			= 64,							// computation register width
 	parameter COMP_LATENCY	= 1,							// pid computation latency in clock cycles
 	parameter SETPOINT_INIT	= 0,							// initial setpoint
 	parameter P_COEF_INIT	= 10,							// initial p coefficient
@@ -34,7 +34,7 @@ module pid_core #(
 	input wire								update_in, 		// pulse triggers update of frontpanel parameters
 
 	// outputs -> source mux
-	output wire signed	[W_OUT-1:0]	data_out,		// pid filter output
+	output wire signed	[W_COMP-1:0]	data_out,		// pid filter output
 	output wire								data_valid_out	// output data valid signal
    );
 
@@ -42,7 +42,7 @@ module pid_core #(
 // local parameters
 //////////////////////////////////////////
 
-localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
+localparam MAX_OUTPUT = {1'b0, {W_COMP-1{1'b1}}};
 localparam MIN_OUTPUT = ~MAX_OUTPUT;
 
 /* state parameters */
@@ -56,31 +56,31 @@ localparam 	ST_IDLE 			= 3'd0,			// module idle, wait for valid data
 //////////////////////////////////////////
 
 /* input data */
-reg signed	[W_OUT-1:0]	data = 0;					// active input data
+reg signed	[W_COMP-1:0]	data = 0;					// active input data
 
 /* overflow handling */
 wire 							overflow;
-wire signed [W_OUT-1:0]	u_cur_clamped;
+wire signed [W_COMP-1:0]	u_cur_clamped;
 
 /* pid parameters */
-reg signed	[W_OUT-1:0]	setpoint = SETPOINT_INIT;	// active lock setpoint
-reg signed 	[W_OUT-1:0]	p_coef = P_COEF_INIT;		// active proportional coefficient
-reg signed	[W_OUT-1:0]	i_coef = I_COEF_INIT;		// active integral coefficient
-reg signed	[W_OUT-1:0]	d_coef = D_COEF_INIT;		// active derivative coefficient
+reg signed	[15:0]	setpoint = SETPOINT_INIT;	// active lock setpoint
+reg signed 	[15:0]	p_coef = P_COEF_INIT;		// active proportional coefficient
+reg signed	[15:0]	i_coef = I_COEF_INIT;		// active integral coefficient
+reg signed	[15:0]	d_coef = D_COEF_INIT;		// active derivative coefficient
 
 /* error signals */
-wire signed	[W_OUT-1:0]	e_cur;				// current error signal
-reg signed	[W_OUT-1:0]	e_prev_0 = 0;		// most recent previous error signal
-reg signed	[W_OUT-1:0]	e_prev_1 = 0;		// second most recent previous error signal
+wire signed	[W_COMP-1:0]	e_cur;				// current error signal
+reg signed	[W_COMP-1:0]	e_prev_0 = 0;		// most recent previous error signal
+reg signed	[W_COMP-1:0]	e_prev_1 = 0;		// second most recent previous error signal
 
 /* z-transform coefficients */
-wire signed	[W_OUT-1:0]	k1, k2, k3; 		// z-transform coefficients for discrete PID filter
+wire signed	[W_COMP-1:0]	k1, k2, k3; 		// z-transform coefficients for discrete PID filter
 
 /* control variable (u) cur, prev, and delta vals */
-reg signed	[W_OUT-1:0]	u_prev = 0;			// previous pid filter output
-reg signed	[W_OUT-1:0] u_next = 0;			// next pid filter output
-wire signed	[W_OUT-1:0] u_cur; 				// current pid filter output
-wire signed	[W_OUT-1:0] delta_u;				// difference between current and previous pid filter outputs
+reg signed	[W_COMP-1:0]	u_prev = 0;			// previous pid filter output
+reg signed	[W_COMP-1:0] u_next = 0;			// next pid filter output
+wire signed	[W_COMP-1:0] u_cur; 				// current pid filter output
+wire signed	[W_COMP-1:0] delta_u;				// difference between current and previous pid filter outputs
 
 /* state registers */
 reg			[7:0] 		counter = 0; 				// intrastate counter
@@ -104,8 +104,8 @@ assign delta_u				= k1*e_cur + k2*e_prev_0 + k3*e_prev_1;
 assign u_cur				= delta_u + u_prev;
 
 /* overflow checking */
-assign overflow 			= (e_cur[W_OUT-1] == u_prev[W_OUT-1])  && (u_prev[W_OUT-1] != u_cur[W_OUT-1]);
-assign u_cur_clamped		= (u_prev[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign overflow 			= (e_cur[W_COMP-1] == u_prev[W_COMP-1])  && (u_prev[W_COMP-1] != u_cur[W_COMP-1]);
+assign u_cur_clamped		= (u_prev[W_COMP-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
 
 /* data out */
 assign data_out			= (overflow) ? u_cur_clamped : u_cur;
