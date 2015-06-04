@@ -10,6 +10,8 @@ module pid_core #(
 	parameter W_IN				= 18,							// input data width
 	parameter W_COMP			= 64,							// computation register width
 	parameter COMP_LATENCY	= 1,							// pid computation latency in clock cycles
+
+	// initial values
 	parameter SETPOINT_INIT	= 0,							// initial setpoint
 	parameter P_COEF_INIT	= 10,							// initial p coefficient
 	parameter I_COEF_INIT	= 3,							// initial i coefficient

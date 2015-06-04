@@ -258,7 +258,8 @@ endgenerate
 adc_controller #(
 	.W_OUT				(W_ADC),
 	.N_CHAN				(N_ADC),
-	.MIN_T_CYCLE		(T_ADC_CYCLE))
+	.MIN_T_CYCLE		(T_ADC_CYCLE),
+	.OS_INIT				(ADC_OS_INIT))
 adc_cont (
 	.clk_in				(clk17_in),
 	.reset_in			(sys_reset),
