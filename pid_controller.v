@@ -46,7 +46,6 @@ module pid_controller #(
 	parameter ADC_OS_INIT	= 1,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
-	parameter OSF_EN_INIT   = 1,
 	parameter PID_SETP_INIT = 0,
 	parameter PID_PCF_INIT	= 10,
 	parameter PID_ICF_INIT	= 3,
@@ -302,7 +301,9 @@ generate
 		oversample_filter #(
 			.W_IN					(W_ADC),
 			.W_OUT				(W_OSF),
-			.W_OSM				(W_OSF_OSM))
+			.W_OSM				(W_OSF_OSM),
+			.OSM_INIT			(OSF_OSM_INIT),
+			.CDLY_INIT			(OSF_CDLY_INIT))
 		ovr_inst_a (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),

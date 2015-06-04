@@ -8,30 +8,29 @@
 
 module oversample_filter #(
 	// parameters
-	parameter W_IN			= 18,									// width of input data
-	parameter W_OUT		= 18,									// width of output data
-	parameter W_OSM		= 4,									// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
-	parameter OSM_INIT 	= 0,									// initial oversample mode
-	parameter CDLY_INIT	= 0									// initial cycle delay
+	parameter W_DATA		= 18,										// width of input data
+	parameter W_OSM		= 4,										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
+	parameter OSM_INIT 	= 0,										// initial oversample mode
+	parameter CDLY_INIT	= 0										// initial cycle delay
 	)(
 	// inputs <- top level entity
-	input wire								clk_in,				// system clock
-	input wire								reset_in,			// system reset
+	input wire									clk_in,				// system clock
+	input wire									reset_in,			// system reset
 
 	// inputs <- pid core
-	input wire signed		[W_IN-1:0]	data_in,				// input data
-	input wire								data_valid_in,		// input data valid signal; asynchronous timing supported
+	input wire signed		[W_DATA-1:0]	data_in,				// input data
+	input wire									data_valid_in,		// input data valid signal; asynchronous timing supported
 
 	// inputs <- frontpanel controller
-	input wire				[15:0]		cycle_delay_in,	// delay period in adc cycles
-	input wire				[W_OSM-1:0]	osm_in,				// oversample mode (log base 2 of the oversample ratio)
-	input wire								activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
-	input wire								update_en_in,		// sensitizes module to update signal
-	input wire								update_in,			// pulse triggers update of frontpanel parameters
+	input wire				[15:0]			cycle_delay_in,	// delay period in adc cycles
+	input wire				[W_OSM-1:0]		osm_in,				// oversample mode (log base 2 of the oversample ratio)
+	input wire									activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
+	input wire									update_en_in,		// sensitizes module to update signal
+	input wire									update_in,			// pulse triggers update of frontpanel parameters
 
 	// outputs -> clk sync
-	output wire signed	[W_OUT-1:0]	data_out,			// output data
-	output wire								data_valid_out		// output data valid signal
+	output wire signed	[W_DATA-1:0]	data_out,			// output data
+	output wire									data_valid_out		// output data valid signal
 	);
 
 //////////////////////////////////////////
@@ -39,7 +38,7 @@ module oversample_filter #(
 //////////////////////////////////////////
 
 localparam	MAX_OS	= 2^W_OSM - 1;		// maximum log2 oversample ratio
-localparam	W_SUM		= MAX_OS + W_IN;	// width of sum register
+localparam	W_SUM		= MAX_OS + W_DATA;	// width of sum register
 
 /* state parameters */
 localparam	ST_IDLE			= 3'd0,	// wait for channel activation signal
