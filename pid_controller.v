@@ -201,6 +201,7 @@ wire	[W_DDS_FREQ-1:0]		opp_freq_data[0:N_DDS-1];
 wire	[W_DDS_PHASE-1:0]		opp_phase_data[0:N_DDS-1];
 wire	[W_DDS_AMP-1:0]		opp_amp_data[0:N_DDS-1];
 wire	[N_DAC-1:0]				opp_dac_data_valid;
+wire	[N_DAC-1:0]				opp_dac_data_sign;
 wire	[N_DDS-1:0]				opp_freq_data_valid;
 wire	[N_DDS-1:0]				opp_phase_data_valid;
 wire	[N_DDS-1:0]				opp_amp_data_valid;
@@ -412,7 +413,7 @@ generate
 	for ( x = 0; x < N_DAC; x = x + 1 ) begin : dac_opp_array
 		output_preprocessor #(
 			.W_IN 				(W_COMP),
-			.W_OUT 				(W_DAC_DATA), // data truncation happens in opp
+			.W_OUT 				(W_DAC_DATA + 1), // opp output is signed, so dac opp output width must be 1 greater than dac data width
 			.W_MLT				(W_OPP_MLT),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		dac_opp (
@@ -420,14 +421,14 @@ generate
 			.reset_in			(sys_reset),
 			.pid_sum_in			(rtr_data[x]),
 			.data_valid_in		(rtr_data_valid[x]),
-			.output_max_in		(opp_max[W_DAC_DATA-1:0]),
-			.output_min_in		(opp_min[W_DAC_DATA-1:0]),
-			.output_init_in	(opp_init[W_DAC_DATA-1:0]),
+			.output_max_in		(opp_max[W_DAC_DATA:0]),
+			.output_min_in		(opp_min[W_DAC_DATA:0]),
+			.output_init_in	(opp_init[W_DAC_DATA:0]),
 			.multiplier_in		(opp_multiplier),
 			.lock_en_in			(rtr_lock_en[x] | rtr_lock_en_dbg[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
-			.data_out			(opp_dac_data[x]),
+			.data_out			({opp_dac_data_sign[x], opp_dac_data[x]}),
 			.data_valid_out	(opp_dac_data_valid[x])
 			);
 	end

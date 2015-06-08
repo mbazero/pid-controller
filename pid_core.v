@@ -111,9 +111,9 @@ assign delta_u				= k1*e_cur + k2*e_prev_0 + k3*e_prev_1;
 assign u_cur				= delta_u + u_prev;
 
 /* check for overflow */
-assign overflow 			= (delta_u[$high(delta_u)] == u_prev[$high(u_prev)])
-									&& (u_prev[$high(u_prev)] != u_cur[$high(u_cur)]);
-assign u_cur_rail			= (u_prev[$high(u_prev)] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign overflow 			= (delta_u[W_OUT-1] == u_prev[W_OUT-1])
+									&& (u_prev[W_OUT-1] != u_cur[W_OUT-1]);
+assign u_cur_rail			= (u_prev[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
 
 /* data out */
 assign data_out			= ( overflow ) ? u_cur_rail : u_cur;
