@@ -36,6 +36,7 @@ module pid_controller #(
 	parameter W_ADC			= 18, // width of adc channels
 	parameter W_COMP			= 64, // width of computation registers
 	parameter W_EP				= 16, // width of opal kelly endpoint
+	parameter W_OPP_MLT		= 8,	// width of opp multiplication factor
 	parameter W_DAC_INST		= 32, // width of dac update instruction
 	parameter W_DDS_FREQ		= 48, // width of dds frequency word
 	parameter W_DDS_PHASE	= 14,	// width of dds phase word
@@ -164,7 +165,7 @@ wire	[N_ADC-1:0]				osf_activate_dbg = 1; // DEBUG
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
-wire	[W_OSF-1:0]				osf_data[0:N_ADC-1];
+wire	[W_ADC-1:0]				osf_data[0:N_ADC-1];
 wire	[N_ADC-1:0]				osf_data_valid;
 
 /* pid core */
@@ -226,7 +227,7 @@ assign adc_dv_out = adc_data_valid[0];
 assign cs_dv_out = cs_data_valid[0];
 assign osf_dv_out = osf_data_valid[0];
 assign pid_dv_out = pid_data_valid[0];
-assign pid_data_out = pid_data[0];
+assign pid_data_out = pid_data[0][15:0];
 assign opp_dac_dv_out = opp_dac_data_valid[0];
 assign opp_dac_data_out = opp_dac_data[0];
 assign diq_dv_out = diq_data_valid;
@@ -417,7 +418,7 @@ generate
 		dac_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
-			.data_in				(rtr_data[x]),
+			.pid_sum_in			(rtr_data[x]),
 			.data_valid_in		(rtr_data_valid[x]),
 			.output_max_in		(opp_max[W_DAC_DATA-1:0]),
 			.output_min_in		(opp_min[W_DAC_DATA-1:0]),
@@ -488,7 +489,7 @@ generate
 		freq_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
-			.data_in				(rtr_data[F]),
+			.pid_sum_in			(rtr_data[F]),
 			.data_valid_in		(rtr_data_valid[F]),
 			.update_en_in		(opp_update_en[F]),
 			.update_in			(module_update),
@@ -510,7 +511,7 @@ generate
 		phase_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
-			.data_in				(rtr_data[P]),
+			.pid_sum_in			(rtr_data[P]),
 			.data_valid_in		(rtr_data_valid[P]),
 			.update_en_in		(opp_update_en[P]),
 			.update_in			(module_update),
@@ -532,7 +533,7 @@ generate
 		amp_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
-			.data_in				(rtr_data[A]),
+			.pid_sum_in			(rtr_data[A]),
 			.data_valid_in		(rtr_data_valid[A]),
 			.update_en_in		(opp_update_en[A]),
 			.update_in			(module_update),

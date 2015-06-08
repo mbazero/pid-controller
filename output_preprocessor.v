@@ -67,11 +67,6 @@ wire signed [W_IN+W_MLT:0]		proc_stage_1,
 										proc_stage_3,
 										proc_stage_4;
 
-/* overflow handling */
-wire signed [W_IN-1:0]	proc_stage_pre[0:1];				// processing stage pre overflow check
-wire signed [W_IN-1:0]	proc_stage_clamped[0:1];		// clamped processing stage
-wire							overflow[0:1];						// overflow indicator
-
 /* pid parameter registers */
 reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
 reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
@@ -128,7 +123,7 @@ always @( posedge clk_in ) begin
 	end else if (( update_in == 1 ) & (update_en_in == 1)) begin
 		data_out_prev <= output_init_in;
 	end else if ( cur_state == ST_DONE ) begin
-		data_out_prev <= proc_stage[4];
+		data_out_prev <= data_out;
 	end
 end
 

@@ -51,13 +51,6 @@ module pid_controller_tf;
 	wire [15:0] hi_inout;
 	wire hi_aa;
 
-	//DEBUG
-	wire signed [17:0] pid_data;
-	reg signed [17:0] pid_data_reg;
-	wire pid_dv;
-	wire signed [15:0] opp_dac_data;
-	wire opp_dac_dv;
-
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
 		.clk50_in(clk50_in),
@@ -84,12 +77,7 @@ module pid_controller_tf;
 		.hi_in(hi_in),
 		.hi_out(hi_out),
 		.hi_inout(hi_inout),
-		.hi_aa(hi_aa),
-		//DEBUG
-		.pid_data_out(pid_data),
-		.pid_dv_out(pid_dv),
-		.opp_dac_data_out(opp_dac_data),
-		.opp_dac_dv_out(opp_dac_dv)
+		.hi_aa(hi_aa)
 	);
 
 	//------------------------------------------------------------------------
@@ -161,7 +149,8 @@ module pid_controller_tf;
 	reg [15:0] output_max = 0;
 
 	reg signed [15:0] setpoint = 0, p_coef = 10, i_coef = 3, d_coef = 0;
-	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
+	reg signed [63:0] pid_data_reg = 0, error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
+	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
 	integer i;
 	reg [15:0] pipeOutWord;
 	reg signed [15:0] wireOutValue;
@@ -301,7 +290,7 @@ module pid_controller_tf;
 			// check pid value
 			repeat(REPS) begin
 				@(posedge pid_dv) begin
-					pid_data_reg = pid_data;
+					pid_data_reg = pid_controller_tf.uut.pid_data[0];
 					e_count = e_count + 1;
 					error = setpoint - chan[0];
 					#1;

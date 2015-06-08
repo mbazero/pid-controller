@@ -101,7 +101,7 @@ assign e_cur				= setpoint - data;
 
 /* compute z-transform coefficients */
 assign k1					= p_coef + i_coef + d_coef;
-assign k2					= -p_coef - 2*d_coef;
+assign k2					= -p_coef - (d_coef << 2);
 assign k3					= d_coef;
 
 /* compute delta u */
