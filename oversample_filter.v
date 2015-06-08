@@ -4,11 +4,11 @@
 
 // todo
 // - pull channel activation and deactivation out to a seperate module
-//		> (actually if you switch to pipeline it is very likely that activation/deactivation will be handled by an entirely different method)
 
 module oversample_filter #(
 	// parameters
 	parameter W_DATA		= 18,										// width of input data
+	parameter W_EP			= 16,										// width of opal kelly endpoint
 	parameter W_OSM		= 4,										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
 	parameter OSM_INIT 	= 0,										// initial oversample mode
 	parameter CDLY_INIT	= 0										// initial cycle delay
@@ -22,7 +22,7 @@ module oversample_filter #(
 	input wire									data_valid_in,		// input data valid signal; asynchronous timing supported
 
 	// inputs <- frontpanel controller
-	input wire				[15:0]			cycle_delay_in,	// delay period in adc cycles
+	input wire				[W_EP-1:0]		cycle_delay_in,	// delay period in adc cycles
 	input wire				[W_OSM-1:0]		osm_in,				// oversample mode (log base 2 of the oversample ratio)
 	input wire									activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
 	input wire									update_en_in,		// sensitizes module to update signal
@@ -37,14 +37,14 @@ module oversample_filter #(
 // local parameters
 //////////////////////////////////////////
 
-localparam	MAX_OS	= 2^W_OSM - 1;		// maximum log2 oversample ratio
-localparam	W_SUM		= MAX_OS + W_DATA;	// width of sum register
+localparam	MAX_OS	= 2^W_OSM - 1;								// maximum log2 oversample ratio
+localparam	W_SUM		= MAX_OS + W_DATA;						// width of sum register
 
 /* state parameters */
-localparam	ST_IDLE			= 3'd0,	// wait for channel activation signal
-				ST_DELAY			= 3'd1,	// wait specified number of adc cycles before accepting data (to account for DAC/DDS settling times)
-				ST_SAMPLE		= 3'd2,	// collect adc data and maintain accumulating sum
-				ST_SEND			= 3'd3;	// divide sum by oversample ratio and assert data valid
+localparam	ST_IDLE			= 3'd0,								// wait for channel activation signal
+				ST_DELAY			= 3'd1,								// wait specified number of adc cycles before accepting data (to account for DAC/DDS settling times)
+				ST_SAMPLE		= 3'd2,								// collect adc data and maintain accumulating sum
+				ST_SEND			= 3'd3;								// divide sum by oversample ratio and assert data valid
 
 //////////////////////////////////////////
 // internal structures
@@ -52,10 +52,10 @@ localparam	ST_IDLE			= 3'd0,	// wait for channel activation signal
 
 /* wires */
 wire	idle;
-wire	osf_reset;	// local reset signal which is activated by system reset or channel deactive
+wire	osf_reset;														// local reset signal which is activated by system reset or channel deactive
 
 /* registers */
-reg	[15:0]		cycle_delay = CDLY_INIT;
+reg	[W_EP-1:0]	cycle_delay = CDLY_INIT;
 reg	[MAX_OS:0]	sample_counter = 0;
 reg	[W_OSM-1:0]	osm_cur = OSM_INIT;
 reg	[W_SUM-1:0]	sum = 0;

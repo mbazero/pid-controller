@@ -35,6 +35,7 @@ qt_app = QApplication(sys.argv)
 
 '''
 TODO
+- automatic interal reference setting
 - change plot x-axis so current time 0 is on right
 - implement algorithm to determine the focused channel in the tab layout
 - add lock that restricts access to FPGA to one thread

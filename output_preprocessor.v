@@ -8,11 +8,11 @@
 
 module output_preprocessor #(
 	// parameters
-	parameter W_IN				= 18,								// width of input data bus
+	parameter W_IN				= 64,								// width of input data bus
 	parameter W_OUT			= 16,								// width of output data bus
-	parameter COMP_LATENCY	= 3,								// computation latency in clock cycles
-	parameter OMAX_INIT		= 52428,							// initial output upper bound
-	parameter OMIN_INIT		= 13107,							// initial output lower bound
+	parameter COMP_LATENCY	= 1,								// computation latency in clock cycles
+	parameter MAX_INIT		= 52428,							// initial output upper bound
+	parameter MIN_INIT		= 13107,							// initial output lower bound
 	parameter OUT_INIT		= 39321,							// initial output starting value
 	parameter MULT_INIT		= 1								// initial output multiplier
 	)(
@@ -21,9 +21,9 @@ module output_preprocessor #(
 	input wire								reset_in, 			// system reset
 
 	// inputs <-- mux
-	input wire signed		[W_IN-1:0]	data_in,				// input data bus
+	input wire signed		[W_IN-1:0]	pid_sum_in,			// pid sum
 	input wire								data_valid_in,		// data valid signal
-	input wire								lock_en_in,			// lock enable signal, opp outputs constant value if lock disables
+	input wire								lock_en_in,			// lock enable signal, opp outputs constant value if lock disabled
 
 	// inputs <-- frontpanel controller
 	input wire signed		[W_OUT-1:0]	output_max_in,		// output lower bound
@@ -33,7 +33,7 @@ module output_preprocessor #(
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
-	// outputs <-- dds controller or dac instruction queue
+	// outputs --> dds or dac
 	output wire	signed	[W_OUT-1:0]	data_out,			// output data
 	output wire								data_valid_out		// output data valid signal
    );
@@ -46,48 +46,48 @@ localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
 localparam MIN_OUTPUT = ~MAX_OUTPUT;
 
 /* state parameters */
-localparam 	ST_IDLE 			= 3'd0,						// module idle, wait for valid data
-				ST_COMPUTE		= 3'd1,						// compute filter output
-				ST_SEND			= 3'd2, 						// send filter data downstream
-				ST_DONE			= 3'd3; 						// cycle complete, latch prev data
+localparam 	ST_IDLE 			= 3'd0,							// module idle, wait for valid data
+				ST_COMPUTE		= 3'd1,							// compute filter output
+				ST_SEND			= 3'd2, 							// send filter data downstream
+				ST_DONE			= 3'd3; 							// cycle complete, latch prev data
 
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
 /* data registers */
-reg signed	[W_IN-1:0] data_out_prev = OUT_INIT;	// previous outputed data
-reg signed	[W_IN-1:0] lock_data_raw = 0;			// raw lock data
+reg signed	[W_OUT-1:0]	data_out_prev = OUT_INIT;		// previous outputed data
+reg signed	[W_IN-1:0]	pid_sum = 0;						// raw lock data
 
 /* processing stage */
-wire signed	[W_IN-1:0] proc_stage [0:4];				// data processing stages
+wire signed	[W_IN-1:0]	proc_stage [0:4];					// data processing stages
 
 /* overflow handling */
-wire signed [W_IN-1:0] proc_stage_pre [0:1];		// processing stage pre overflow check
-wire signed [W_IN-1:0] proc_stage_clamped [0:1];	// clamped processing stage
-wire							overflow	[0:1];				// overflow indicator
+wire signed [W_IN-1:0]	proc_stage_pre [0:1];			// processing stage pre overflow check
+wire signed [W_IN-1:0]	proc_stage_clamped [0:1];		// clamped processing stage
+wire							overflow	[0:1];					// overflow indicator
 
 /* pid parameter registers */
-reg signed 	[W_IN-1:0] output_max = OMAX_INIT;		// active output upper bound
-reg signed	[W_IN-1:0] output_min = OMIN_INIT;		// active output lower bound
-reg signed	[W_IN-1:0] output_init = OUT_INIT;		// active output initial value
-reg signed	[W_IN-1:0]	multiplier = MULT_INIT; 	// active output multiplication factor
+reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
+reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
+reg signed	[W_OUT-1:0]	output_init = OUT_INIT;			// active output initial value
+reg signed	[7:0]			multiplier = MULT_INIT; 		// active output multiplication factor
 
 /* state registers */
-reg			[7:0]			counter = 0; 					// intrastate counter
-reg			[2:0]			cur_state = ST_IDLE;			// current state
-reg			[2:0]			next_state = ST_IDLE;		// next state
+reg			[7:0]			counter = 0; 						// intrastate counter
+reg			[2:0]			cur_state = ST_IDLE;				// current state
+reg			[2:0]			next_state = ST_IDLE;			// next state
 
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
 
 //// lock data processing ////
-/* stage 0: multiply lock data by specified factor */
-assign proc_stage_pre[0] = lock_data_raw * multiplier;
+/* stage 0: multiply pid data */
+assign proc_stage_pre[0] = pid_sum * multiplier;
 
-assign proc_stage_clamped[0] = (lock_data_raw[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
-assign overflow[0] = lock_data_raw[W_OUT-1] != proc_stage_pre[0][W_OUT-1];
+assign proc_stage_clamped[0] = (pid_sum[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign overflow[0] = pid_sum[W_OUT-1] != proc_stage_pre[0][W_OUT-1];
 assign proc_stage[0] = (overflow[0]) ? proc_stage_clamped[0] : proc_stage_pre[0];
 
 /* stage 1: add lock data to previous outputed data value */
@@ -120,9 +120,9 @@ assign data_valid_out = ( cur_state == ST_SEND );
 /* data register */
 always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
-		lock_data_raw <= 0;
+		pid_sum <= 0;
 	end else if ( ( data_valid_in == 1 ) & ( cur_state == ST_IDLE ) ) begin
-		lock_data_raw <= data_in >>> (W_IN - W_OUT); // arithmetic right shift input data difference between W_IN and W_OUT
+		pid_sum <= pid_sum_in;
 	end
 end
 

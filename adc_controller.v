@@ -14,7 +14,7 @@ module adc_controller #(
 	parameter W_OUT			= 18,						// width of adc data channels
 	parameter N_CHAN			= 8,						// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
 	parameter MIN_T_CYCLE	= 85,						// minimum cycle time in number of adc clock cycles
-	/* adc data sheet lists the min cycle time as 5us. max adc clock rate is 17MHz. 5us*17M = 85 */
+																// adc data sheet lists the min cycle time as 5us. max adc clock rate is 17MHz. 5us*17M = 85
 	parameter OS_INIT			= 1						// initial oversample mode
 	)(
 	// inputs <- top level entity

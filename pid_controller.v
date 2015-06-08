@@ -3,6 +3,8 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - add ability for manual override to set dds/dac output statically
+// - add ability to update phase, freq, and amp simulatenously
 // - consider adding full speed 50MHz DAC/DDS serial clock
 // - compartmentalize PID pipeline for easy swapping of ADC/DAC controllers
 // - maybe add functionality to support simultenous update of all dac channels (nLDAC pin control)
@@ -33,6 +35,7 @@ module pid_controller #(
 	parameter N_DDS			= 0,	// number of dds channels
 	parameter W_ADC			= 18, // width of adc channels
 	parameter W_COMP			= 64, // width of computation registers
+	parameter W_EP				= 16, // width of opal kelly endpoint
 	parameter W_DAC_INST		= 32, // width of dac update instruction
 	parameter W_DDS_FREQ		= 48, // width of dds frequency word
 	parameter W_DDS_PHASE	= 14,	// width of dds phase word
@@ -50,9 +53,18 @@ module pid_controller #(
 	parameter PID_ICF_INIT	= 3,
 	parameter PID_DCF_INIT	= 0,
 	parameter RTR_ACTV_INIT	= 1,
-	parameter OPP_OMAX_INIT = 9999,
-	parameter OPP_OMIN_INIT = 1111,
-	parameter OPP_OIN_INIT	= 5000,
+	parameter DAC_MAX_INIT	= 52428,
+	parameter DAC_MIN_INIT	= 13107,
+	parameter DAC_OUT_INIT	= 39321,
+	parameter DDSF_MAX_INIT	= 2^47,
+	parameter DDSF_MIN_INIT = 0,
+	parameter DDSF_OUT_INIT = 0,
+	parameter DDSP_MAX_INIT	= 2^13,
+	parameter DDSP_MIN_INIT = 0,
+	parameter DDSP_OUT_INIT = 0,
+	parameter DDSA_MAX_INIT = 2^9,
+	parameter DDSA_MIN_INIT = 0,
+	parameter DDSA_OUT_INIT	= 0,
 	parameter OPP_MLT_INIT	= 1
 
 	)(
@@ -299,6 +311,7 @@ generate
 		/* osf bank a: draws from adc channel a */
 		oversample_filter #(
 			.W_DATA				(W_ADC),
+			.W_EP					(W_EP),
 			.W_OSM				(W_OSF_OSM),
 			.OSM_INIT			(OSF_OSM_INIT),
 			.CDLY_INIT			(OSF_CDLY_INIT))
@@ -319,6 +332,7 @@ generate
 		/* osf bank b: draws from adc channel b */
 		oversample_filter #(
 			.W_DATA				(W_ADC),
+			.W_EP					(W_EP),
 			.W_OSM				(W_OSF_OSM),
 			.OSM_INIT			(OSF_OSM_INIT),
 			.CDLY_INIT			(OSF_CDLY_INIT))
@@ -344,7 +358,8 @@ generate
 	for ( m = 0; m < N_ADC; m = m + 1 ) begin : pid_array
 		pid_core #(
 			.W_IN					(W_ADC),
-			.W_COMP				(W_COMP),
+			.W_OUT				(W_COMP),
+			.W_EP					(W_EP),
 			.COMP_LATENCY		(PID_COMP_LATENCY),
 			.SETPOINT_INIT		(PID_SETP_INIT),
 			.P_COEF_INIT		(PID_PCF_INIT),

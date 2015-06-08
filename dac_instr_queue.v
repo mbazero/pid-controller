@@ -13,9 +13,9 @@
 
 module dac_instr_queue #(
 	// parameters
-	parameter W_DATA		= 16,		// width of dac data signal
-	parameter W_CHS		= 3,		// width of dac channel select signal
-	parameter N_CHAN		= 8		// number of DAC channels
+	parameter W_DATA		= 16,									// width of dac data signal
+	parameter W_CHS		= 3,									// width of dac channel select signal
+	parameter N_CHAN		= 8									// number of DAC channels
 	)(
 	// inputs <-- top level entity
 	input wire								clk_in,				// system clock
@@ -58,7 +58,7 @@ wire								dv_rdc_lower;					// reduction OR of lower data valid bus
 wire [W_DATA-1:0] mux_dout_upper, mux_dout_lower;		// mux output data for upper and lower channels
 
 /* mux selects */
-wire [W_CHS-1:0] mux_sel_upper, mux_sel_lower;					// mux select signals for upper and lower channels
+wire [W_CHS-1:0] mux_sel_upper, mux_sel_lower;			// mux select signals for upper and lower channels
 
 /* channel numbers (generated from data valid) */
 wire [W_CHS-1:0] chan_upper, chan_lower;					// upper and lower channel signals
