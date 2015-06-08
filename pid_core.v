@@ -96,19 +96,21 @@ reg			[2:0] 			next_state = ST_IDLE; 		// next state
 // combinational logic
 //////////////////////////////////////////
 
-/* current error */
+/* compute error */
 assign e_cur				= setpoint - data;
 
-/* z-transform coefficients */
+/* compute z-transform coefficients */
 assign k1					= p_coef + i_coef + d_coef;
 assign k2					= -p_coef - 2*d_coef;
 assign k3					= d_coef;
 
-/* delta u */
+/* compute delta u */
 assign delta_u				= k1*e_cur + k2*e_prev_0 + k3*e_prev_1;
+
+/* compute u */
 assign u_cur				= delta_u + u_prev;
 
-/* overflow checking */
+/* check for overflow */
 assign overflow 			= (delta_u[$high(delta_u)] == u_prev[$high(u_prev)])
 									&& (u_prev[$high(u_prev)] != u_cur[$high(u_cur)]);
 assign u_cur_rail			= (u_prev[$high(u_prev)] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
