@@ -15,7 +15,7 @@ module output_preprocessor #(
 	parameter MAX_INIT		= 52428,							// initial output upper bound
 	parameter MIN_INIT		= 13107,							// initial output lower bound
 	parameter OUT_INIT		= 39321,							// initial output starting value
-	parameter MULT_INIT		= 1								// initial output multiplier
+	parameter MLT_INIT		= 1								// initial output multiplier
 	)(
 	// inputs <-- top level entity
 	input wire								clk_in,				// system clock
@@ -71,7 +71,7 @@ wire signed [W_IN+W_MLT:0]		proc_stage_1,
 reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
 reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
 reg signed	[W_OUT-1:0]	output_init = OUT_INIT;			// active output initial value
-reg signed	[W_MLT-1:0]	multiplier = MULT_INIT; 		// active output multiplication factor
+reg signed	[W_MLT-1:0]	multiplier = MLT_INIT; 			// active output multiplication factor
 
 /* state registers */
 reg			[7:0]			counter = 0; 						// intrastate counter

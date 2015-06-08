@@ -15,10 +15,10 @@ module pid_controller_tf;
 	localparam	TX_LEN	= W_DATA*N_CHAN/2;
 
 	// Simulation structures
-	reg signed [W_DATA-1:0]	chan[0:N_CHAN-1];
-	reg [TX_LEN-1:0] 	data_a_tx;
-	reg [TX_LEN-1:0] 	data_b_tx;
-	reg [15:0] wire_out;
+	wire signed [W_DATA-1:0]	chan[0:N_CHAN-1];
+	reg [TX_LEN-1:0] 	data_a_tx = 0;
+	reg [TX_LEN-1:0] 	data_b_tx = 0;
+	reg [15:0] wire_out = 0;
 
 	// Inputs
 	reg clk50_in;
@@ -131,35 +131,36 @@ module pid_controller_tf;
 	assign adc_data_a_in = data_a_tx[TX_LEN-1];
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
-	// set channel values
-	initial begin
-		chan[0] = -655;
-		chan[1] = 0;
-		chan[2] = 0;
-		chan[3] = 0;
-		chan[4] = 0;
-		chan[5] = 0;
-		chan[6] = 0;
-		chan[7] = 0;
-	end
-
 	// misc structures
 	reg [15:0] output_init = 0;
 	reg [15:0] output_min = 0;
 	reg [15:0] output_max = 0;
 
-	reg signed [15:0] setpoint = 0, p_coef = 10, i_coef = 3, d_coef = 0;
+	reg signed [15:0] setpoint = 0, p_coef = 10, i_coef = 3, d_coef = 2;
 	reg signed [63:0] pid_data_reg = 0, error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
 	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
 	integer i;
 	reg [15:0] pipeOutWord;
 	reg signed [15:0] wireOutValue;
 
+	// step function structures
+	reg [15:0] t_data = 13107;
+
 	// dac received data
-	reg [31:0] r_instr;
+	reg [31:0] r_instr = 0;
 	wire [15:0] r_data;
 	wire [3:0] r_prefix, r_control, r_address, r_feature;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
+
+	// set channel values
+	assign chan[0] = r_data - t_data;
+	assign chan[1] = 0;
+	assign chan[2] = 0;
+	assign chan[3] = 0;
+	assign chan[4] = 0;
+	assign chan[5] = 0;
+	assign chan[6] = 0;
+	assign chan[7] = 0;
 
 	// simulation params
 	localparam REPS = 100;

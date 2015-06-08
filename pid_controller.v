@@ -57,17 +57,20 @@ module pid_controller #(
 	parameter DAC_MAX_INIT	= 52428,
 	parameter DAC_MIN_INIT	= 13107,
 	parameter DAC_OUT_INIT	= 39321,
+	parameter DAC_MLT_INIT	= 1,
 	parameter DDSF_MAX_INIT	= 2^47,
 	parameter DDSF_MIN_INIT = 0,
 	parameter DDSF_OUT_INIT = 0,
+	parameter DDSF_MLT_INIT = 1,
 	parameter DDSP_MAX_INIT	= 2^13,
 	parameter DDSP_MIN_INIT = 0,
 	parameter DDSP_OUT_INIT = 0,
+	parameter DDSP_MLT_INIT = 1,
 	parameter DDSA_MAX_INIT = 2^9,
 	parameter DDSA_MIN_INIT = 0,
 	parameter DDSA_OUT_INIT	= 0,
+	parameter DDSA_MLT_INIT = 1,
 	parameter OPP_MLT_INIT	= 1
-
 	)(
 	// inputs <- OPAL KELLY PLL
 	input wire							clk50_in,				// 50MHz system clock
@@ -391,7 +394,8 @@ router #(
 	.W_CHAN				(W_COMPV),
 	.W_SEL				(W_RTR_SEL),
 	.N_IN					(N_ADC),
-	.N_OUT				(N_OUT))
+	.N_OUT				(N_OUT),
+	.ACTV_INIT			(RTR_ACTV_INIT))
 rtr (
 	.data_packed_in	(rtr_input_packed),
 	.src_select_in		(rtr_src_sel),
@@ -415,7 +419,11 @@ generate
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DAC_DATA + 1), // opp output is signed, so dac opp output width must be 1 greater than dac data width
 			.W_MLT				(W_OPP_MLT),
-			.COMP_LATENCY		(OPP_COMP_LATENCY))
+			.COMP_LATENCY		(OPP_COMP_LATENCY),
+			.MAX_INIT			(DAC_MAX_INIT),
+			.MIN_INIT			(DAC_MIN_INIT),
+			.OUT_INIT			(DAC_OUT_INIT),
+			.MLT_INIT			(DAC_MLT_INIT))
 		dac_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -486,7 +494,11 @@ generate
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_FREQ),
 			.W_MLT				(W_OPP_MLT),
-			.COMP_LATENCY		(OPP_COMP_LATENCY))
+			.COMP_LATENCY		(OPP_COMP_LATENCY),
+			.MAX_INIT			(DDSF_MAX_INIT),
+			.MIN_INIT			(DDSF_MIN_INIT),
+			.OUT_INIT			(DDSF_OUT_INIT),
+			.MLT_INIT			(DDSF_MLT_INIT))
 		freq_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -508,7 +520,11 @@ generate
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_PHASE),
 			.W_MLT				(W_OPP_MLT),
-			.COMP_LATENCY		(OPP_COMP_LATENCY))
+			.COMP_LATENCY		(OPP_COMP_LATENCY),
+			.MAX_INIT			(DDSP_MAX_INIT),
+			.MIN_INIT			(DDSP_MIN_INIT),
+			.OUT_INIT			(DDSP_OUT_INIT),
+			.MLT_INIT			(DDSP_MLT_INIT))
 		phase_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -530,7 +546,11 @@ generate
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_AMP),
 			.W_MLT				(W_OPP_MLT),
-			.COMP_LATENCY		(OPP_COMP_LATENCY))
+			.COMP_LATENCY		(OPP_COMP_LATENCY),
+			.MAX_INIT			(DDSA_MAX_INIT),
+			.MIN_INIT			(DDSA_MIN_INIT),
+			.OUT_INIT			(DDSA_OUT_INIT),
+			.MLT_INIT			(DDSA_MLT_INIT))
 		amp_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),

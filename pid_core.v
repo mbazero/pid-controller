@@ -101,7 +101,7 @@ assign e_cur				= setpoint - data;
 
 /* compute z-transform coefficients */
 assign k1					= p_coef + i_coef + d_coef;
-assign k2					= -p_coef - (d_coef << 2);
+assign k2					= -p_coef - (d_coef << 1);
 assign k3					= d_coef;
 
 /* compute delta u */
@@ -135,9 +135,9 @@ end
 /* previous error and output registers */
 always @( posedge clk_in ) begin
 	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
-		u_prev		<= 0;
-		e_prev_0 	<= 0;
-		e_prev_1		<= 0;
+		u_prev	<= 0;
+		e_prev_0	<= 0;
+		e_prev_1	<= 0;
 	end else if ( cur_state == ST_DONE ) begin
 		u_prev		<= data_out;
 		e_prev_0	<= e_cur;
