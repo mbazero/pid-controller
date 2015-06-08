@@ -194,7 +194,7 @@ wire	[N_OUT-1:0]				opp_update_en;
 wire	[47:0]					opp_max;
 wire	[47:0]					opp_min;
 wire	[47:0]					opp_init;
-wire	[7:0]						opp_multiplier;
+wire	[W_OPP_MLT-1:0]		opp_multiplier;
 wire	[W_DAC_DATA-1:0]		opp_dac_data[0:N_DAC-1];
 wire	[W_DDS_FREQ-1:0]		opp_freq_data[0:N_DDS-1];
 wire	[W_DDS_PHASE-1:0]		opp_phase_data[0:N_DDS-1];
@@ -412,6 +412,7 @@ generate
 		output_preprocessor #(
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DAC_DATA), // data truncation happens in opp
+			.W_MLT				(W_OPP_MLT),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		dac_opp (
 			.clk_in				(clk50_in),
@@ -482,6 +483,7 @@ generate
 		output_preprocessor #(
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_FREQ),
+			.W_MLT				(W_OPP_MLT),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		freq_opp (
 			.clk_in				(clk50_in),
@@ -503,6 +505,7 @@ generate
 		output_preprocessor #(
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_PHASE),
+			.W_MLT				(W_OPP_MLT),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		phase_opp (
 			.clk_in				(clk50_in),
@@ -524,6 +527,7 @@ generate
 		output_preprocessor #(
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DDS_AMP),
+			.W_MLT				(W_OPP_MLT),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		amp_opp (
 			.clk_in				(clk50_in),

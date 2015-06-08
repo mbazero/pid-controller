@@ -1,7 +1,9 @@
 `timescale 1ns / 1ps
 
 // pid_core -- mba 2014
-// computer PID sum
+// -----------------------------------------------------------
+// Computes PID sum using discrete form of PID equation.
+// -----------------------------------------------------------
 
 // TODO
 // - remove lock enable from here and top level
@@ -64,7 +66,7 @@ reg signed	[W_IN-1:0]		data = 0;						// active input data
 
 /* overflow handling */
 wire 								overflow;
-wire signed [W_OUT-1:0]		u_cur_clamped;
+wire signed [W_OUT-1:0]		u_cur_rail;
 
 /* pid parameters */
 reg signed	[W_EP-1:0]		setpoint = SETPOINT_INIT;	// active lock setpoint
@@ -82,7 +84,6 @@ wire signed	[W_EP+1:0]		k1, k2, k3; 					// z-transform coefficients for discret
 
 /* control variable (u) cur, prev, and delta vals */
 reg signed	[W_OUT-1:0]		u_prev = 0;						// previous pid filter output
-reg signed	[W_OUT-1:0]		u_next = 0;						// next pid filter output
 wire signed	[W_OUT-1:0]		u_cur; 							// current pid filter output
 wire signed	[W_OUT-1:0]		delta_u;							// difference between current and previous pid filter outputs
 
@@ -108,11 +109,12 @@ assign delta_u				= k1*e_cur + k2*e_prev_0 + k3*e_prev_1;
 assign u_cur				= delta_u + u_prev;
 
 /* overflow checking */
-assign overflow 			= (delta_u[$high(delta_u)] == u_prev[$high(u_prev)])  && (u_prev[$high(u_prev)] != u_cur[$high(u_cur)]);
-assign u_cur_clamped		= (u_prev[$high(u_prev)] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
+assign overflow 			= (delta_u[$high(delta_u)] == u_prev[$high(u_prev)])
+									&& (u_prev[$high(u_prev)] != u_cur[$high(u_cur)]);
+assign u_cur_rail			= (u_prev[$high(u_prev)] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
 
 /* data out */
-assign data_out			= (overflow) ? u_cur_clamped : u_cur;
+assign data_out			= ( overflow ) ? u_cur_rail : u_cur;
 assign data_valid_out	= ( cur_state == ST_SEND );
 
 //////////////////////////////////////////

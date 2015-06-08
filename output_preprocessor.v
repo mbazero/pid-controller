@@ -1,15 +1,16 @@
 `timescale 1ns / 1ps
 
 // output_preprocessor -- mba 2014
-
-// TODO
-// - change to pipelined version
-// - clean up overflow checking
+// -----------------------------------------------------------
+// Adds PID sum to previous output value and enforces max and
+// min output bounds.
+// -----------------------------------------------------------
 
 module output_preprocessor #(
 	// parameters
 	parameter W_IN				= 64,								// width of input data bus
 	parameter W_OUT			= 16,								// width of output data bus
+	parameter W_MLT			= 8,								// width of multiplier
 	parameter COMP_LATENCY	= 1,								// computation latency in clock cycles
 	parameter MAX_INIT		= 52428,							// initial output upper bound
 	parameter MIN_INIT		= 13107,							// initial output lower bound
@@ -29,7 +30,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_max_in,		// output lower bound
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
-	input wire 				[7:0]       multiplier_in,		// output multiplication factor
+	input wire 				[W_MLT-1:0]	multiplier_in,		// output multiplication factor
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
@@ -57,21 +58,25 @@ localparam 	ST_IDLE 			= 3'd0,							// module idle, wait for valid data
 
 /* data registers */
 reg signed	[W_OUT-1:0]	data_out_prev = OUT_INIT;		// previous outputed data
-reg signed	[W_IN-1:0]	pid_sum = 0;						// raw lock data
+reg signed	[W_IN-1:0]	pid_sum = 0;						// current pid sum
 
 /* processing stage */
-wire signed	[W_IN-1:0]	proc_stage [0:4];					// data processing stages
+wire signed [W_IN+W_MLT-1:0]	proc_stage_0;
+wire signed [W_IN+W_MLT:0]		proc_stage_1,
+										proc_stage_2,
+										proc_stage_3,
+										proc_stage_4;
 
 /* overflow handling */
-wire signed [W_IN-1:0]	proc_stage_pre [0:1];			// processing stage pre overflow check
-wire signed [W_IN-1:0]	proc_stage_clamped [0:1];		// clamped processing stage
-wire							overflow	[0:1];					// overflow indicator
+wire signed [W_IN-1:0]	proc_stage_pre[0:1];				// processing stage pre overflow check
+wire signed [W_IN-1:0]	proc_stage_clamped[0:1];		// clamped processing stage
+wire							overflow[0:1];						// overflow indicator
 
 /* pid parameter registers */
 reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
 reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
 reg signed	[W_OUT-1:0]	output_init = OUT_INIT;			// active output initial value
-reg signed	[7:0]			multiplier = MULT_INIT; 		// active output multiplication factor
+reg signed	[W_MLT-1:0]	multiplier = MULT_INIT; 		// active output multiplication factor
 
 /* state registers */
 reg			[7:0]			counter = 0; 						// intrastate counter
@@ -82,35 +87,25 @@ reg			[2:0]			next_state = ST_IDLE;			// next state
 // combinational logic
 //////////////////////////////////////////
 
-//// lock data processing ////
-/* stage 0: multiply pid data */
-assign proc_stage_pre[0] = pid_sum * multiplier;
-
-assign proc_stage_clamped[0] = (pid_sum[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
-assign overflow[0] = pid_sum[W_OUT-1] != proc_stage_pre[0][W_OUT-1];
-assign proc_stage[0] = (overflow[0]) ? proc_stage_clamped[0] : proc_stage_pre[0];
+//// output data processing ////
+/* stage 0: scale pid sum */
+assign proc_stage_0 = pid_sum * multiplier;
 
 /* stage 1: add lock data to previous outputed data value */
-assign proc_stage_pre[1] = proc_stage[0] + data_out_prev;
-
-assign proc_stage_clamped[1] = (data_out_prev[W_OUT-1] == 0) ? MAX_OUTPUT : MIN_OUTPUT;
-assign overflow[1] = (proc_stage[0][W_OUT-1] == data_out_prev[W_OUT-1])
-						&& (proc_stage_pre[1][W_OUT-1] != proc_stage[0][W_OUT-1]);
-assign proc_stage[1] = (overflow[1]) ? proc_stage_clamped[1] : proc_stage_pre[1];
+assign proc_stage_1 = proc_stage_0 + data_out_prev;
 
 /* stage 2: select output init value if lock is not enabled */
-assign proc_stage[2] = ( lock_en_in == 1 ) ? proc_stage[1] : output_init;
+assign proc_stage_2 = ( lock_en_in == 1 ) ? proc_stage_1 : output_init;
 
 /* stage 3: restrict lock data upper bound */
-assign proc_stage[3] = ( proc_stage[2] < output_max ) ? proc_stage[2] : output_max;
+assign proc_stage_3 = ( proc_stage_2 > output_max ) ? output_max : proc_stage_2;
 
 /* stage 4: restrict lock data lower bound */
-assign proc_stage[4] = ( proc_stage[3] > output_min ) ? proc_stage[3] : output_min;
+assign proc_stage_4 = ( proc_stage_3 < output_min ) ? output_min : proc_stage_3;
+////////////////////////////////
 
-/* data output */
-assign data_out = proc_stage[4];
-
-/* data output valid signal */
+/* data out */
+assign data_out = proc_stage_4[W_OUT-1:0];
 assign data_valid_out = ( cur_state == ST_SEND );
 
 //////////////////////////////////////////
