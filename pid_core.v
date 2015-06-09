@@ -6,6 +6,7 @@
 // -----------------------------------------------------------
 
 // TODO
+// - add option to set push direction
 // - remove lock enable from here and top level
 
 module pid_core #(
@@ -125,7 +126,7 @@ assign data_valid_out	= ( cur_state == ST_SEND );
 
 /* data register */
 always @ ( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( reset_in | ~lock_en_in ) begin
 		data <= 0;
 	end else if (( data_valid_in == 1 ) & ( cur_state == ST_IDLE )) begin
 		data <= data_in;
@@ -134,7 +135,7 @@ end
 
 /* previous error and output registers */
 always @( posedge clk_in ) begin
-	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
+	if ( reset_in | lock_en_in | clear_in ) begin
 		u_prev	<= 0;
 		e_prev_0	<= 0;
 		e_prev_1	<= 0;
