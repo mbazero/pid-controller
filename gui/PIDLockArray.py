@@ -85,7 +85,6 @@ class PIDLockArray:
 	def update_error_data(self):
 		# update wire outs
 		self.okc.UpdateWireOuts()
-		print 'Updated Wire Outs.'
 
 		# loop through active channels and update error data
 		for chan in self.active_chans :
@@ -236,22 +235,16 @@ class PIDChannel:
 		if self.rtr_src_sel >= 0 :
 			osf_data_owep = epm.osf_data0_owep + self.rtr_src_sel
 
-			print 'Getting adc channel ' + str(self.rtr_src_sel) + ' data at address: ' + str(osf_data_owep)
-
 			# get unsigned adc error data from wireout
 			data_raw_us = self.okc.GetWireOutValue(osf_data_owep)
-			print 'Raw unsigned data: ' + str(data_raw_us)
 
 			# convert data to signed
 			data_raw_s = self.uint16_to_int32(data_raw_us)
-			print 'Raw signed data: ' + str(data_raw_s)
 
 			# map raw adc data to voltage
 			data_volts = self.map_val(data_raw_s, [-2**15, 2**15 - 1], [-5, 5])
 			# data_volts = random.randrange(-1, 1)/1000
 			self.error_data = self.error_data[1:len(self.error_data)] + [data_volts]
-
-			print 'Voltage data: ' + str(data_volts)
 
 	def bulk_update_error_data(self):
 		if self.rtr_src_sel >= 0 :
@@ -408,14 +401,12 @@ class PIDChannel:
 
 	#################### opp handlers #######################
 	def handle_opp_lock_en(self, state): #TODO change name to handle_pid_lock_en
-		if (state == 1) :
+		if (state > 0) :
 			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PID filter activated'
-			self.okc.SetAndUpdateWireInValue(epm.pid_lock_en_wep, 1)
-
-			self.okc.Set
+			self.okc.SetAndUpdateWireIn(epm.pid_lock_en_wep, 1)
 		else :
-			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PIF filter deactivated'
-			self.okc.SetAndUpdateWireInValue(epm.pid_lock_en_wep, 0)
+			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PID filter deactivated'
+			self.okc.SetAndUpdateWireIn(epm.pid_lock_en_wep, 0)
 
 	def handle_opp_init(self, text):
 		opp_init_old = self.opp_init

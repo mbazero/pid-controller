@@ -56,14 +56,14 @@ module pid_controller_tf;
 
 	// Simulation params
 	localparam	SETPOINT = 0,
-					P_COEF = 1,
-					I_COEF = 0,
-					D_COEF = 0,
+					P_COEF = 10,
+					I_COEF = 3,
+					D_COEF = 2,
 					DAC_MAX = 52428,
 					DAC_MIN = 13107,
 					DAC_INIT = 39321;
 
-	reg [15:0] target = DAC_INIT;
+	reg [15:0] target = DAC_INIT + 133;
 
 
 	// Instantiate the Unit Under Test (UUT)
@@ -176,7 +176,8 @@ module pid_controller_tf;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
 	// set channel values
-	assign chan[0] = r_data - target;
+	//assign chan[0] = r_data - target;
+	assign chan[0] = 655;
 	assign chan[1] = 0;
 	assign chan[2] = 0;
 	assign chan[3] = 0;
@@ -184,9 +185,6 @@ module pid_controller_tf;
 	assign chan[5] = 0;
 	assign chan[6] = 0;
 	assign chan[7] = 0;
-
-	// simulation params
-	localparam REPS = 100;
 
 	initial begin : main
 		// Initialize Inputs
@@ -233,14 +231,14 @@ module pid_controller_tf;
 //		UpdateWireIns;
 //		ActivateTriggerIn(module_update_tep, 0);
 //
-//		// Route input channel 0 to output channel 0 and activate output 0
-//		SetWireInValue(rtr_src_sel_wep, 16'd0, mask);	// router source
-//		SetWireInValue(rtr_dest_sel_wep, 16'd0, mask);	// router destination
-//		SetWireInValue(rtr_output_active_wep, 16'd1, mask);	// activate channel 0
-//
-//		UpdateWireIns;
-//		ActivateTriggerIn(module_update_tep, 0);
-//
+		// Route input channel 0 to output channel 0 and activate output 0
+		SetWireInValue(rtr_src_sel_wep, 16'd0, mask);	// router source
+		SetWireInValue(rtr_dest_sel_wep, 16'd0, mask);	// router destination
+		SetWireInValue(rtr_output_active_wep, 16'd1, mask);	// activate channel 0
+
+		UpdateWireIns;
+		ActivateTriggerIn(module_update_tep, 0);
+
 //		// Set channel 0 OPP params
 //		output_init = 5000;
 //		output_min = 1111;
@@ -256,22 +254,45 @@ module pid_controller_tf;
 //		// trigger adc reference set
 //		ActivateTriggerIn(dac_ref_set_tep, 0);
 //
-//		// activate pid lock 0
-//		SetWireInValue(pid_lock_en_wep, 16'd1, mask);
-//		UpdateWireIns;
-//
-//		// activate adc channel 0
-//		SetWireInValue(osf_activate_wep, 16'd1, mask);
-//		UpdateWireIns;
-//
+		// activate pid lock 0
+		SetWireInValue(pid_lock_en_wep, 16'd1, mask);
+		UpdateWireIns;
+
+		// activate adc channel 0
+		SetWireInValue(osf_activate_wep, 16'd1, mask);
+		UpdateWireIns;
+
 		// trigger adc cstart
 		#200;
 		ActivateTriggerIn(adc_cstart_tep, 0);
 
-		fork : sim
+		fork
+			adc_transmit(100);
+			pipe_read(100);
+			check_pid(100);
+			print_state(100);
+			change_target(100);
+			rcv_data(100);
+		join
 
+		// read pipe data
+		ReadFromPipeOut(osf_bulk_data_pep, 1024);
+		for(i = 0; i < (100); i = i + 1) begin
+			pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
+			#1;
+			//$display("%d: Pipe out val -- %d", i, pipeOutWord);
+		end
+
+		$stop;
+
+	end
+
+	task adc_transmit;
+		input [7:0] reps;
+
+		begin
 			// adc data transmission simulation
-			repeat(REPS) begin
+			repeat(reps) begin
 				// wait for convst_out to pulse and then assert busy
 				@(posedge adc_convst_out) begin
 					@(posedge clk17_in) adc_busy_in = 1;
@@ -298,88 +319,98 @@ module pid_controller_tf;
 				@(posedge clk17_in) adc_busy_in = 0;
 
 			end
-
-			// simulate pipe continuous read
-			repeat(REPS) begin
-				@(posedge pid_dv) begin
-					UpdateWireOuts;
-					wireOutValue = GetWireOutValue(osf_data0_owep);
-					//$display("Wire out val: %d", wireOutValue);
-				end
-			end
-
-			// check pid value
-			repeat(REPS) begin
-				@(posedge pid_dv) begin
-					pid_data_reg = pid_controller_tf.uut.pid_data[0];
-					e_count = e_count + 1;
-					error = setpoint - chan[0];
-					#1;
-					integral = integral + error;
-					derivative = error - error_prev;
-					#1;
-					u_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
-					error_prev = error;
-					#1;
-					if(u_expected == pid_data_reg) begin
-						//$display("PID Success\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
-					end else begin
-						$display("PID Failure\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
-						$stop;
-					end
-				end
-			end
-
-			// print internal state
-			repeat(REPS) begin
-				@(posedge pid_controller_tf.uut.cs_data_valid[0]) begin
-					$display("ADC Value:\t%d", $signed(pid_controller_tf.uut.cs_data_a));
-				end
-				@(posedge pid_controller_tf.uut.pid_data_valid[0]) begin
-					$display("PID Value:\t%d", $signed(pid_controller_tf.uut.pid_data[0]));
-				end
-				@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
-					$display("OPP Value:\t%d", pid_controller_tf.uut.opp_dac_data[0]);
-					$display("Target Value:\t%d", target);
-					$display("----------------------------------");
-				end
-			end
-
-			// change target after 15 reps
-			repeat(REPS) begin
-				@(posedge pid_dv) begin
-					if(e_count == 15) begin
-						target = 26214;
-					end
-				end
-			end
-
-
-			// simulate received dac data
-			repeat(REPS) begin
-				@(negedge dac_nsync_out) begin
-					repeat(32) begin
-						@(negedge dac_sclk_out) begin
-							r_instr = {r_instr[30:0], dac_din_out}; // shift data in
-						end
-					end
-
-				end
-			end
-
-		join
-
-		// read pipe data
-		ReadFromPipeOut(osf_bulk_data_pep, 1024);
-		for(i = 0; i < REPS; i = i + 1) begin
-			pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
-			#1;
-			//$display("%d: Pipe out val -- %d", i, pipeOutWord);
 		end
+	endtask
 
-		$stop;
+	task pipe_read;
+		input [7:0] reps;
 
-	end
+		// simulate pipe continuous read
+		repeat(reps) begin
+			@(posedge pid_dv) begin
+				UpdateWireOuts;
+				wireOutValue = GetWireOutValue(osf_data0_owep);
+				//$display("Wire out val: %d", wireOutValue);
+			end
+		end
+	endtask
+
+	task check_pid;
+		input [7:0] reps;
+
+		// check pid value
+		repeat(reps) begin
+			@(posedge pid_dv) begin
+				pid_data_reg = pid_controller_tf.uut.pid_data[0];
+				e_count = e_count + 1;
+				error = setpoint - chan[0];
+				#1;
+				integral = integral + error;
+				derivative = error - error_prev;
+				#1;
+				u_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
+				error_prev = error;
+				#1;
+				if(u_expected == pid_data_reg) begin
+					//$display("PID Success\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
+				end else begin
+					$display("PID Failure\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
+					$stop;
+				end
+			end
+		end
+	endtask
+
+	task print_state;
+		input [7:0] reps;
+
+		// print internal state
+		repeat(reps) begin
+			@(posedge pid_controller_tf.uut.cs_data_valid[0]) begin
+				$display("ITERATION #%d", e_count);
+				$display("----------------------------------");
+				$display("ADC Value:\t%d", $signed(pid_controller_tf.uut.cs_data_a));
+			end
+			@(posedge pid_controller_tf.uut.pid_data_valid[0]) begin
+				$display("PID Value:\t%d", $signed(pid_controller_tf.uut.pid_data[0]));
+			end
+			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
+				$display("OPP Value:\t%d", pid_controller_tf.uut.opp_dac_data[0]);
+				$display("Target Value:\t%d", target);
+				$display("----------------------------------");
+			end
+		end
+	endtask
+
+	task change_target;
+		input [7:0] reps;
+
+		// change target after 15 reps
+		repeat(reps) begin
+			@(posedge pid_dv) begin
+				if(e_count == 15) begin
+					//target = 26214;
+				end
+			end
+		end
+	endtask
+
+
+
+	task rcv_data;
+		input [7:0] reps;
+
+		// simulate received dac data
+		repeat(reps) begin
+			@(negedge dac_nsync_out) begin
+				repeat(32) begin
+					@(negedge dac_sclk_out) begin
+						r_instr = {r_instr[30:0], dac_din_out}; // shift data in
+					end
+				end
+			end
+		end
+	endtask
 
 	`include "ok_sim/okHostCalls.v"
 

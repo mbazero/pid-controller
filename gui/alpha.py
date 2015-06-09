@@ -263,7 +263,6 @@ class ChannelControl(QWidget):
 		self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
 
 	def updateGraph(self):
-		print "updating"
 		self.plotItem.clear()
 		# self.plotItem.plot(y)
 		self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)

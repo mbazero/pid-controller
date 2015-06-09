@@ -53,7 +53,7 @@ module pid_controller #(
 	parameter PID_PCF_INIT	= 1,
 	parameter PID_ICF_INIT	= 0,
 	parameter PID_DCF_INIT	= 0,
-	parameter RTR_ACTV_INIT	= 1,
+	parameter RTR_ACTV_INIT	= 0,
 	parameter DAC_MAX_INIT	= 52428,
 	parameter DAC_MIN_INIT	= 13107,
 	parameter DAC_OUT_INIT	= 39321,
@@ -164,7 +164,7 @@ wire	[W_ADC-1:0]				cs_data_b;
 
 /* oversample filter */
 wire	[N_ADC-1:0]				osf_activate;
-wire	[N_ADC-1:0]				osf_activate_dbg = 1; // DEBUG
+wire	[N_ADC-1:0]				osf_activate_dbg = 0; // DEBUG
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
@@ -191,7 +191,7 @@ wire	[W_COMPV*N_OUT-1:0]	rtr_output_packed;
 wire	[W_COMP-1:0]			rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
 wire	[N_OUT-1:0]				rtr_lock_en;
-wire	[N_OUT-1:0]				rtr_lock_en_dbg = 1; // DEBUG
+wire	[N_OUT-1:0]				rtr_lock_en_dbg = 0; // DEBUG
 
 /* output preprocessor */
 wire	[N_OUT-1:0]				opp_update_en;
@@ -368,8 +368,8 @@ generate
 			.COMP_LATENCY		(PID_COMP_LATENCY),
 			.SETPOINT_INIT		(PID_SETP_INIT),
 			.P_COEF_INIT		(PID_PCF_INIT),
-			.I_COEF_INIT		(PID_ICF_INIT)
-			.D_COEF_INIT		(PID_DCF_INIT)),
+			.I_COEF_INIT		(PID_ICF_INIT),
+			.D_COEF_INIT		(PID_DCF_INIT))
 		pid_inst (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),

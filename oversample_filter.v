@@ -2,9 +2,6 @@
 
 // oversample_filter -- mba 2014
 
-// todo
-// - pull channel activation and deactivation out to a seperate module
-
 module oversample_filter #(
 	// parameters
 	parameter W_DATA		= 18,										// width of input data
@@ -88,7 +85,7 @@ always @( posedge clk_in ) begin
 		sum <= 0;
 	end else if (( cur_state == ST_IDLE ) | ( cur_state == ST_DELAY )) begin
 		sum <= 0;
-	end else if (( data_valid_in == 1) & ( cur_state == ST_SAMPLE )) begin
+	end else if (( data_valid_in == 1 ) & ( cur_state == ST_SAMPLE )) begin
 		sum <= sum + data_in;
 	end
 end
@@ -110,8 +107,8 @@ always @( posedge clk_in ) begin
 		osm_cur		<= 0;
 		cycle_delay	<= 0;
 	end else if (( update_in == 1 ) & ( update_en_in == 1 )) begin
-		osm_cur 			<= osm_in;
-		cycle_delay		<= cycle_delay_in;
+		osm_cur 		<= osm_in;
+		cycle_delay	<= cycle_delay_in;
 	end
 end
 
