@@ -3,6 +3,9 @@
 // pid_controller_tf -- mba 2015
 // PID controller test fixture.
 
+// TODO
+// - add PID coefficients as parameters and connect them to UUT port
+
 module pid_controller_tf;
 	// Endpoint map
 	`include "ep_map.vh"
@@ -51,8 +54,28 @@ module pid_controller_tf;
 	wire [15:0] hi_inout;
 	wire hi_aa;
 
+	// Simulation params
+	localparam	SETPOINT = 0,
+					P_COEF = 1,
+					I_COEF = 0,
+					D_COEF = 0,
+					DAC_MAX = 52428,
+					DAC_MIN = 13107,
+					DAC_INIT = 39321;
+
+	reg [15:0] target = DAC_INIT;
+
+
 	// Instantiate the Unit Under Test (UUT)
-	pid_controller uut (
+	pid_controller #(
+		.PID_SETP_INIT(SETPOINT),
+		.PID_PCF_INIT(P_COEF),
+		.PID_ICF_INIT(I_COEF),
+		.PID_DCF_INIT(D_COEF),
+		.DAC_MAX_INIT(DAC_MAX),
+		.DAC_MIN_INIT(DAC_MIN),
+		.DAC_OUT_INIT(DAC_INIT))
+	uut (
 		.clk50_in(clk50_in),
 		.clk17_in(clk17_in),
 		.adc_busy_in(adc_busy_in),
@@ -136,15 +159,15 @@ module pid_controller_tf;
 	reg [15:0] output_min = 0;
 	reg [15:0] output_max = 0;
 
-	reg signed [15:0] setpoint = 0, p_coef = 10, i_coef = 3, d_coef = 2;
+	reg signed [15:0] setpoint = SETPOINT,
+							p_coef = P_COEF,
+							i_coef = I_COEF,
+							d_coef = D_COEF;
 	reg signed [63:0] pid_data_reg = 0, error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
 	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
 	integer i;
 	reg [15:0] pipeOutWord;
 	reg signed [15:0] wireOutValue;
-
-	// step function structures
-	reg [15:0] t_data = 13107;
 
 	// dac received data
 	reg [31:0] r_instr = 0;
@@ -153,7 +176,7 @@ module pid_controller_tf;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
 	// set channel values
-	assign chan[0] = r_data - t_data;
+	assign chan[0] = r_data - target;
 	assign chan[1] = 0;
 	assign chan[2] = 0;
 	assign chan[3] = 0;
@@ -198,9 +221,9 @@ module pid_controller_tf;
 //
 //		// Set channel 0 PID params
 //		setpoint = 0;
-//		p_coef = 10;
-//		i_coef = 3;
-//		d_coef = 2;
+//		p_coef = P_COEF;
+//		i_coef = I_COEF;
+//		d_coef = D_COEF;
 //		SetWireInValue(pid_setpoint_wep, setpoint, mask);	// setpoint = 3
 //		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
 //		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
@@ -254,9 +277,6 @@ module pid_controller_tf;
 					@(posedge clk17_in) adc_busy_in = 1;
 				end
 
-				// set random chan[0] value
-				//chan[0] = $random % 100;
-
 				// simulate serial transmission from adc to fpga
 				@(negedge adc_n_cs_out) begin
 					data_a_tx = {chan[0], chan[1], chan[2], chan[3]};
@@ -302,12 +322,38 @@ module pid_controller_tf;
 					error_prev = error;
 					#1;
 					if(u_expected == pid_data_reg) begin
-						$display("PID Success\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+						//$display("PID Success\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
 					end else begin
-						$display("PID Failure\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
+						$display("PID Failure\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
+						$stop;
 					end
 				end
 			end
+
+			// print internal state
+			repeat(REPS) begin
+				@(posedge pid_controller_tf.uut.cs_data_valid[0]) begin
+					$display("ADC Value:\t%d", $signed(pid_controller_tf.uut.cs_data_a));
+				end
+				@(posedge pid_controller_tf.uut.pid_data_valid[0]) begin
+					$display("PID Value:\t%d", $signed(pid_controller_tf.uut.pid_data[0]));
+				end
+				@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
+					$display("OPP Value:\t%d", pid_controller_tf.uut.opp_dac_data[0]);
+					$display("Target Value:\t%d", target);
+					$display("----------------------------------");
+				end
+			end
+
+			// change target after 15 reps
+			repeat(REPS) begin
+				@(posedge pid_dv) begin
+					if(e_count == 15) begin
+						target = 26214;
+					end
+				end
+			end
+
 
 			// simulate received dac data
 			repeat(REPS) begin

@@ -50,8 +50,8 @@ module pid_controller #(
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
 	parameter PID_SETP_INIT = 0,
-	parameter PID_PCF_INIT	= 10,
-	parameter PID_ICF_INIT	= 3,
+	parameter PID_PCF_INIT	= 1,
+	parameter PID_ICF_INIT	= 0,
 	parameter PID_DCF_INIT	= 0,
 	parameter RTR_ACTV_INIT	= 1,
 	parameter DAC_MAX_INIT	= 52428,
@@ -368,8 +368,8 @@ generate
 			.COMP_LATENCY		(PID_COMP_LATENCY),
 			.SETPOINT_INIT		(PID_SETP_INIT),
 			.P_COEF_INIT		(PID_PCF_INIT),
-			.D_COEF_INIT		(PID_DCF_INIT),
-			.I_COEF_INIT		(PID_ICF_INIT))
+			.I_COEF_INIT		(PID_ICF_INIT)
+			.D_COEF_INIT		(PID_DCF_INIT)),
 		pid_inst (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
