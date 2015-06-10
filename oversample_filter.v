@@ -34,7 +34,7 @@ module oversample_filter #(
 // local parameters
 //////////////////////////////////////////
 
-localparam	MAX_OS	= 2^W_OSM - 1;								// maximum log2 oversample ratio
+localparam	MAX_OS	= 2**W_OSM - 1;							// maximum log2 oversample ratio
 localparam	W_SUM		= MAX_OS + W_DATA;						// width of sum register
 
 /* state parameters */
