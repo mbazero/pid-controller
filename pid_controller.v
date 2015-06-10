@@ -29,23 +29,35 @@
 // - adc controller clock disparity
 
 module pid_controller #(
-	// config parameters
+	// ----------------- i/o params ---------------------
+	// - reduce number ADC or DAC channels to save FPGA
+	//   space if full number of channels not needed
+	// - set number of DDS channels to reflect hardware
+	//   configuration
+	// --------------------------------------------------
 	parameter N_ADC			= 8,	// number of adc channels
 	parameter N_DAC			= 8,	// number of dac channels
 	parameter N_DDS			= 0,	// number of dds channels
-	parameter W_ADC			= 18, // width of adc channels
-	parameter W_COMP			= 64, // width of computation registers
-	parameter W_EP				= 16, // width of opal kelly endpoint
-	parameter W_OPP_MLT		= 8,	// width of opp multiplication factor
-	parameter W_DAC_INST		= 32, // width of dac update instruction
+	parameter W_ADC_DATA		= 18, // width of adc data word
+	parameter W_DAC_DATA		= 16,	// width of dac data word
 	parameter W_DDS_FREQ		= 48, // width of dds frequency word
 	parameter W_DDS_PHASE	= 14,	// width of dds phase word
 	parameter W_DDS_AMP 		= 10, // width of dds amplitude instruction
-	parameter W_DAC_DATA		= 16,	// width of dac data input
-	parameter W_DAC_CHS		= 3,	// width of dac channel input
-	parameter T_ADC_CYCLE	= 85,	// adc conversion cycle time in number of adc clock cycles
 
-	// initial values
+	// ---------------- misc. params --------------------
+	// - don't change any of these unless hardware on
+	//   breakout board changes
+	// --------------------------------------------------
+	parameter W_COMP			= 64, // width of computation registers
+	parameter W_EP				= 16, // width of opal kelly endpoint
+	parameter W_OPP_MLT		= 8,	// width of opp multiplication factor
+	parameter W_DAC_CHS		= 3,	// width of dac channel input...only change this if you get a DAC with >8 channels
+
+	// -------------- simulation params -----------------
+	// - initial value params used to run timing
+	//   simulations, which do not support opal kelly
+	//   parameter setting
+	// --------------------------------------------------
 	parameter ADC_OS_INIT	= 1,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
@@ -71,6 +83,7 @@ module pid_controller #(
 	parameter DDSA_OUT_INIT	= 0,
 	parameter DDSA_MLT_INIT = 1,
 	parameter OPP_MLT_INIT	= 1
+	// --------------------------------------------------
 	)(
 	// inputs <- OPAL KELLY PLL
 	input wire							clk50_in,				// 50MHz system clock
@@ -117,16 +130,6 @@ module pid_controller #(
 
 	// inputs <- test fixture
 	input wire							adc_cstart_tf_in,
-
-	// DEBUG
-	output wire adc_dv_out,
-	output wire cs_dv_out,
-	output wire osf_dv_out,
-	output wire pid_dv_out,
-	output wire [15:0] pid_data_out,
-	output wire opp_dac_dv_out,
-	output wire [15:0] opp_dac_data_out,
-	output wire diq_dv_out
 	);
 
 //////////////////////////////////////////
@@ -154,21 +157,21 @@ wire								module_update;
 wire								adc_cstart;
 wire	[2:0]						adc_os;
 wire	[N_ADC-1:0]				adc_data_valid;
-wire	[W_ADC-1:0]				adc_data_a;
-wire	[W_ADC-1:0]				adc_data_b;
+wire	[W_ADC_DATA-1:0]		adc_data_a;
+wire	[W_ADC_DATA-1:0]		adc_data_b;
 
 /* clock synchronizer */
 wire	[N_ADC-1:0]				cs_data_valid;
-wire	[W_ADC-1:0]				cs_data_a;
-wire	[W_ADC-1:0]				cs_data_b;
+wire	[W_ADC_DATA-1:0]		cs_data_a;
+wire	[W_ADC_DATA-1:0]		cs_data_b;
 
 /* oversample filter */
 wire	[N_ADC-1:0]				osf_activate;
-wire	[N_ADC-1:0]				osf_activate_dbg = 0; // DEBUG
+wire	[N_ADC-1:0]				osf_activate_dbg = 0; 	// assert for timing simulation only
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
-wire	[W_ADC-1:0]				osf_data[0:N_ADC-1];
+wire	[W_ADC_DATA-1:0]		osf_data[0:N_ADC-1];
 wire	[N_ADC-1:0]				osf_data_valid;
 
 /* pid core */
@@ -191,7 +194,7 @@ wire	[W_COMPV*N_OUT-1:0]	rtr_output_packed;
 wire	[W_COMP-1:0]			rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
 wire	[N_OUT-1:0]				rtr_lock_en;
-wire	[N_OUT-1:0]				rtr_lock_en_dbg = 0; // DEBUG
+wire	[N_OUT-1:0]				rtr_lock_en_dbg = 0;		// assert for timing simulation only
 
 /* output preprocessor */
 wire	[N_OUT-1:0]				opp_update_en;
@@ -225,16 +228,6 @@ wire	[N_DDS-1:0]				dds_done;
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
-
-// DEBUG
-assign adc_dv_out = adc_data_valid[0];
-assign cs_dv_out = cs_data_valid[0];
-assign osf_dv_out = osf_data_valid[0];
-assign pid_dv_out = pid_data_valid[0];
-assign pid_data_out = pid_data[0][15:0];
-assign opp_dac_dv_out = opp_dac_data_valid[0];
-assign opp_dac_data_out = opp_dac_data[0];
-assign diq_dv_out = diq_data_valid;
 
 /* output buffer enable */
 assign n_out_buf_en = 1'b0;
@@ -271,9 +264,8 @@ endgenerate
 
 /* adc controller */
 adc_controller #(
-	.W_OUT				(W_ADC),
+	.W_OUT				(W_ADC_DATA),
 	.N_CHAN				(N_ADC),
-	.MIN_T_CYCLE		(T_ADC_CYCLE),
 	.OS_INIT				(ADC_OS_INIT))
 adc_cont (
 	.clk_in				(clk17_in),
@@ -296,7 +288,7 @@ adc_cont (
 
 /* clock synchronizer */
 clk_sync #(
-	.W_DATA				(W_ADC),
+	.W_DATA				(W_ADC_DATA),
 	.N_ADC				(N_ADC))
 cs (
 	.sys_clk_in			(clk50_in),
@@ -315,7 +307,7 @@ generate
 	for ( l = 0; l < N_ADC/2; l = l + 1 ) begin : osf_array
 		/* osf bank a: draws from adc channel a */
 		oversample_filter #(
-			.W_DATA				(W_ADC),
+			.W_DATA				(W_ADC_DATA),
 			.W_EP					(W_EP),
 			.W_OSM				(W_OSF_OSM),
 			.OSM_INIT			(OSF_OSM_INIT),
@@ -336,7 +328,7 @@ generate
 
 		/* osf bank b: draws from adc channel b */
 		oversample_filter #(
-			.W_DATA				(W_ADC),
+			.W_DATA				(W_ADC_DATA),
 			.W_EP					(W_EP),
 			.W_OSM				(W_OSF_OSM),
 			.OSM_INIT			(OSF_OSM_INIT),
@@ -362,7 +354,7 @@ genvar m;
 generate
 	for ( m = 0; m < N_ADC; m = m + 1 ) begin : pid_array
 		pid_core #(
-			.W_IN					(W_ADC),
+			.W_IN					(W_ADC_DATA),
 			.W_OUT				(W_COMP),
 			.W_EP					(W_EP),
 			.COMP_LATENCY		(PID_COMP_LATENCY),
@@ -597,7 +589,7 @@ endgenerate
 frontpanel_interface #(
 	.N_ADC					(N_ADC),
 	.N_OUT					(N_OUT),
-	.W_ADC					(W_ADC),
+	.W_ADC_DATA				(W_ADC_DATA),
 	.W_OSF_CD				(W_OSF_CD),
 	.W_OSF_OSM				(W_OSF_OSM),
 	.N_DAC					(N_DAC),

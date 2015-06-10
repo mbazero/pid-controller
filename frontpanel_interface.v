@@ -13,7 +13,7 @@ module frontpanel_interface #(
 	// parameters
 	parameter N_ADC		= 8,									// number of active adc channels
 	parameter N_OUT		= 8,									// number of output channels
-	parameter W_ADC		= 18,									// width of adc channels
+	parameter W_ADC_DATA	= 18,									// width of adc channels
 	parameter W_OSF_CD	= 16,									// width of osf cycle delay signal
 	parameter W_OSF_OSM	= 6,									// width of oversample ratio signal
 	parameter N_DAC		= 8,									// number of dac channels
@@ -25,8 +25,8 @@ module frontpanel_interface #(
 
 	// inputs <- adc controller
 	input wire				[N_ADC-1:0]			adc_data_valid_in,
-	input wire				[W_ADC-1:0]			adc_data_a_in,
-	input wire				[W_ADC-1:0]			adc_data_b_in,
+	input wire				[W_ADC_DATA-1:0]	adc_data_a_in,
+	input wire				[W_ADC_DATA-1:0]	adc_data_b_in,
 
 	// inputs <- dac opp
 	input wire				[N_DAC-1:0]			opp_dac_data_valid_in,
@@ -109,7 +109,7 @@ wire	[17*(N_ADC+1)-1:0] ok2x;	// must have space for continuous update adc regis
 /* adc controller */
 wire	[15:0] 		adc_os_wire;
 wire	[15:0] 		adc_cstart_trig;
-reg	[W_ADC-1:0]	adc_data[0:N_ADC-1];
+reg	[W_ADC_DATA-1:0]	adc_data[0:N_ADC-1];
 
 /* oversample filter */
 wire	[15:0]	osf_activate_wire;
@@ -280,7 +280,7 @@ generate
 			.ok1				(ok1),
 			.ok2				(ok2x[j*17 +: 17]),
 			.ep_addr			(osf_data0_owep + j[7:0]),
-			.ep_datain		(adc_data[j][W_ADC-1 -: W_DAC])
+			.ep_datain		(adc_data[j][W_ADC_DATA-1 -: W_DAC])
 			);
 	end
 endgenerate
