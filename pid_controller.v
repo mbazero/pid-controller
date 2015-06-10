@@ -3,30 +3,17 @@
 // two_dds_test -- mba 2014
 
 // TODO
-// - add ability for manual override to set dds/dac output statically
+// - test reset
 // - add ability to update phase, freq, and amp simulatenously
 // - consider adding full speed 50MHz DAC/DDS serial clock
-// - compartmentalize PID pipeline for easy swapping of ADC/DAC controllers
-// - maybe add functionality to support simultenous update of all dac channels (nLDAC pin control)
 // - consistency with frontpanel param updating (some modules update on posedge of update signal, some on posedge of clock)
-// - consistency with frontpanel param reseting (
+// - consistency with frontpanel param reseting
 // - should probably change everything to asynch reset b/c sys reset signal is a trigger (only one clock cycle)
 // - make sure output preprocessor multiplier is delivered in signed fashion
-// - figure out lock en signal (is it really needed, if so, make it a frontpanel param)
 // - modify adc reset so it is synchronous with the 17MHz clock
 // - check modules instantiation in dds data path in this TLE (dds OPPs and dds controllers)
 // - parameterize dds controller
 // - add phase and amplitude funcitonality to dds controller
-// - implement proper opp min and max endpoints in frontpanel interface
-// - need way for multiple sources to drive same channel
-
-// RESOLVED
-// - opp min/max/init signal widths are all fucked up
-//		> kept as full length in frontpanel controller and did sub-mappings in module instatiations
-// - remove ovr cycle start signal and implement the functionality internally to osf
-// - figure out and specify what drives adc_cstart
-//		> temporarily resolved
-// - adc controller clock disparity
 
 module pid_controller #(
 	// ----------------- i/o params ---------------------
@@ -129,7 +116,7 @@ module pid_controller #(
 	output wire							hi_muxsel,
 
 	// inputs <- test fixture
-	input wire							adc_cstart_tf_in,
+	input wire							adc_cstart_tf_in
 	);
 
 //////////////////////////////////////////

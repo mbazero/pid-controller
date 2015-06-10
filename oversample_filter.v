@@ -48,19 +48,19 @@ localparam	ST_IDLE			= 3'd0,								// wait for channel activation signal
 //////////////////////////////////////////
 
 /* wires */
-wire	idle;
-wire	osf_reset;														// local reset signal which is activated by system reset or channel deactive
+wire							idle;
+wire							osf_reset;								// local reset signal which is activated by system reset or channel deactive
 
 /* registers */
-reg	[W_EP-1:0]	cycle_delay = CDLY_INIT;
-reg	[MAX_OS:0]	sample_counter = 0;
-reg	[W_OSM-1:0]	osm_cur = OSM_INIT;
-reg	[W_SUM-1:0]	sum = 0;
+reg			[W_EP-1:0]	cycle_delay = CDLY_INIT;
+reg			[MAX_OS:0]	sample_counter = 0;
+reg			[W_OSM-1:0]	osm_cur = OSM_INIT;
+reg signed 	[W_SUM-1:0]	sum = 0;
 
 /* state registers */
-reg	[15:0]	counter = 0;
-reg	[2:0]		cur_state = ST_IDLE;
-reg	[2:0]		next_state = ST_IDLE;
+reg			[15:0]		counter = 0;
+reg			[2:0]			cur_state = ST_IDLE;
+reg			[2:0]			next_state = ST_IDLE;
 
 //////////////////////////////////////////
 // combinational logic

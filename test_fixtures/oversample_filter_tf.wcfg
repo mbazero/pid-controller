@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="oversample_filter_tf.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="oversample_filter_tf" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="10" />
+   <wvobject fp_name="divider28" type="divider">
+      <obj_property name="label">INPUT</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/clk_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk_in</obj_property>
+      <obj_property name="ObjectShortName">clk_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/data_valid_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_valid_in</obj_property>
+      <obj_property name="ObjectShortName">data_valid_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/data_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_in[17:0]</obj_property>
+      <obj_property name="ObjectShortName">data_in[17:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/osm_cur" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">osm_cur[5:0]</obj_property>
+      <obj_property name="ObjectShortName">osm_cur[5:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider29" type="divider">
+      <obj_property name="label">INTERNAL</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/sum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sum[24:0]</obj_property>
+      <obj_property name="ObjectShortName">sum[24:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider27" type="divider">
+      <obj_property name="label">OUTPUT</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/data_valid_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_valid_out</obj_property>
+      <obj_property name="ObjectShortName">data_valid_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_out[17:0]</obj_property>
+      <obj_property name="ObjectShortName">data_out[17:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+</wave_config>
