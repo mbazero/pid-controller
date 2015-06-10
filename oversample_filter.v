@@ -141,7 +141,7 @@ always @( * ) begin
 	next_state <= cur_state; // default assignment if not case statement and condition is satisfied
 	case ( cur_state )
 		ST_IDLE: begin
-			if ( activate_in == 1 )							next_state <= ST_SAMPLE;
+			if ( activate_in == 1 )							next_state <= ST_SAMPLE;	// don't have to delay on first iteration
 		end
 		ST_DELAY: begin
 			if ( sample_counter >= cycle_delay ) 		next_state <= ST_SAMPLE;
