@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="10" />
+   <WVObjectSize size="11" />
    <wvobject fp_name="divider28" type="divider">
       <obj_property name="label">INPUT</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -44,6 +44,12 @@
    <wvobject fp_name="/oversample_filter_tf/uut/sum" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">sum[24:0]</obj_property>
       <obj_property name="ObjectShortName">sum[24:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/sample_counter" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sample_counter[7:0]</obj_property>
+      <obj_property name="ObjectShortName">sample_counter[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider27" type="divider">
       <obj_property name="label">OUTPUT</obj_property>

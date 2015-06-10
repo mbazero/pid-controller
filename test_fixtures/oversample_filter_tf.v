@@ -53,6 +53,7 @@ module oversample_filter_tf;
 	reg signed [127:0] sum = 0;
 	reg signed [W_DATA-1:0] received;
 	reg signed [W_DATA-1:0] expected;
+	integer delta = 0;
 
 	// generate 50MHz clock
 	always #10 clk_in = ~clk_in;
@@ -71,46 +72,70 @@ module oversample_filter_tf;
 		#100;
 
 		// set oversample mode
-		osm_in = 2;
+		osm_in = 0;
 		num_samples = 2**osm_in;
 		@(posedge clk_in) update_in = 1;
 		@(posedge clk_in) update_in = 0;
 
-		repeat(10) begin
-			fork
-				// send data
-				repeat(num_samples) begin
-					data_in = $random;
-					sum = sum + data_in;
+		repeat(2**W_OSM) begin
+			$display("######################################");
+			$display("OSM = %d", osm_in);
+			$display("######################################");
 
-					$display("data_in: %d", data_in);
+			repeat(10) begin
+				fork
+					// send data
+					repeat(num_samples) begin
+						data_in = $random;
+						sum = sum + data_in;
 
-					@(posedge clk_in) data_valid_in = 1;
-					@(posedge clk_in) data_valid_in = 0;
+						$display("data_in: %d", data_in);
 
-					#100;
+						@(posedge clk_in) data_valid_in = 1;
+						@(posedge clk_in) data_valid_in = 0;
 
-					$display("sum_rcv: %d", $signed(oversample_filter_tf.uut.sum));
-					$display("sum_exp: %d", sum);
+						#100;
 
-					#1700;
-				end
+						if(oversample_filter_tf.uut.sum != sum) begin
+							$display("SUM FAILURE\t--\tReceived: %d\Expected: %d", oversample_filter_tf.uut.sum, sum);
+							$stop;
+						end
 
-				// receive data
-				@(posedge data_valid_out) begin
-					received = data_out;
-					expected = sum / (num_samples);
-					sum = 0;
-
-					if(received == expected) begin
-						$write("SUCCESS\t--\t");
-					end else begin
-						$write("FAILURE\t--\t");
+						#1700;
 					end
-					$display("Received: %d\tExpected: %d", received, expected);
-				end
-			join
+
+					// receive data
+					@(posedge data_valid_out) begin
+						received = data_out;
+						expected = sum / (num_samples);
+						sum = 0;
+
+						delta = expected - received;
+
+						$display("-------------------------------------------");
+						$display("Received: %d\tExpected: %d", received, expected);
+						$display("OSM: %d", osm_in);
+						$display("num_samples: %d", num_samples);
+						if(delta == 0 | delta == -1 | delta == 1) begin // data received might vary by +/- 1
+							$display("SUCCESS");
+						end else begin
+							$display("FAILURE");
+							$stop;
+						end
+						$display("-------------------------------------------");
+					end
+				join
+			end
+
+			// set oversample mode
+			osm_in = osm_in + 1;
+			num_samples = 2**osm_in;
+			@(posedge clk_in) update_in = 1;
+			@(posedge clk_in) update_in = 0;
+
 		end
+
+		$display("*****SIMULATION COMPLETED SUCCESSFULLY*****");
 
 		$stop;
 

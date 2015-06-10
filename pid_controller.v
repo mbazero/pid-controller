@@ -3,6 +3,7 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - refactor fuck out of frontpanel_controller
 // - test reset
 // - add ability to update phase, freq, and amp simulatenously
 // - consider adding full speed 50MHz DAC/DDS serial clock
