@@ -35,6 +35,7 @@ qt_app = QApplication(sys.argv)
 
 '''
 TODO
+- add params (like W_MLT) to special file for parsing
 - automatic interal reference setting
 - change plot x-axis so current time 0 is on right
 - implement algorithm to determine the focused channel in the tab layout
@@ -536,9 +537,17 @@ class OutputWidget(QGroupBox):
 		self.opp_min_wgt.setText('1.0');
 
 		#################### opp_multiplier #######################
-		self.opp_multiplier_wgt = QLineEdit(self)
-		self.opp_multiplier_wgt.setPlaceholderText('0 to 256')
-		self.form_layout.addRow('Multiplier:', self.opp_multiplier_wgt)
+		self.opp_mult_wgt = QLineEdit(self)
+
+		# create and apply input validator
+		mult_validator = QIntValidator(-2**9, 2**9 - 1)
+		self.opp_mult_wgt.setValidator(mult_validator)
+
+		self.opp_mult_wgt.setPlaceholderText(str(-2**9) + ' to ' + str(2**9 - 1))
+		self.form_layout.addRow('Multiplier:', self.opp_mult_wgt)
+
+		# handler
+		self.opp_mult_wgt.textChanged.connect(lambda: pid.handle_opp_mult(self.opp_mult_wgt.text()))
 
 		# add form layout to main layout
 		self.layout.addLayout(self.form_layout)

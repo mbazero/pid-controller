@@ -38,7 +38,7 @@ module pid_controller #(
 	// --------------------------------------------------
 	parameter W_COMP			= 64, // width of computation registers
 	parameter W_EP				= 16, // width of opal kelly endpoint
-	parameter W_OPP_MLT		= 8,	// width of opp multiplication factor
+	parameter W_OPP_MLT		= 10,	// width of opp multiplication factor; specifies max allowed multiplier
 	parameter W_DAC_CHS		= 3,	// width of dac channel input...only change this if you get a DAC with >8 channels
 
 	// -------------- simulation params -----------------
