@@ -251,7 +251,7 @@ module pid_controller_tf;
 		output_init = 13107;
 		output_min = 1;
 		output_max = 52428;
-		multiplier = 5;
+		multiplier = 1;
 		right_shift = 9;
 
 		SetWireInValue(opp_init0_wep, output_init[15:0], mask); // set output init

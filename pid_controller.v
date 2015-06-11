@@ -61,22 +61,22 @@ module pid_controller #(
 	parameter DAC_MIN_INIT	= 0,
 	parameter DAC_OUT_INIT	= 0,
 	parameter DAC_MLT_INIT	= 1,
-	parameter DAC_DVS_INIT	= 1,
+	parameter DAC_RS_INIT	= 0,
 	parameter DDSF_MAX_INIT	= 0,
 	parameter DDSF_MIN_INIT = 0,
 	parameter DDSF_OUT_INIT = 0,
 	parameter DDSF_MLT_INIT = 1,
-	parameter DDSF_DVS_INIT	= 1,
+	parameter DDSF_RS_INIT	= 0,
 	parameter DDSP_MAX_INIT	= 0,
 	parameter DDSP_MIN_INIT = 0,
 	parameter DDSP_OUT_INIT = 0,
 	parameter DDSP_MLT_INIT = 1,
-	parameter DDSP_DVS_INIT	= 1,
+	parameter DDSP_RS_INIT	= 0,
 	parameter DDSA_MAX_INIT = 0,
 	parameter DDSA_MIN_INIT = 0,
 	parameter DDSA_OUT_INIT	= 0,
 	parameter DDSA_MLT_INIT = 1,
-	parameter DDSA_DVS_INIT	= 1
+	parameter DDSA_RS_INIT	= 0
 	// --------------------------------------------------
 	)(
 	// inputs <- OPAL KELLY PLL
@@ -421,7 +421,7 @@ generate
 			.MIN_INIT			(DAC_MIN_INIT),
 			.OUT_INIT			(DAC_OUT_INIT),
 			.MLT_INIT			(DAC_MLT_INIT),
-			.DVS_INIT			(DAC_DVS_INIT))
+			.RS_INIT				(DAC_RS_INIT))
 		dac_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -499,7 +499,7 @@ generate
 			.MIN_INIT			(DDSF_MIN_INIT),
 			.OUT_INIT			(DDSF_OUT_INIT),
 			.MLT_INIT			(DDSF_MLT_INIT),
-			.DVS_INIT			(DDSF_DVS_INIT))
+			.RS_INIT				(DDSF_RS_INIT))
 		freq_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -528,7 +528,7 @@ generate
 			.MIN_INIT			(DDSP_MIN_INIT),
 			.OUT_INIT			(DDSP_OUT_INIT),
 			.MLT_INIT			(DDSP_MLT_INIT),
-			.DVS_INIT			(DDSP_DVS_INIT))
+			.RS_INIT				(DDSP_RS_INIT))
 		phase_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -557,7 +557,7 @@ generate
 			.MIN_INIT			(DDSA_MIN_INIT),
 			.OUT_INIT			(DDSA_OUT_INIT),
 			.MLT_INIT			(DDSA_MLT_INIT),
-			.DVS_INIT			(DDSA_DVS_INIT))
+			.RS_INIT				(DDSA_RS_INIT))
 		amp_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
