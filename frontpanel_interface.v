@@ -3,6 +3,7 @@
 // frontpanel_interface -- mba13
 
 // TODO
+// - add multiplexer for osf data active
 // - consolodate triggers to single end point
 // - parameterize all input widths
 // - implement better wireOr functionality (right now you can only read adc_data from first channel)
@@ -25,8 +26,8 @@ module frontpanel_interface #(
 	input wire										clk17_in,
 
 	// inputs <- oversample filter
-	input wire		[N_ADC-1:0]					osf_data_valid
-	input wire		[N_ADC*W_ADC_DATA-1:0]	osf_data_packed,
+	input wire				[N_ADC-1:0]					osf_data_valid,
+	input wire				[N_ADC*W_ADC_DATA-1:0]	osf_data_packed,
 
 	// outputs -> adc controller
 	output wire				[2:0]					adc_os_out,						// dm
@@ -85,11 +86,19 @@ module frontpanel_interface #(
 `include "parameters.vh"
 
 //////////////////////////////////////////
+// local parameters
+//////////////////////////////////////////
+
+localparam N_PIPES = 2; // number of opal kelly pipes
+
+//////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
-/* local parameters */
-localparam N_PIPES = 2; // number of opal kelly pipes
+/* split osf data */
+wire	[W_ADC-1:0]		osf_data[N_ADC-1:0];
+wire	[W_ADC-1:0]		osf_data_active;	// osf data channel active for bulk transfer mode
+wire						osf_dv_active;
 
 /* host interface */
 wire 						ticlk;
@@ -140,6 +149,18 @@ wire	[15:0]	sys_reset_trig;
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
+
+/* split osf data */
+genvar a;
+generate
+	for ( a = 0; a < N_ADC; a = a + 1) begin : osf_data_split
+		assign osf_data[a] 	= osf_data_packed[ a*W_ADC +: W_ADC ];
+	end
+endgenerate
+
+/* multiplex active osf data channel */
+assign osf_data_active		= osf_data[0];
+assign osf_dv_active			= osf_data_valid[0];
 
 /* adc controller */
 assign adc_os_out 			= adc_os_wire[2:0];
@@ -218,8 +239,8 @@ pipe_tx_fifo osf_pipe_fifo (
 		.ti_clk_in		(ticlk),
 		.sys_clk_in		(clk50_in),
 		.reset_in		(sys_reset_out), // TODO add reset when active channel changes
-		.data_valid_in	(osf_data_valid[0]), // TODO same as below
-		.data_in			(osf_data[0][W_ADC_DATA-1 -: W_EP]), //TODO change to multiplexed input depending on active channel
+		.data_valid_in	(osf_dv_active),
+		.data_in			(osf_data_active[W_ADC_DATA-1 -: W_EP]),
 		.pipe_read_in	(osf_pipe_read),
 		.data_out		(osf_pipe_dout)
 		);

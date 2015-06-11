@@ -160,6 +160,7 @@ wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
 wire	[W_ADC_DATA-1:0]		osf_data[0:N_ADC-1];
+wire	[W_ADC_DATA*N_ADC-1:0] osf_data_packed;
 wire	[N_ADC-1:0]				osf_data_valid;
 
 /* pid core */
@@ -223,7 +224,7 @@ assign n_out_buf_en = 1'b0;
 /* pack oversample filter data to single data vector for presentation to frontpanel interface */
 genvar h;
 generate
-	for ( h = 0; h < N_ADC; h = h + 1 ) begin : rtr_in_arr
+	for ( h = 0; h < N_ADC; h = h + 1 ) begin : osf_data_pack
 		assign osf_data_packed[ h*W_ADC_DATA +: W_ADC_DATA ] = osf_data[h];
 	end
 endgenerate
@@ -231,7 +232,7 @@ endgenerate
 /* pack pid data and valid signals to single data vector for presentation to router */
 genvar i;
 generate
-	for ( i = 0; i < N_ADC; i = i + 1 ) begin : rtr_in_arr
+	for ( i = 0; i < N_ADC; i = i + 1 ) begin : pid_data_pack
 		assign rtr_input_packed[ i*W_COMPV +: W_COMPV ] = {pid_lock_en[i], pid_data_valid[i], pid_data[i]};
 	end
 endgenerate
@@ -239,7 +240,7 @@ endgenerate
 /* split router output data vector to seperate channels */
 genvar j;
 generate
-	for ( j = 0; j < N_OUT; j = j + 1 ) begin : rtr_out_arr
+	for ( j = 0; j < N_OUT; j = j + 1 ) begin : rtr_data_split
 		assign rtr_data[j] 			= rtr_output_packed[ j*W_COMPV +: W_COMP ];
 		assign rtr_data_valid[j]	= rtr_output_packed[ j*W_COMPV + W_COMP ];
 		assign rtr_lock_en[j]		= rtr_output_packed[ j*W_COMPV + W_COMP + 1];
