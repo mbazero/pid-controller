@@ -15,6 +15,13 @@ MODULE_UPDATE	= 4
 EP_MAP_PATH		= '../ep_map.vh'
 
 '''
+SUPER IMPORTANT TODO
+- properly handle updating for multiple channels
+- e.g. when update signal is pulsed for an opp module, all frontpanel params are updated, not just one
+'''
+
+
+'''
 Block Update Todo
 - properly handle x-axis scaling
 - add ok address mappings for pipe and focus wep

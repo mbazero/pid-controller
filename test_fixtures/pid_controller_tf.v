@@ -54,28 +54,8 @@ module pid_controller_tf;
 	wire [15:0] hi_inout;
 	wire hi_aa;
 
-	// Simulation params
-	localparam	SETPOINT = 0,
-					P_COEF = 10,
-					I_COEF = 3,
-					D_COEF = 2,
-					DAC_MAX = 52428,
-					DAC_MIN = 13107,
-					DAC_INIT = 39321;
-
-	reg [15:0] target = DAC_INIT + 133;
-
-
 	// Instantiate the Unit Under Test (UUT)
-	pid_controller #(
-		.PID_SETP_INIT(SETPOINT),
-		.PID_PCF_INIT(P_COEF),
-		.PID_ICF_INIT(I_COEF),
-		.PID_DCF_INIT(D_COEF),
-		.DAC_MAX_INIT(DAC_MAX),
-		.DAC_MIN_INIT(DAC_MIN),
-		.DAC_OUT_INIT(DAC_INIT))
-	uut (
+	pid_controller uut (
 		.clk50_in(clk50_in),
 		.clk17_in(clk17_in),
 		.adc_busy_in(adc_busy_in),
@@ -111,9 +91,9 @@ module pid_controller_tf;
 												 //           host interface checks for ready (0-255)
 	parameter PostReadyDelay = 5;     // REQUIRED: # of clocks after ready is asserted and
 												 //           check that the block transfer begins (0-255)
-	parameter pipeInSize = 1024;      // REQUIRED: byte (must be even) length of default
+	parameter pipeInSize = 2048;      // REQUIRED: byte (must be even) length of default
 												 //           PipeIn; Integer 0-2^32
-	parameter pipeOutSize = 1024;     // REQUIRED: byte (must be even) length of default
+	parameter pipeOutSize = 2048;     // REQUIRED: byte (must be even) length of default
 												 //           PipeOut; Integer 0-2^32
 
 	integer k;
@@ -154,30 +134,49 @@ module pid_controller_tf;
 	assign adc_data_a_in = data_a_tx[TX_LEN-1];
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
-	// misc structures
+	// misc params
+	localparam REPS = 1000;
+
+	// pid parameters
+	reg signed [15:0] setpoint = 0;
+	reg signed [15:0]	p_coef = 0;
+	reg signed [15:0]	i_coef = 0;
+	reg signed [15:0]	d_coef = 0;
+
+	// opp parameters
 	reg [15:0] output_init = 0;
 	reg [15:0] output_min = 0;
 	reg [15:0] output_max = 0;
 
-	reg signed [15:0] setpoint = SETPOINT,
-							p_coef = P_COEF,
-							i_coef = I_COEF,
-							d_coef = D_COEF;
-	reg signed [63:0] pid_data_reg = 0, error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
+	// pid verification
+	reg signed [63:0] pid_data_reg = 0;
+	reg signed [63:0] error = 0;
+	reg signed [63:0]	error_prev = 0;
+	reg signed [63:0]	integral = 0;
+	reg signed [63:0]	derivative = 0;
+	reg signed [63:0]	u_expected = 0;
+	reg signed [63:0]	e_count = 0;
+	reg [15:0] target = 0;
 	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
 	integer i;
+
+	// pipe verification
 	reg [15:0] pipeOutWord;
 	reg signed [15:0] wireOutValue;
+	reg signed [15:0] pipe_expected[REPS-1:0];
+	integer rep_count = 0;
 
-	// dac received data
+	// dac received data verification
 	reg [31:0] r_instr = 0;
 	wire [15:0] r_data;
 	wire [3:0] r_prefix, r_control, r_address, r_feature;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
-	// set channel values
+	// adc channel assignments
+	reg signed [15:0] chan_1_reg = 0;
 	//assign chan[0] = r_data - target;
-	assign chan[0] = 655;
+	//assign chan[0] = 655;
+	assign chan[0] = chan_1_reg;
 	assign chan[1] = 0;
 	assign chan[2] = 0;
 	assign chan[3] = 0;
@@ -198,39 +197,39 @@ module pid_controller_tf;
 		// Frontpanel reset
 		FrontPanelReset;
 
-//		// System reset
-//		ActivateTriggerIn(sys_reset_tep, 0);
-//
-//		// Set ADC oversampling mode
-//		SetWireInValue(adc_os_wep, 4, mask);	// os = 0
-//
-//		UpdateWireIns;
-//		ActivateTriggerIn(module_update_tep, 0);
-//
-//		// Set OSF ratio and activate channel 0
-//		SetWireInValue(osf_activate_wep, 16'd1, mask); // set OSF[0] activation
-//		SetWireInValue(osf_cycle_delay_wep, 16'd0, mask); // cycle delay = 0
-//		SetWireInValue(osf_osm_wep, 16'd0, mask); // log ovr = 0
-//		SetWireInValue(osf_update_en_wep, 16'd1, mask); // sensitize OSF channel 0
-//
-//		UpdateWireIns;
-//		ActivateTriggerIn(module_update_tep, 0);
-//
-//
-//		// Set channel 0 PID params
-//		setpoint = 0;
-//		p_coef = P_COEF;
-//		i_coef = I_COEF;
-//		d_coef = D_COEF;
-//		SetWireInValue(pid_setpoint_wep, setpoint, mask);	// setpoint = 3
-//		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
-//		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
-//		SetWireInValue(pid_d_coef_wep, d_coef, mask);	// d = 0
-//		SetWireInValue(pid_update_en_wep, 16'd1, mask);	// sensitize PID channel 0
-//
-//		UpdateWireIns;
-//		ActivateTriggerIn(module_update_tep, 0);
-//
+		// System reset
+		ActivateTriggerIn(sys_reset_tep, 0);
+
+		// Set ADC oversampling mode
+		SetWireInValue(adc_os_wep, 1, mask);	// os = 0
+
+		UpdateWireIns;
+		ActivateTriggerIn(module_update_tep, 0);
+
+		// Set OSF ratio and activate channel 0
+		SetWireInValue(osf_activate_wep, 1, mask); // set OSF[0] activation
+		SetWireInValue(osf_cycle_delay_wep, 0, mask); // cycle delay = 0
+		SetWireInValue(osf_osm_wep, 0, mask); // log ovr = 0
+		SetWireInValue(osf_update_en_wep, 1, mask); // sensitize OSF channel 0
+
+		UpdateWireIns;
+		ActivateTriggerIn(module_update_tep, 0);
+
+
+		// Set channel 0 PID params
+		setpoint = 0;
+		p_coef = 10;
+		i_coef = 3;
+		d_coef = 2;
+		SetWireInValue(pid_setpoint_wep, setpoint, mask);	// setpoint = 3
+		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
+		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
+		SetWireInValue(pid_d_coef_wep, d_coef, mask);	// d = 0
+		SetWireInValue(pid_update_en_wep, 16'd1, mask);	// sensitize PID channel 0
+
+		UpdateWireIns;
+		ActivateTriggerIn(module_update_tep, 0);
+
 		// Route input channel 0 to output channel 0 and activate output 0
 		SetWireInValue(rtr_src_sel_wep, 16'd0, mask);	// router source
 		SetWireInValue(rtr_dest_sel_wep, 16'd0, mask);	// router destination
@@ -239,21 +238,21 @@ module pid_controller_tf;
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
-//		// Set channel 0 OPP params
-//		output_init = 5000;
-//		output_min = 1111;
-//		output_max = 9999;
-//		SetWireInValue(opp_init0_wep, output_init, mask); // set output init
-//		SetWireInValue(opp_min0_wep, output_min, mask); // set output min
-//		SetWireInValue(opp_max0_wep, output_max, mask); // set output max
-//		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
-//
-//		UpdateWireIns;
-//		ActivateTriggerIn(module_update_tep, 0);
-//
-//		// trigger adc reference set
-//		ActivateTriggerIn(dac_ref_set_tep, 0);
-//
+		// Set channel 0 OPP params
+		output_init = 13107;
+		output_min = 26214;
+		output_max = 52428;
+		SetWireInValue(opp_init0_wep, output_init, mask); // set output init
+		SetWireInValue(opp_min0_wep, output_min, mask); // set output min
+		SetWireInValue(opp_max0_wep, output_max, mask); // set output max
+		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
+
+		UpdateWireIns;
+		ActivateTriggerIn(module_update_tep, 0);
+
+		// trigger adc reference set
+		ActivateTriggerIn(dac_ref_set_tep, 0);
+
 		// activate pid lock 0
 		SetWireInValue(pid_lock_en_wep, 16'd1, mask);
 		UpdateWireIns;
@@ -267,28 +266,48 @@ module pid_controller_tf;
 		ActivateTriggerIn(adc_cstart_tep, 0);
 
 		fork
-			adc_transmit(100);
-			pipe_read(100);
-			check_pid(100);
-			print_state(100);
-			change_target(100);
-			rcv_data(100);
+			adc_transmit(REPS);
+			pipe_read(REPS);
+			check_pid(REPS);
+			print_state(REPS);
+			change_target(REPS);
+			rcv_data(REPS);
+			check_pipe(REPS);
 		join
-
-		// read pipe data
-		ReadFromPipeOut(osf_block_data_pep, 1024);
-		for(i = 0; i < (100); i = i + 1) begin
-			pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
-			#1;
-			//$display("%d: Pipe out val -- %d", i, pipeOutWord);
-		end
 
 		$stop;
 
 	end
 
+	task check_pipe;
+		input [31:0] reps;
+
+		begin
+			repeat(reps) begin
+				@(posedge pid_controller_tf.uut.osf_data_valid[0]) begin
+					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[0][17 -: 16];
+					rep_count = rep_count + 1;
+				end
+			end
+
+			// read pipe data
+			ReadFromPipeOut(osf_block_data_pep, pipeOutSize);
+			for(i = 0; i < (REPS); i = i + 1) begin
+				pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
+				#1;
+				$write("#%d: ", i);
+				if(pipe_expected[i] == pipeOutWord) begin
+					$display("Pipe Success\t--\tExpected: %d\tReceived: %d", pipe_expected[i], $signed(pipeOutWord));
+				end else begin
+					$display("Pipe Failure\t--\tExpected: %d\tReceived: %d", pipe_expected[i], $signed(pipeOutWord));
+					$stop;
+				end
+			end
+		end
+	endtask
+
 	task adc_transmit;
-		input [7:0] reps;
+		input [31:0] reps;
 
 		begin
 			// adc data transmission simulation
@@ -297,6 +316,8 @@ module pid_controller_tf;
 				@(posedge adc_convst_out) begin
 					@(posedge clk17_in) adc_busy_in = 1;
 				end
+
+				chan_1_reg = $random;
 
 				// simulate serial transmission from adc to fpga
 				@(negedge adc_n_cs_out) begin
@@ -323,7 +344,7 @@ module pid_controller_tf;
 	endtask
 
 	task pipe_read;
-		input [7:0] reps;
+		input [31:0] reps;
 
 		// simulate pipe continuous read
 		repeat(reps) begin
@@ -336,7 +357,7 @@ module pid_controller_tf;
 	endtask
 
 	task check_pid;
-		input [7:0] reps;
+		input [31:0] reps;
 
 		// check pid value
 		repeat(reps) begin
@@ -352,7 +373,7 @@ module pid_controller_tf;
 				error_prev = error;
 				#1;
 				if(u_expected == pid_data_reg) begin
-					//$display("PID Success\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
+					$display("PID Success\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
 				end else begin
 					$display("PID Failure\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
 					$stop;
@@ -362,7 +383,7 @@ module pid_controller_tf;
 	endtask
 
 	task print_state;
-		input [7:0] reps;
+		input [31:0] reps;
 
 		// print internal state
 		repeat(reps) begin
@@ -383,7 +404,7 @@ module pid_controller_tf;
 	endtask
 
 	task change_target;
-		input [7:0] reps;
+		input [31:0] reps;
 
 		// change target after 15 reps
 		repeat(reps) begin
@@ -398,7 +419,7 @@ module pid_controller_tf;
 
 
 	task rcv_data;
-		input [7:0] reps;
+		input [31:0] reps;
 
 		// simulate received dac data
 		repeat(reps) begin
