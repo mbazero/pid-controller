@@ -160,8 +160,11 @@ module pid_controller_tf;
 	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
 	integer i;
 
+	// output verification
+	reg [15:0] dac_data_reg = 0;
+
 	// pipe verification
-	reg [15:0] pipeOutWord;
+	reg signed [15:0] pipeOutWord;
 	reg signed [15:0] wireOutValue;
 	reg signed [15:0] pipe_expected[REPS-1:0];
 	integer rep_count = 0;
@@ -271,7 +274,8 @@ module pid_controller_tf;
 			check_pid(REPS);
 			print_state(REPS);
 			change_target(REPS);
-			rcv_data(REPS);
+			check_output(REPS);
+			check_rcv(REPS);
 			check_pipe(REPS);
 		join
 
@@ -296,12 +300,7 @@ module pid_controller_tf;
 				pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
 				#1;
 				$write("#%d: ", i);
-				if(pipe_expected[i] == pipeOutWord) begin
-					$display("Pipe Success\t--\tExpected: %d\tReceived: %d", pipe_expected[i], $signed(pipeOutWord));
-				end else begin
-					$display("Pipe Failure\t--\tExpected: %d\tReceived: %d", pipe_expected[i], $signed(pipeOutWord));
-					$stop;
-				end
+				assert_equals(pipe_expected[i], pipeOutWord, "Pipe");
 			end
 		end
 	endtask
@@ -372,12 +371,7 @@ module pid_controller_tf;
 				u_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
 				error_prev = error;
 				#1;
-				if(u_expected == pid_data_reg) begin
-					$display("PID Success\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
-				end else begin
-					$display("PID Failure\t--\tExpected: %d\tReceived: %d", u_expected, pid_data_reg);
-					$stop;
-				end
+				assert_equals(u_expected, pid_data_reg, "PID");
 			end
 		end
 	endtask
@@ -416,13 +410,21 @@ module pid_controller_tf;
 		end
 	endtask
 
-
-
-	task rcv_data;
+	task check_output;
 		input [31:0] reps;
 
-		// simulate received dac data
 		repeat(reps) begin
+			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
+				dac_data_reg = pid_controller_tf.uut.opp_dac_data[0];
+			end
+		end
+	endtask
+
+	task check_rcv;
+		input [31:0] reps;
+
+		repeat(reps) begin
+			// simulate dac receiving data
 			@(negedge dac_nsync_out) begin
 				repeat(32) begin
 					@(negedge dac_sclk_out) begin
@@ -430,8 +432,30 @@ module pid_controller_tf;
 					end
 				end
 			end
+			#1 assert_equals(dac_data_reg, r_data, "Receive");
 		end
 	endtask
+
+	task assert_equals;
+		input [63:0] expected;
+		input [63:0] received;
+		input [20*8-1:0] test_name;
+
+		begin
+
+			$display("%s Test:", test_name);
+			$display("Expected: %d", $signed(expected));
+			$display("Received: %d", $signed(received));
+
+			if(expected == received) begin
+				$display("Success");
+			end else begin
+				$display("Failure");
+				$stop;
+			end
+		end
+	endtask
+
 
 	`include "ok_sim/okHostCalls.v"
 
