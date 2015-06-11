@@ -15,7 +15,8 @@ module output_preprocessor #(
 	parameter MAX_INIT		= 52428,							// initial output upper bound
 	parameter MIN_INIT		= 13107,							// initial output lower bound
 	parameter OUT_INIT		= 39321,							// initial output starting value
-	parameter MLT_INIT		= 1								// initial output multiplier
+	parameter MLT_INIT		= 1,								// initial output multiplier
+	parameter DVS_INIT		= 1								// initial output divisor
 	)(
 	// inputs <-- top level entity
 	input wire								clk_in,				// system clock
@@ -31,6 +32,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
 	input wire signed		[W_MLT-1:0]	multiplier_in,		// output multiplication factor
+	input wire signed		[W_EP-1:0]	divisor_in,			// output division factor
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
@@ -65,13 +67,15 @@ wire signed [W_IN+W_MLT-1:0]	proc_stage_0;
 wire signed [W_IN+W_MLT:0]		proc_stage_1,
 										proc_stage_2,
 										proc_stage_3,
-										proc_stage_4;
+										proc_stage_4,
+										proc_stage_5;
 
 /* pid parameter registers */
 reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
 reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
 reg signed	[W_OUT-1:0]	output_init = OUT_INIT;			// active output initial value
 reg signed	[W_MLT-1:0]	multiplier = MLT_INIT; 			// active output multiplication factor
+reg signed	[W_EP-1:0]	divisor = DVS_INIT;				// active ooutput division factor
 
 /* state registers */
 reg			[7:0]			counter = 0; 						// intrastate counter
@@ -83,24 +87,27 @@ reg			[2:0]			next_state = ST_IDLE;			// next state
 //////////////////////////////////////////
 
 //// output data processing ////
-/* stage 0: scale pid sum */
+/* stage 0: multiply pid sum */
 assign proc_stage_0 = pid_sum * multiplier;
 
-/* stage 1: add lock data to previous outputed data value */
-assign proc_stage_1 = proc_stage_0 + data_out_prev;
+/* stage 1: divide pid sum */
+assign proc_stage_1 = proc_stage_0 / divisor;
 
-/* stage 2: select output init value if lock is not enabled */
-assign proc_stage_2 = ( lock_en_in == 1 ) ? proc_stage_1 : output_init;
+/* stage 2: add lock data to previous outputed data value */
+assign proc_stage_2 = proc_stage_1 + data_out_prev;
 
-/* stage 3: restrict lock data upper bound */
-assign proc_stage_3 = ( proc_stage_2 > output_max ) ? output_max : proc_stage_2;
+/* stage 3: select output init value if lock is not enabled */
+assign proc_stage_3 = ( lock_en_in == 1 ) ? proc_stage_2 : output_init;
 
-/* stage 4: restrict lock data lower bound */
-assign proc_stage_4 = ( proc_stage_3 < output_min ) ? output_min : proc_stage_3;
+/* stage 4: restrict lock data upper bound */
+assign proc_stage_4 = ( proc_stage_3 > output_max ) ? output_max : proc_stage_3;
+
+/* stage 5: restrict lock data lower bound */
+assign proc_stage_5 = ( proc_stage_4 < output_min ) ? output_min : proc_stage_4;
 ////////////////////////////////
 
 /* data out */
-assign data_out = proc_stage_4[W_OUT-1:0];
+assign data_out = proc_stage_5[W_OUT-1:0];
 assign data_valid_out = ( cur_state == ST_SEND );
 
 //////////////////////////////////////////

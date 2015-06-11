@@ -58,19 +58,22 @@ module pid_controller #(
 	parameter DAC_MIN_INIT	= 13107,
 	parameter DAC_OUT_INIT	= 39321,
 	parameter DAC_MLT_INIT	= 1,
+	parameter DAC_DVS_INIT	= 1,
 	parameter DDSF_MAX_INIT	= 2^47,
 	parameter DDSF_MIN_INIT = 0,
 	parameter DDSF_OUT_INIT = 0,
 	parameter DDSF_MLT_INIT = 1,
+	parameter DDSF_DVS_INIT	= 1,
 	parameter DDSP_MAX_INIT	= 2^13,
 	parameter DDSP_MIN_INIT = 0,
 	parameter DDSP_OUT_INIT = 0,
 	parameter DDSP_MLT_INIT = 1,
+	parameter DDSP_DVS_INIT	= 1,
 	parameter DDSA_MAX_INIT = 2^9,
 	parameter DDSA_MIN_INIT = 0,
 	parameter DDSA_OUT_INIT	= 0,
 	parameter DDSA_MLT_INIT = 1,
-	parameter OPP_MLT_INIT	= 1
+	parameter DDSA_DVS_INIT	= 1
 	// --------------------------------------------------
 	)(
 	// inputs <- OPAL KELLY PLL
@@ -191,6 +194,7 @@ wire	[47:0]					opp_max;
 wire	[47:0]					opp_min;
 wire	[47:0]					opp_init;
 wire	[W_OPP_MLT-1:0]		opp_multiplier;
+wire	[W_EP-1:0]				opp_divisor;
 wire	[W_DAC_DATA-1:0]		opp_dac_data[0:N_DAC-1];
 wire	[W_DDS_FREQ-1:0]		opp_freq_data[0:N_DDS-1];
 wire	[W_DDS_PHASE-1:0]		opp_phase_data[0:N_DDS-1];
@@ -412,7 +416,8 @@ generate
 			.MAX_INIT			(DAC_MAX_INIT),
 			.MIN_INIT			(DAC_MIN_INIT),
 			.OUT_INIT			(DAC_OUT_INIT),
-			.MLT_INIT			(DAC_MLT_INIT))
+			.MLT_INIT			(DAC_MLT_INIT),
+			.DVS_INIT			(DAC_DVS_INIT))
 		dac_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -422,6 +427,7 @@ generate
 			.output_min_in		(opp_min[W_DAC_DATA:0]),
 			.output_init_in	(opp_init[W_DAC_DATA:0]),
 			.multiplier_in		(opp_multiplier),
+			.divisor_in			(opp_divisor),
 			.lock_en_in			(rtr_lock_en[x] | rtr_lock_en_dbg[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
@@ -487,7 +493,8 @@ generate
 			.MAX_INIT			(DDSF_MAX_INIT),
 			.MIN_INIT			(DDSF_MIN_INIT),
 			.OUT_INIT			(DDSF_OUT_INIT),
-			.MLT_INIT			(DDSF_MLT_INIT))
+			.MLT_INIT			(DDSF_MLT_INIT),
+			.DVS_INIT			(DDSF_DVS_INIT))
 		freq_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -500,6 +507,7 @@ generate
 			.output_min_in		(opp_min[W_DDS_FREQ-1:0]),
 			.output_init_in	(opp_init[W_DDS_FREQ-1:0]),
 			.multiplier_in		(opp_multiplier),
+			.divisor_in			(opp_divisior),
 			.data_out			(opp_freq_data[y]),
 			.data_valid_out	(opp_freq_data_valid[y])
 			);
@@ -513,7 +521,8 @@ generate
 			.MAX_INIT			(DDSP_MAX_INIT),
 			.MIN_INIT			(DDSP_MIN_INIT),
 			.OUT_INIT			(DDSP_OUT_INIT),
-			.MLT_INIT			(DDSP_MLT_INIT))
+			.MLT_INIT			(DDSP_MLT_INIT),
+			.DVS_INIT			(DDSP_DVS_INIT))
 		phase_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -526,6 +535,7 @@ generate
 			.output_min_in		(opp_min[W_DDS_PHASE-1:0]),
 			.output_init_in	(opp_init[W_DDS_PHASE-1:0]),
 			.multiplier_in		(opp_multiplier),
+			.divisor_in			(opp_divisor),
 			.data_out			(opp_phase_data[y]),
 			.data_valid_out	(opp_phase_data_valid[y])
 			);
@@ -539,7 +549,8 @@ generate
 			.MAX_INIT			(DDSA_MAX_INIT),
 			.MIN_INIT			(DDSA_MIN_INIT),
 			.OUT_INIT			(DDSA_OUT_INIT),
-			.MLT_INIT			(DDSA_MLT_INIT))
+			.MLT_INIT			(DDSA_MLT_INIT),
+			.DVS_INIT			(DDSA_DVS_INIT))
 		amp_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
@@ -552,6 +563,7 @@ generate
 			.output_min_in		(opp_min[W_DDS_AMP-1:0]),
 			.output_init_in	(opp_init[W_DDS_AMP-1:0]),
 			.multiplier_in		(opp_multiplier),
+			.divisor_in			(opp_divisor),
 			.data_out			(opp_amp_data[y]),
 			.data_valid_out	(opp_amp_data_valid[y])
 			);
@@ -589,6 +601,7 @@ frontpanel_interface #(
 	.W_ADC_DATA				(W_ADC_DATA),
 	.W_OSF_CD				(W_OSF_CD),
 	.W_OSF_OSM				(W_OSF_OSM),
+	.W_MLT					(W_OPP_MLT),
 	.W_EP						(W_EP),
 	.N_DAC					(N_DAC),
 	.W_DAC					(W_DAC_DATA))
@@ -617,6 +630,7 @@ fp_io (
 	.opp_max_out			(opp_max),
 	.opp_init_out			(opp_init),
 	.opp_multiplier_out	(opp_multiplier),
+	.opp_divisor_out		(opp_divisor),
 	.opp_update_en_out	(opp_update_en),
 	.dac_ref_set_out		(dac_ref_set),
 	.module_update_out	(module_update),
