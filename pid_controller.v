@@ -45,31 +45,34 @@ module pid_controller #(
 	// - initial value params used to run timing
 	//   simulations, which do not support opal kelly
 	//   parameter setting
+	// - to run a timing sim, assert TSIM_EN and set
+	//   initial values as desired
 	// --------------------------------------------------
+	parameter TSIM_EN			= 0,
 	parameter ADC_OS_INIT	= 1,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
 	parameter PID_SETP_INIT = 0,
-	parameter PID_PCF_INIT	= 1,
+	parameter PID_PCF_INIT	= 0,
 	parameter PID_ICF_INIT	= 0,
 	parameter PID_DCF_INIT	= 0,
 	parameter RTR_ACTV_INIT	= 0,
-	parameter DAC_MAX_INIT	= 52428,
-	parameter DAC_MIN_INIT	= 13107,
-	parameter DAC_OUT_INIT	= 39321,
+	parameter DAC_MAX_INIT	= 0,
+	parameter DAC_MIN_INIT	= 0,
+	parameter DAC_OUT_INIT	= 0,
 	parameter DAC_MLT_INIT	= 1,
 	parameter DAC_DVS_INIT	= 1,
-	parameter DDSF_MAX_INIT	= 2^47,
+	parameter DDSF_MAX_INIT	= 0,
 	parameter DDSF_MIN_INIT = 0,
 	parameter DDSF_OUT_INIT = 0,
 	parameter DDSF_MLT_INIT = 1,
 	parameter DDSF_DVS_INIT	= 1,
-	parameter DDSP_MAX_INIT	= 2^13,
+	parameter DDSP_MAX_INIT	= 0,
 	parameter DDSP_MIN_INIT = 0,
 	parameter DDSP_OUT_INIT = 0,
 	parameter DDSP_MLT_INIT = 1,
 	parameter DDSP_DVS_INIT	= 1,
-	parameter DDSA_MAX_INIT = 2^9,
+	parameter DDSA_MAX_INIT = 0,
 	parameter DDSA_MIN_INIT = 0,
 	parameter DDSA_OUT_INIT	= 0,
 	parameter DDSA_MLT_INIT = 1,
@@ -158,7 +161,7 @@ wire	[W_ADC_DATA-1:0]		cs_data_b;
 
 /* oversample filter */
 wire	[N_ADC-1:0]				osf_activate;
-wire	[N_ADC-1:0]				osf_activate_dbg = 0; 	// assert for timing simulation only
+wire	[N_ADC-1:0]				osf_activate_dbg = TSIM_EN; // asserted for timing simulation only
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
@@ -186,7 +189,7 @@ wire	[W_COMPV*N_OUT-1:0]	rtr_output_packed;
 wire	[W_COMP-1:0]			rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
 wire	[N_OUT-1:0]				rtr_lock_en;
-wire	[N_OUT-1:0]				rtr_lock_en_dbg = 0;		// assert for timing simulation only
+wire	[N_OUT-1:0]				rtr_lock_en_dbg = TSIM_EN; // assert for timing simulation only
 
 /* output preprocessor */
 wire	[N_OUT-1:0]				opp_update_en;
@@ -504,7 +507,7 @@ generate
 			.data_valid_in		(rtr_data_valid[F]),
 			.update_en_in		(opp_update_en[F]),
 			.update_in			(module_update),
-			.lock_en_in			(1'b1), //DEBUG
+			.lock_en_in			(rtr_lock_en[F]),
 			.output_max_in		(opp_max[W_DDS_FREQ-1:0]),
 			.output_min_in		(opp_min[W_DDS_FREQ-1:0]),
 			.output_init_in	(opp_init[W_DDS_FREQ-1:0]),
@@ -533,7 +536,7 @@ generate
 			.data_valid_in		(rtr_data_valid[P]),
 			.update_en_in		(opp_update_en[P]),
 			.update_in			(module_update),
-			.lock_en_in			(1'b0), //DEBUG
+			.lock_en_in			(rtr_lock_en[P]),
 			.output_max_in		(opp_max[W_DDS_PHASE-1:0]),
 			.output_min_in		(opp_min[W_DDS_PHASE-1:0]),
 			.output_init_in	(opp_init[W_DDS_PHASE-1:0]),
@@ -562,7 +565,7 @@ generate
 			.data_valid_in		(rtr_data_valid[A]),
 			.update_en_in		(opp_update_en[A]),
 			.update_in			(module_update),
-			.lock_en_in			(1'b0), //DEBUG
+			.lock_en_in			(rtr_lock_en[A]),
 			.output_max_in		(opp_max[W_DDS_AMP-1:0]),
 			.output_min_in		(opp_min[W_DDS_AMP-1:0]),
 			.output_init_in	(opp_init[W_DDS_AMP-1:0]),
