@@ -33,7 +33,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
 	input wire signed		[W_MLT-1:0]	multiplier_in,		// output multiplication factor
-	input wire signed		[W_EP-1:0]	right_shift_in,	// output right shift
+	input wire 				[W_EP-1:0]	right_shift_in,	// output right shift
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
@@ -76,7 +76,7 @@ reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
 reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
 reg signed	[W_OUT-1:0]	output_init = OUT_INIT;			// active output initial value
 reg signed	[W_MLT-1:0]	multiplier = MLT_INIT; 			// active output multiplication factor
-reg signed	[W_EP-1:0]	right_shift = RS_INIT;			// active ooutput division factor
+reg 			[W_EP-1:0]	right_shift = RS_INIT;			// active ooutput division factor
 
 /* state registers */
 reg			[7:0]			counter = 0; 						// intrastate counter

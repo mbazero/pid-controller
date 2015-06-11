@@ -148,7 +148,7 @@ module pid_controller_tf;
 	reg signed [47:0] output_min = 0;
 	reg signed [47:0] output_max = 0;
 	reg signed [15:0] multiplier;
-	reg signed [15:0] right_shift;
+	reg [15:0] right_shift;
 
 	// pid verification
 	reg signed [63:0] pid_data_reg = 0;
@@ -249,6 +249,7 @@ module pid_controller_tf;
 
 		// Set channel 0 OPP params
 		output_init = 13107;
+		dac_data_reg = output_init;
 		output_min = 1;
 		output_max = 52428;
 		multiplier = 1;
@@ -440,14 +441,33 @@ module pid_controller_tf;
 			@(posedge pid_dv) begin
 				#1;
 				proc_stage[0] = pid_data_reg * multiplier;
-				proc_stage[1] = proc_stage[0] / (2**right_shift);
+				proc_stage[1] = proc_stage[0] >>> right_shift;
 				proc_stage[2] = proc_stage[1] + dac_data_reg;
 				proc_stage[3] = (lock_en == 1) ? proc_stage[2] : output_init;
 				proc_stage[4] = (proc_stage[3] > output_max) ? output_max : proc_stage[3];
 				proc_stage[5] = (proc_stage[4] < output_min) ? output_min : proc_stage[4];
+
+				$display("***************EXP PIPE***************");
+				$display(proc_stage[0]);
+				$display(proc_stage[1]);
+				$display(proc_stage[2]);
+				$display(proc_stage[3]);
+				$display(proc_stage[4]);
+				$display(proc_stage[5]);
+				$display("**************************************");
 			end
 
 			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
+				$display("***************RCV PIPE***************");
+				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.data_out_prev);
+				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_0);
+				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_1);
+				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_2);
+				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_3);
+				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_4);
+				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_5);
+				$display("**************************************");
+
 				dac_data_reg = pid_controller_tf.uut.opp_dac_data[0];
 			end
 
