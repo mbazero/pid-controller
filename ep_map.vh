@@ -30,7 +30,7 @@ parameter opp_max0_wep				= 8'h11;
 parameter opp_max1_wep				= 8'h12;
 parameter opp_max2_wep				= 8'h13;
 parameter opp_multiplier_wep		= 8'h14;
-parameter opp_divisor_wep			= 8'h15;
+parameter opp_right_shift_wep		= 8'h15;
 parameter opp_update_en_wep		= 8'h16;
 
 parameter dac_ref_set_tep			= 8'h56;

@@ -17,7 +17,7 @@ module output_preprocessor #(
 	parameter MIN_INIT		= 13107,							// initial output lower bound
 	parameter OUT_INIT		= 39321,							// initial output starting value
 	parameter MLT_INIT		= 1,								// initial output multiplier
-	parameter DVS_INIT		= 1								// initial output divisor
+	parameter RS_INIT			= 1								// initial output right shift
 	)(
 	// inputs <-- top level entity
 	input wire								clk_in,				// system clock
@@ -33,7 +33,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
 	input wire signed		[W_MLT-1:0]	multiplier_in,		// output multiplication factor
-	input wire signed		[W_EP-1:0]	divisor_in,			// output division factor
+	input wire signed		[W_EP-1:0]	right_shift_in,	// output right shift
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
@@ -76,7 +76,7 @@ reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
 reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
 reg signed	[W_OUT-1:0]	output_init = OUT_INIT;			// active output initial value
 reg signed	[W_MLT-1:0]	multiplier = MLT_INIT; 			// active output multiplication factor
-reg signed	[W_EP-1:0]	divisor = (DVS_INIT != 0) ? DVS_INIT : 1;	// active ooutput division factor
+reg signed	[W_EP-1:0]	right_shift = RS_INIT;			// active ooutput division factor
 
 /* state registers */
 reg			[7:0]			counter = 0; 						// intrastate counter
@@ -92,7 +92,7 @@ reg			[2:0]			next_state = ST_IDLE;			// next state
 assign proc_stage_0 = pid_sum * multiplier;
 
 /* stage 1: divide pid sum */
-assign proc_stage_1 = proc_stage_0 / divisor;
+assign proc_stage_1 = proc_stage_0 >>> right_shift;
 
 /* stage 2: add lock data to previous outputed data value */
 assign proc_stage_2 = proc_stage_1 + data_out_prev;
@@ -142,7 +142,7 @@ always @( posedge update_in ) begin
 		output_min	<= output_min_in;
 		output_init	<= output_init_in;
 		multiplier	<= multiplier_in;
-		divisor		<= (divisor_in != 0) ? divisor_in : 1;
+		right_shift	<= right_shift_in;
 	end
 end
 

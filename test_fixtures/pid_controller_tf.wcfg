@@ -206,28 +206,28 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage_0" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">proc_stage_0[71:0]</obj_property>
-      <obj_property name="ObjectShortName">proc_stage_0[71:0]</obj_property>
+      <obj_property name="ElementShortName">proc_stage_0[73:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage_0[73:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage_1" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">proc_stage_1[72:0]</obj_property>
-      <obj_property name="ObjectShortName">proc_stage_1[72:0]</obj_property>
+      <obj_property name="ElementShortName">proc_stage_1[74:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage_1[74:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage_2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">proc_stage_2[72:0]</obj_property>
-      <obj_property name="ObjectShortName">proc_stage_2[72:0]</obj_property>
+      <obj_property name="ElementShortName">proc_stage_2[74:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage_2[74:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage_3" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">proc_stage_3[72:0]</obj_property>
-      <obj_property name="ObjectShortName">proc_stage_3[72:0]</obj_property>
+      <obj_property name="ElementShortName">proc_stage_3[74:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage_3[74:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/\dac_opp_array[0].dac_opp /proc_stage_4" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">proc_stage_4[72:0]</obj_property>
-      <obj_property name="ObjectShortName">proc_stage_4[72:0]</obj_property>
+      <obj_property name="ElementShortName">proc_stage_4[74:0]</obj_property>
+      <obj_property name="ObjectShortName">proc_stage_4[74:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/opp_dac_data_valid[0]" type="logic" db_ref_id="1">

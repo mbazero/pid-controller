@@ -135,7 +135,7 @@ module pid_controller_tf;
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
 	// misc params
-	localparam REPS = 1000;
+	localparam REPS = 100;
 
 	// pid parameters
 	reg signed [15:0] setpoint = 0;
@@ -144,9 +144,11 @@ module pid_controller_tf;
 	reg signed [15:0]	d_coef = 0;
 
 	// opp parameters
-	reg [15:0] output_init = 0;
-	reg [15:0] output_min = 0;
-	reg [15:0] output_max = 0;
+	reg signed [47:0] output_init = 0;
+	reg signed [47:0] output_min = 0;
+	reg signed [47:0] output_max = 0;
+	reg signed [15:0] multiplier;
+	reg signed [15:0] right_shift;
 
 	// pid verification
 	reg signed [63:0] pid_data_reg = 0;
@@ -158,6 +160,7 @@ module pid_controller_tf;
 	reg signed [63:0]	e_count = 0;
 	reg [15:0] target = 0;
 	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
+	reg lock_en = 0;
 	integer i;
 
 	// output verification
@@ -168,6 +171,9 @@ module pid_controller_tf;
 	reg signed [15:0] wireOutValue;
 	reg signed [15:0] pipe_expected[REPS-1:0];
 	integer rep_count = 0;
+
+	// output verification
+	reg signed [127:0] proc_stage[5:0];
 
 	// dac received data verification
 	reg [31:0] r_instr = 0;
@@ -243,13 +249,28 @@ module pid_controller_tf;
 
 		// Set channel 0 OPP params
 		output_init = 13107;
-		output_min = 26214;
+		output_min = 1;
 		output_max = 52428;
-		SetWireInValue(opp_init0_wep, output_init, mask); // set output init
-		SetWireInValue(opp_min0_wep, output_min, mask); // set output min
-		SetWireInValue(opp_max0_wep, output_max, mask); // set output max
-		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
+		multiplier = 5;
+		right_shift = 9;
 
+		SetWireInValue(opp_init0_wep, output_init[15:0], mask); // set output init
+		SetWireInValue(opp_init1_wep, output_init[31:16], mask);
+		SetWireInValue(opp_init2_wep, output_init[47:32], mask);
+
+		SetWireInValue(opp_min0_wep, output_min[15:0], mask); // set output min
+		SetWireInValue(opp_min1_wep, output_min[31:16], mask);
+		SetWireInValue(opp_min2_wep, output_min[47:32], mask);
+
+		SetWireInValue(opp_max0_wep, output_max[15:0], mask); // set output max
+		SetWireInValue(opp_max1_wep, output_max[31:16], mask);
+		SetWireInValue(opp_max2_wep, output_max[47:32], mask);
+
+		SetWireInValue(opp_multiplier_wep, multiplier, mask); // set multiplier
+
+		SetWireInValue(opp_right_shift_wep, right_shift, mask); // set right_shift
+
+		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
@@ -257,7 +278,8 @@ module pid_controller_tf;
 		ActivateTriggerIn(dac_ref_set_tep, 0);
 
 		// activate pid lock 0
-		SetWireInValue(pid_lock_en_wep, 16'd1, mask);
+		lock_en = 1;
+		SetWireInValue(pid_lock_en_wep, lock_en, mask);
 		UpdateWireIns;
 
 		// activate adc channel 0
@@ -414,9 +436,26 @@ module pid_controller_tf;
 		input [31:0] reps;
 
 		repeat(reps) begin
+			// compute expected output value
+			@(posedge pid_dv) begin
+				#1;
+				proc_stage[0] = pid_data_reg * multiplier;
+				proc_stage[1] = proc_stage[0] / (2**right_shift);
+				proc_stage[2] = proc_stage[1] + dac_data_reg;
+				proc_stage[3] = (lock_en == 1) ? proc_stage[2] : output_init;
+				proc_stage[4] = (proc_stage[3] > output_max) ? output_max : proc_stage[3];
+				proc_stage[5] = (proc_stage[4] < output_min) ? output_min : proc_stage[4];
+			end
+
 			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
 				dac_data_reg = pid_controller_tf.uut.opp_dac_data[0];
 			end
+
+			#1 assert_equals(proc_stage[5], dac_data_reg, "Output");
+
+			//right_shift = $random;
+			//multiplier = $random;
+
 		end
 	endtask
 
@@ -437,8 +476,8 @@ module pid_controller_tf;
 	endtask
 
 	task assert_equals;
-		input [63:0] expected;
-		input [63:0] received;
+		input [127:0] expected;
+		input [127:0] received;
 		input [20*8-1:0] test_name;
 
 		begin

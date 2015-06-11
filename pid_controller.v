@@ -197,7 +197,7 @@ wire	[47:0]					opp_max;
 wire	[47:0]					opp_min;
 wire	[47:0]					opp_init;
 wire	[W_OPP_MLT-1:0]		opp_multiplier;
-wire	[W_EP-1:0]				opp_divisor;
+wire	[W_EP-1:0]				opp_right_shift;
 wire	[W_DAC_DATA-1:0]		opp_dac_data[0:N_DAC-1];
 wire	[W_DDS_FREQ-1:0]		opp_freq_data[0:N_DDS-1];
 wire	[W_DDS_PHASE-1:0]		opp_phase_data[0:N_DDS-1];
@@ -431,7 +431,7 @@ generate
 			.output_min_in		(opp_min[W_DAC_DATA:0]),
 			.output_init_in	(opp_init[W_DAC_DATA:0]),
 			.multiplier_in		(opp_multiplier),
-			.divisor_in			(opp_divisor),
+			.right_shift_in	(opp_right_shift),
 			.lock_en_in			(rtr_lock_en[x] | rtr_lock_en_dbg[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
@@ -512,7 +512,7 @@ generate
 			.output_min_in		(opp_min[W_DDS_FREQ-1:0]),
 			.output_init_in	(opp_init[W_DDS_FREQ-1:0]),
 			.multiplier_in		(opp_multiplier),
-			.divisor_in			(opp_divisor),
+			.right_shift_in	(opp_right_shift),
 			.data_out			(opp_freq_data[y]),
 			.data_valid_out	(opp_freq_data_valid[y])
 			);
@@ -541,7 +541,7 @@ generate
 			.output_min_in		(opp_min[W_DDS_PHASE-1:0]),
 			.output_init_in	(opp_init[W_DDS_PHASE-1:0]),
 			.multiplier_in		(opp_multiplier),
-			.divisor_in			(opp_divisor),
+			.right_shift_in	(opp_right_shift),
 			.data_out			(opp_phase_data[y]),
 			.data_valid_out	(opp_phase_data_valid[y])
 			);
@@ -570,7 +570,7 @@ generate
 			.output_min_in		(opp_min[W_DDS_AMP-1:0]),
 			.output_init_in	(opp_init[W_DDS_AMP-1:0]),
 			.multiplier_in		(opp_multiplier),
-			.divisor_in			(opp_divisor),
+			.right_shift_in	(opp_right_shift),
 			.data_out			(opp_amp_data[y]),
 			.data_valid_out	(opp_amp_data_valid[y])
 			);
@@ -637,7 +637,7 @@ fp_io (
 	.opp_max_out			(opp_max),
 	.opp_init_out			(opp_init),
 	.opp_multiplier_out	(opp_multiplier),
-	.opp_divisor_out		(opp_divisor),
+	.opp_right_shift_out	(opp_right_shift),
 	.opp_update_en_out	(opp_update_en),
 	.dac_ref_set_out		(dac_ref_set),
 	.module_update_out	(module_update),
