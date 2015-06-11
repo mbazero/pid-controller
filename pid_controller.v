@@ -220,6 +220,14 @@ wire	[N_DDS-1:0]				dds_done;
 /* output buffer enable */
 assign n_out_buf_en = 1'b0;
 
+/* pack oversample filter data to single data vector for presentation to frontpanel interface */
+genvar h;
+generate
+	for ( h = 0; h < N_ADC; h = h + 1 ) begin : rtr_in_arr
+		assign osf_data_packed[ h*W_ADC_DATA +: W_ADC_DATA ] = osf_data[h];
+	end
+endgenerate
+
 /* pack pid data and valid signals to single data vector for presentation to router */
 genvar i;
 generate
@@ -580,20 +588,16 @@ frontpanel_interface #(
 	.W_ADC_DATA				(W_ADC_DATA),
 	.W_OSF_CD				(W_OSF_CD),
 	.W_OSF_OSM				(W_OSF_OSM),
+	.W_EP						(W_EP),
 	.N_DAC					(N_DAC),
 	.W_DAC					(W_DAC_DATA))
 fp_io (
 	.clk50_in				(clk50_in),
 	.clk17_in				(clk17_in),
-	.adc_data_valid_in	(cs_data_valid),
-	.adc_data_a_in			(cs_data_a),
-	.adc_data_b_in			(cs_data_b),
+	.osf_data_valid_in	(osf_data_valid),
+	.osf_data_in			(osf_data_packed),
 	.adc_cstart_out		(adc_cstart),
 	.adc_os_out				(adc_os),
-	.opp_dac_data_valid_in (opp_dac_data_valid),
-	.opp_dac_data0_in		(opp_dac_data[0]),
-	.diq_data_valid_in	(diq_data_valid),
-	.diq_data_in			(diq_data),
 	.osf_cycle_delay_out	(osf_cycle_delay),
 	.osf_osm_out			(osf_osm),
 	.osf_activate_out		(osf_activate),

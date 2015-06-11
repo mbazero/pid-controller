@@ -16,6 +16,7 @@ module frontpanel_interface #(
 	parameter W_ADC_DATA	= 18,									// width of adc channels
 	parameter W_OSF_CD	= 16,									// width of osf cycle delay signal
 	parameter W_OSF_OSM	= 6,									// width of oversample ratio signal
+	parameter W_EP			= 16,									// width of opal kelly endpoint
 	parameter N_DAC		= 8,									// number of dac channels
 	parameter W_DAC		= 16									// width of dac data channel
 	)(
@@ -23,18 +24,9 @@ module frontpanel_interface #(
 	input	wire										clk50_in,
 	input wire										clk17_in,
 
-	// inputs <- adc controller
-	input wire				[N_ADC-1:0]			adc_data_valid_in,
-	input wire				[W_ADC_DATA-1:0]	adc_data_a_in,
-	input wire				[W_ADC_DATA-1:0]	adc_data_b_in,
-
-	// inputs <- dac opp
-	input wire				[N_DAC-1:0]			opp_dac_data_valid_in,
-	input wire				[W_DAC-1:0]			opp_dac_data0_in,
-
-	// inputs <- dac instruction queue
-	input wire										diq_data_valid_in,
-	input wire				[W_DAC-1:0]			diq_data_in,
+	// inputs <- oversample filter
+	input wire		[N_ADC-1:0]					osf_data_valid
+	input wire		[N_ADC*W_ADC_DATA-1:0]	osf_data_packed,
 
 	// outputs -> adc controller
 	output wire				[2:0]					adc_os_out,						// dm
@@ -193,24 +185,6 @@ assign i2c_scl   = 1'bz;
 assign hi_muxsel = 1'b0;
 
 //////////////////////////////////////////
-// sequential logic
-//////////////////////////////////////////
-
-/* adc data register */
-genvar i;
-generate
-	for ( i = 0; i < N_ADC/2; i = i + 1 ) begin : adc_reg_arr
-		always @( posedge clk50_in ) begin
-			if ( adc_data_valid_in[i] == 1 ) begin
-				adc_data[i] 	<= adc_data_a_in;
-			end else if ( adc_data_valid_in[i+N_ADC/2] == 1 ) begin
-				adc_data[i+N_ADC/2] 	<= adc_data_b_in;
-			end
-		end
-	end
-endgenerate
-
-//////////////////////////////////////////
 // modules
 //////////////////////////////////////////
 
@@ -280,7 +254,7 @@ generate
 			.ok1				(ok1),
 			.ok2				(ok2x[j*17 +: 17]),
 			.ep_addr			(osf_data0_owep + j[7:0]),
-			.ep_datain		(osf_data[j][W_ADC_DATA-1 -: W_DAC])
+			.ep_datain		(osf_data[j][W_ADC_DATA-1 -: W_EP])
 			);
 	end
 endgenerate
