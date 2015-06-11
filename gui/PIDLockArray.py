@@ -465,12 +465,12 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		self.okc.SetWireInValue(epm.opp_multiplier_wep, opp_mult)
+		self.okc.SetWireInValue(epm.opp_multiplier_wep, self.opp_mult)
 		self.okc.SetWireInValue(epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
-		print 'OPP multiplier changed from ' + str(opp_mult_old) + ' to ' + str(opp_mult)
+		print 'OPP multiplier changed from ' + str(opp_mult_old) + ' to ' + str(self.opp_mult)
 
 	#################### helper functions #######################
 	def map_val(self, val, vrange, mrange):
