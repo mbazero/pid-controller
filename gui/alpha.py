@@ -549,6 +549,19 @@ class OutputWidget(QGroupBox):
 		# handler
 		self.opp_mult_wgt.textChanged.connect(lambda: pid.handle_opp_mult(self.opp_mult_wgt.text()))
 
+		#################### opp_right_shift #######################
+		self.opp_rs_wgt = QLineEdit(self)
+
+		# create and apply input validator
+		rs_validator = QIntValidator(0, 2**16 - 1)
+		self.opp_rs_wgt.setValidator(rs_validator)
+
+		self.opp_rs_wgt.setPlaceholderText(str(-2**9) + ' to ' + str(2**9 - 1))
+		self.form_layout.addRow('Right shift:', self.opp_rs_wgt)
+
+		# handler
+		self.opp_rs_wgt.textChanged.connect(lambda: pid.handle_opp_rs(self.opp_rs_wgt.text()))
+
 		# add form layout to main layout
 		self.layout.addLayout(self.form_layout)
 

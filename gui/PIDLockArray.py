@@ -210,6 +210,7 @@ class PIDChannel:
 		self.opp_min = 0
 		self.opp_max = 0
 		self.opp_mult = 1
+		self.opp_right_shift = 0
 
 		# error data list
 		self.error_data = [0 for count in range(1024)]
@@ -478,6 +479,21 @@ class PIDChannel:
 		self.okc.ModUpdate()
 
 		print 'OPP multiplier changed from ' + str(opp_mult_old) + ' to ' + str(self.opp_mult)
+
+	def handle_opp_rs(self, text):
+		opp_right_shift_old = self.opp_right_shift
+
+		try:
+			self.opp_right_shift = int(text)
+		except ValueError:
+			return
+
+		self.okc.SetWireInValue(epm.opp_right_shift_wep, self.opp_right_shift)
+		self.okc.SetWireInValue(epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
+		self.okc.UpdateWireIns()
+		self.okc.ModUpdate()
+
+		print 'OPP right shift changed from ' + str(opp_right_shift_old) + ' to ' + str(self.opp_right_shift)
 
 	#################### helper functions #######################
 	def map_val(self, val, vrange, mrange):

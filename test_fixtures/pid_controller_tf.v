@@ -135,7 +135,7 @@ module pid_controller_tf;
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
 	// misc params
-	localparam REPS = 100;
+	localparam REPS = 10;
 
 	// pid parameters
 	reg signed [15:0] setpoint = 0;
@@ -252,7 +252,7 @@ module pid_controller_tf;
 		dac_data_reg = output_init;
 		output_min = 1;
 		output_max = 52428;
-		multiplier = 1;
+		multiplier = 9;
 		right_shift = 9;
 
 		SetWireInValue(opp_init0_wep, output_init[15:0], mask); // set output init
