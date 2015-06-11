@@ -499,7 +499,7 @@ generate
 			.output_max_in		(opp_max[W_DDS_FREQ-1:0]),
 			.output_min_in		(opp_min[W_DDS_FREQ-1:0]),
 			.output_init_in	(opp_init[W_DDS_FREQ-1:0]),
-			.multiplier_in		(8'b1), //DEBUG
+			.multiplier_in		(opp_multiplier),
 			.data_out			(opp_freq_data[y]),
 			.data_valid_out	(opp_freq_data_valid[y])
 			);
@@ -525,7 +525,7 @@ generate
 			.output_max_in		(opp_max[W_DDS_PHASE-1:0]),
 			.output_min_in		(opp_min[W_DDS_PHASE-1:0]),
 			.output_init_in	(opp_init[W_DDS_PHASE-1:0]),
-			.multiplier_in		(8'b1), //DEBUG
+			.multiplier_in		(opp_multiplier),
 			.data_out			(opp_phase_data[y]),
 			.data_valid_out	(opp_phase_data_valid[y])
 			);
@@ -551,7 +551,7 @@ generate
 			.output_max_in		(opp_max[W_DDS_AMP-1:0]),
 			.output_min_in		(opp_min[W_DDS_AMP-1:0]),
 			.output_init_in	(opp_init[W_DDS_AMP-1:0]),
-			.multiplier_in		(8'b1), //DEBUG
+			.multiplier_in		(opp_multiplier),
 			.data_out			(opp_amp_data[y]),
 			.data_valid_out	(opp_amp_data_valid[y])
 			);

@@ -30,7 +30,7 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_max_in,		// output lower bound
 	input wire signed		[W_OUT-1:0]	output_min_in,		// output upper bound
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
-	input wire 				[W_MLT-1:0]	multiplier_in,		// output multiplication factor
+	input wire signed		[W_MLT-1:0]	multiplier_in,		// output multiplication factor
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
