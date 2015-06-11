@@ -76,7 +76,7 @@ reg signed 	[W_OUT-1:0]	output_max = MAX_INIT;			// active output upper bound
 reg signed	[W_OUT-1:0]	output_min = MIN_INIT;			// active output lower bound
 reg signed	[W_OUT-1:0]	output_init = OUT_INIT;			// active output initial value
 reg signed	[W_MLT-1:0]	multiplier = MLT_INIT; 			// active output multiplication factor
-reg signed	[W_EP-1:0]	divisor = DVS_INIT;				// active ooutput division factor
+reg signed	[W_EP-1:0]	divisor = (DVS_INIT != 0) ? DVS_INIT : 1'b1;	// active ooutput division factor
 
 /* state registers */
 reg			[7:0]			counter = 0; 						// intrastate counter
@@ -142,6 +142,7 @@ always @( posedge update_in ) begin
 		output_min	<= output_min_in;
 		output_init	<= output_init_in;
 		multiplier	<= multiplier_in;
+		divisor		<= (divisor_in != 0) ? divisor_in : 1'b1;
 	end
 end
 
