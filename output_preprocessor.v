@@ -11,6 +11,7 @@ module output_preprocessor #(
 	parameter W_IN				= 64,								// width of input data bus
 	parameter W_OUT			= 16,								// width of output data bus
 	parameter W_MLT			= 8,								// width of multiplier
+	parameter W_EP				= 16,								// width of opal kelly endpoint
 	parameter COMP_LATENCY	= 1,								// computation latency in clock cycles
 	parameter MAX_INIT		= 52428,							// initial output upper bound
 	parameter MIN_INIT		= 13107,							// initial output lower bound
@@ -52,7 +53,7 @@ localparam MIN_OUTPUT = ~MAX_OUTPUT;
 localparam 	ST_IDLE 			= 3'd0,							// module idle, wait for valid data
 				ST_COMPUTE		= 3'd1,							// compute filter output
 				ST_SEND			= 3'd2, 							// send filter data downstream
-				ST_DONE			= 3'd3; 							// cycle complete, latch prev data
+				ST_WRITEBACK	= 3'd3; 							// cycle complete, write back outputted data
 
 //////////////////////////////////////////
 // internal structures
@@ -129,7 +130,7 @@ always @( posedge clk_in ) begin
 		data_out_prev <= output_init;
 	end else if (( update_in == 1 ) & (update_en_in == 1)) begin
 		data_out_prev <= output_init_in;
-	end else if ( cur_state == ST_DONE ) begin
+	end else if ( cur_state == ST_WRITEBACK ) begin
 		data_out_prev <= data_out;
 	end
 end
@@ -179,9 +180,9 @@ always @( * ) begin
 			if ( counter == COMP_LATENCY-1 )	next_state <= ST_SEND;
 		end
 		ST_SEND: begin
-			if ( counter == 0 )					next_state <= ST_DONE;
+			if ( counter == 0 )					next_state <= ST_WRITEBACK;
 		end
-		ST_DONE: begin
+		ST_WRITEBACK: begin
 			if ( counter == 0 )					next_state <= ST_IDLE;
 		end
 	endcase

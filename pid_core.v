@@ -56,7 +56,7 @@ localparam MIN_OUTPUT = ~MAX_OUTPUT;
 localparam 	ST_IDLE 			= 3'd0,							// module idle, wait for valid data
 				ST_COMPUTE		= 3'd1,							// compute filter output
 				ST_SEND			= 3'd2, 							// send filter data downstream
-				ST_DONE			= 3'd3; 							// cycle complete, latch prev data
+				ST_WRITEBACK	= 3'd3; 							// cycle complete, writeback pid sum and error
 
 //////////////////////////////////////////
 // internal structures
@@ -139,7 +139,7 @@ always @( posedge clk_in ) begin
 		u_prev	<= 0;
 		e_prev_0	<= 0;
 		e_prev_1	<= 0;
-	end else if ( cur_state == ST_DONE ) begin
+	end else if ( cur_state == ST_WRITEBACK ) begin
 		u_prev		<= data_out;
 		e_prev_0	<= e_cur;
 		e_prev_1	<= e_prev_0;
@@ -195,8 +195,8 @@ always @( * ) begin
 		ST_COMPUTE: begin
 			if ( counter == COMP_LATENCY-1 )	next_state <= ST_SEND;
 		end
-		ST_SEND: 									next_state <= ST_DONE;
-		ST_DONE: 									next_state <= ST_IDLE;
+		ST_SEND: 									next_state <= ST_WRITEBACK;
+		ST_WRITEBACK:								next_state <= ST_IDLE;
 	endcase
 end
 
