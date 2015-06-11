@@ -27,8 +27,8 @@ module frontpanel_interface #(
 	input wire										clk17_in,
 
 	// inputs <- oversample filter
-	input wire				[N_ADC-1:0]					osf_data_valid,
-	input wire				[N_ADC*W_ADC_DATA-1:0]	osf_data_packed,
+	input wire				[N_ADC-1:0]					osf_data_valid_in,
+	input wire				[N_ADC*W_ADC_DATA-1:0]	osf_data_packed_in,
 
 	// outputs -> adc controller
 	output wire				[2:0]					adc_os_out,						// dm
@@ -98,9 +98,9 @@ localparam N_PIPES = 2; // number of opal kelly pipes
 //////////////////////////////////////////
 
 /* split osf data */
-wire	[W_ADC-1:0]		osf_data[N_ADC-1:0];
-wire	[W_ADC-1:0]		osf_data_active;	// osf data channel active for bulk transfer mode
-wire						osf_dv_active;
+wire	[W_ADC_DATA-1:0]	osf_data[N_ADC-1:0];
+wire	[W_ADC_DATA-1:0]	osf_data_active;	// osf data channel active for bulk transfer mode
+wire							osf_dv_active;
 
 /* host interface */
 wire 						ticlk;
@@ -158,13 +158,13 @@ wire	[15:0]	sys_reset_trig;
 genvar a;
 generate
 	for ( a = 0; a < N_ADC; a = a + 1) begin : osf_data_split
-		assign osf_data[a] 	= osf_data_packed[ a*W_ADC +: W_ADC ];
+		assign osf_data[a] 	= osf_data_packed_in[ a*W_ADC_DATA +: W_ADC_DATA ];
 	end
 endgenerate
 
 /* multiplex active osf data channel */
 assign osf_data_active		= osf_data[0];
-assign osf_dv_active			= osf_data_valid[0];
+assign osf_dv_active			= osf_data_valid_in[0];
 
 /* adc controller */
 assign adc_os_out 			= adc_os_wire[2:0];

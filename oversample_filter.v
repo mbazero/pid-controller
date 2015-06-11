@@ -41,7 +41,7 @@ localparam	W_SUM		= MAX_OS + W_DATA;						// width of sum register
 localparam	ST_IDLE			= 3'd0,								// wait for channel activation signal
 				ST_DELAY			= 3'd1,								// wait specified number of adc cycles before accepting data (to account for DAC/DDS settling times)
 				ST_SAMPLE		= 3'd2,								// collect adc data and maintain accumulating sum
-				ST_SEND			= 3'd3;								// divide sum by oversample ratio and assert data valid
+				ST_SEND			= 3'd3;								// divide sum by oversample ratio (right shift) and assert data valid
 
 //////////////////////////////////////////
 // internal structures

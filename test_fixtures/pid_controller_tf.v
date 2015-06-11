@@ -276,7 +276,7 @@ module pid_controller_tf;
 		join
 
 		// read pipe data
-		ReadFromPipeOut(osf_bulk_data_pep, 1024);
+		ReadFromPipeOut(osf_block_data_pep, 1024);
 		for(i = 0; i < (100); i = i + 1) begin
 			pipeOutWord = {pipeOut[i*2+1], pipeOut[i*2]};
 			#1;

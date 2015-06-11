@@ -65,7 +65,7 @@ localparam	RD_ST_IDLE		= 3'd0,		// wait for busy signal to begin read
 //////////////////////////////////////////
 
 /* registers */
-reg	[2:0]					os_cur = OS_INIT;					// active oversampling mode
+reg	[2:0]					os_cur = (OS_INIT >= OS_MIN) ? OS_INIT : OS_MIN;
 
 /* state registers */
 reg	[7:0] 				cv_counter = 0; 					// convert state machine counter
