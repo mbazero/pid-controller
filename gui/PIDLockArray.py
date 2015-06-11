@@ -15,11 +15,11 @@ MODULE_UPDATE	= 4
 EP_MAP_PATH		= '../ep_map.vh'
 
 '''
-Bulk Update Todo
+Block Update Todo
 - properly handle x-axis scaling
 - add ok address mappings for pipe and focus wep
-- test update_error_data_bulk method
-- add button to select between continuous or bulk transfer
+- test update_error_data_block method
+- add button to select between continuous or block transfer
 '''
 
 '''
@@ -70,12 +70,12 @@ class PIDLockArray:
 		self.polling_period = 0.1
 		self.polling_period_lock = threading.Lock();
 
-		# global bulk update setting
+		# global block update setting
 		'''
-		By default the GUI bulk updates the focused channel and continuously updates all other hidden channels.
-		If the global bulk update option is toggled off, all channels are updated continuously.
+		By default the GUI block updates the focused channel and continuously updates all other hidden channels.
+		If the global block update option is toggled off, all channels are updated continuously.
 		'''
-		self.bulk_update = False
+		self.block_update = False
 
 	#################### general #######################
 	def handle_poll_period(self, text):
@@ -88,8 +88,8 @@ class PIDLockArray:
 
 		# loop through active channels and update error data
 		for chan in self.active_chans :
-			if chan.focused and self.bulk_update :
-				chan.bulk_update_error_data()
+			if chan.focused and self.block_update :
+				chan.block_update_error_data()
 			else :
 				chan.update_error_data()
 
@@ -101,15 +101,15 @@ class PIDLockArray:
 
 		self.update_focus_on_fpga()
 
-	# set bulk transfer to true
-	def handle_bulk_update(self, toggled):
+	# set block transfer to true
+	def handle_block_update(self, toggled):
 		if toggled == True :
-			self.bulk_update = True
-			print 'Bulk Update Mode Enabed'
+			self.block_update = True
+			print 'Block Update Mode Enabed'
 		else :
-			self.bulk_update = False
+			self.block_update = False
 			self.indexToChan(self.focused_chan).clear_error_data()
-			print 'Bulk Update Mode Disabled'
+			print 'Block Update Mode Disabled'
 
 	# update focused tab on fpga (set regardless of channel activation status)
 	def update_focus_on_fpga(self):
@@ -206,8 +206,8 @@ class PIDChannel:
 
 		# error data list
 		self.error_data = [0 for count in range(1024)]
-		intra_bulk_period = (2**self.osf_log_ovr)*(1/pla.adc_update_rate)
-		self.error_data_x = [float(count)*intra_bulk_period for count in range(1024)]
+		intra_block_period = (2**self.osf_log_ovr)*(1/pla.adc_update_rate)
+		self.error_data_x = [float(count)*intra_block_period for count in range(1024)]
 		self.data_lock = threading.Lock()
 
 		# initialize fp params
@@ -246,11 +246,11 @@ class PIDChannel:
 			# data_volts = random.randrange(-1, 1)/1000
 			self.error_data = self.error_data[1:len(self.error_data)] + [data_volts]
 
-	def bulk_update_error_data(self):
+	def block_update_error_data(self):
 		if self.rtr_src_sel >= 0 :
 			block_size = 1024
 			buf = bytearray(block_size*2)
-			self.okc.xem.ReadFromPipeOut(epm.osf_bulk_data_pep, buf)
+			self.okc.xem.ReadFromPipeOut(epm.osf_block_data_pep, buf)
 
 			# unpack byte array as array of signed shorts
 			fmt_str = '<' + str(block_size) + 'h'

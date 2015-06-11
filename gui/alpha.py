@@ -168,13 +168,13 @@ class GlobalParams(QGroupBox):
 		# connect signal to slot
 		self.poll_period_wgt.editingFinished.connect(lambda: pla.handle_poll_period(self.poll_period_wgt.text()))
 
-		#################### bulk_transfer #######################
-		self.bulk_update = QPushButton('Bulk Update Mode', self)
-		self.bulk_update.setCheckable(True)
-		self.layout.addWidget(self.bulk_update)
+		#################### block_transfer #######################
+		self.block_update = QPushButton('Block Update Mode', self)
+		self.block_update.setCheckable(True)
+		self.layout.addWidget(self.block_update)
 
 		# connect adc_cstart signal to handler
-		self.bulk_update.clicked.connect(pla.handle_bulk_update)
+		self.block_update.clicked.connect(pla.handle_block_update)
 
 		#################### lock status array #######################
 		self.dac_status_layout = QVBoxLayout()

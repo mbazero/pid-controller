@@ -6,6 +6,7 @@ parameter osf_cycle_delay_wep		= 8'h02;
 parameter osf_osm_wep				= 8'h03;
 parameter osf_update_en_wep		= 8'h04;
 parameter osf_data0_owep			= 8'h20;
+parameter osf_block_data_pep		= 8'ha3;
 
 parameter pid_clear_tep				= 8'h55;
 parameter pid_lock_en_wep			= 8'h17;
@@ -35,5 +36,3 @@ parameter dac_ref_set_tep			= 8'h56;
 parameter module_update_tep		= 8'h57;
 
 parameter sys_reset_tep				= 8'h58;
-
-parameter osf_bulk_data_pep		= 8'ha3;

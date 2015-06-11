@@ -103,8 +103,8 @@ localparam N_PIPES = 2; // number of opal kelly pipes
 wire 						ticlk;
 wire	[30:0]			ok1;
 wire	[16:0] 			ok2;
-//wire	[17*(N_ADC+N_PIPES)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of bulk update pipes
-wire	[17*(N_ADC+1)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of bulk update pipes
+//wire	[17*(N_ADC+N_PIPES)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of block update pipes
+wire	[17*(N_ADC+1)-1:0] ok2x;	// must have space for continuous update adc registers for each channel a number of block update pipes
 
 /* adc controller */
 wire	[15:0] 		adc_os_wire;
@@ -235,7 +235,7 @@ wire [15:0] osf_pipe_dout;
 okPipeOut osf_pipe (
 		.ok1			(ok1),
 		.ok2			(ok2x[N_ADC*17 +: 17]),
-		.ep_addr		(osf_bulk_data_pep),
+		.ep_addr		(osf_block_data_pep),
 		.ep_datain	(osf_pipe_dout),
 		.ep_read		(osf_pipe_read)
 		);
@@ -243,9 +243,9 @@ okPipeOut osf_pipe (
 pipe_tx_fifo osf_pipe_fifo (
 		.ti_clk_in		(ticlk),
 		.sys_clk_in		(clk50_in),
-		.reset_in		(sys_reset_out),
-		.data_valid_in	(opp_dac_data_valid_in[0]),		//DEBUG adc_data_valid_in[0]
-		.data_in			(opp_dac_data0_in),				//DEBUG adc_data_a_in[17:2]
+		.reset_in		(sys_reset_out), // TODO add reset when active channel changes
+		.data_valid_in	(osf_data_valid[0]), // TODO same as below
+		.data_in			(osf_data[0][W_ADC_DATA-1 -: W_EP]), //TODO change to multiplexed input depending on active channel
 		.pipe_read_in	(osf_pipe_read),
 		.data_out		(osf_pipe_dout)
 		);
@@ -280,7 +280,7 @@ generate
 			.ok1				(ok1),
 			.ok2				(ok2x[j*17 +: 17]),
 			.ep_addr			(osf_data0_owep + j[7:0]),
-			.ep_datain		(adc_data[j][W_ADC_DATA-1 -: W_DAC])
+			.ep_datain		(osf_data[j][W_ADC_DATA-1 -: W_DAC])
 			);
 	end
 endgenerate
