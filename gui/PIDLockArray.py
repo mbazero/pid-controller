@@ -97,10 +97,9 @@ class PIDLockArray:
 
 		# loop through active channels and update error data
 		for chan in self.active_chans :
+			chan.update_error_data()
 			if chan.focused and self.block_update :
 				chan.block_update_error_data()
-			else :
-				chan.update_error_data()
 
    # update focused tab based on tab change
 	def handle_tab_changed(self, index):
@@ -117,7 +116,6 @@ class PIDLockArray:
 			print 'Block Update Mode Enabed'
 		else :
 			self.block_update = False
-			self.indexToChan(self.focused_chan).clear_error_data()
 			print 'Block Update Mode Disabled'
 
 	# update focused tab on fpga (set regardless of channel activation status)
@@ -217,10 +215,18 @@ class PIDChannel:
 		self.opp_mult = 1
 		self.opp_right_shift = 0
 
-		# error data list
+		# single word error data
 		self.error_data = [0 for count in range(1024)]
 		intra_block_period = (2**self.osf_log_ovr)*(1/pla.adc_update_rate)
 		self.error_data_x = [float(count)*intra_block_period for count in range(1024)]
+		# TODO make sure this computation is actually valid
+
+		# block error data
+		self.block_error_data = [0 for count in range(1024)]
+		self.block_error_data_x = [count for count in range(1024)]
+		# TODO compute x values
+
+		# error data lock
 		self.data_lock = threading.Lock()
 
 		# initialize fp params
@@ -241,6 +247,7 @@ class PIDChannel:
 
 	def clear_error_data(self):
 		self.error_data = [0 for i in self.error_data]
+		self.block_error_data = [0 for i in self.block_error_data]
 
 	#################### update error data #######################
 	# get new error data from wire outs (continuous transfer)
@@ -271,8 +278,8 @@ class PIDChannel:
 
 			# map raw adc data to voltage
 			# TODO: extract map ranges to stored values
-			self.error_data = [self.map_val(d, [-2**15, 2**15-1], [-5, 5]) for d in data_raw] #DEBUG change this back to adc range
-			# self.error_data = [self.map_val(d, [0, 2**16-1], [0, 5]) for d in data_raw]
+			self.block_error_data = [self.map_val(d, [-2**15, 2**15-1], [-5, 5]) for d in data_raw] #DEBUG change this back to adc range
+			# self.block_error_data = [self.map_val(d, [0, 2**16-1], [0, 5]) for d in data_raw]
 
 	def uint16_to_int32(self, uint):
 		if uint >= 2**15 :

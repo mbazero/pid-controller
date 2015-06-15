@@ -3,9 +3,7 @@
 // two_dds_test -- mba 2014
 
 // TODO
-// - resolve issue with clock/non-clock loads on mod update
-// - make sure frontpanel params retain their state on reset (when you reset, you still want fp params to reflect state shwon in gui)
-// - refactor fuck out of frontpanel_controller
+// - refactor fuck out of frontpanel_controller (seriously, this is all fucked now)
 // - test reset
 // - add ability to update phase, freq, and amp simulatenously
 // - consider adding full speed 50MHz DAC/DDS serial clock

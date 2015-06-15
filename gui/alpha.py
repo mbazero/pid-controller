@@ -78,8 +78,8 @@ class MainWindow(QWidget):
 		# create lock channel GUIs
 		dac_array = pla.dac_array
 		dds_array = pla.dds_array
-		self.dac_chans = [ChannelControl(dac_array[count]) for count in range(num_dac_chan)]
-		self.dds_chans = [ChannelControl(dds_array[count]) for count in range(num_dds_chan)]
+		self.dac_chans = [ChannelControl(dac_array[count], pla) for count in range(num_dac_chan)]
+		self.dds_chans = [ChannelControl(dds_array[count], pla) for count in range(num_dds_chan)]
 
 		# initialize dac tabs
 		for j in range(num_dac_chan) :
@@ -225,11 +225,12 @@ class GlobalParams(QGroupBox):
 
 
 class ChannelControl(QWidget):
-	def __init__(self, pid):
+	def __init__(self, pid, pla):
 		# initialize widget
 		QWidget.__init__(self)
 
-		# declare pid
+		# declare pla and pid
+		self.pla = pla
 		self.pid = pid
 
 		# initialize channel control components
@@ -262,10 +263,14 @@ class ChannelControl(QWidget):
 		self.plotItem.setLabel('left', 'ADC Output', 'V')
 		self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
 
+	# TODO refactor this...I don't like how channel control has access to the pla
 	def updateGraph(self):
 		self.plotItem.clear()
 		# self.plotItem.plot(y)
-		self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
+		if self.pid.focused and self.pla.block_update :
+			self.plotItem.plot(self.pid.block_error_data_x, self.pid.block_error_data)
+		else :
+			self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
 
 # Source params widget
 class InputWidget(QGroupBox):

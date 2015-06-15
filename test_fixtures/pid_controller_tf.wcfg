@@ -10,7 +10,11 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="61" />
+   <WVObjectSize size="62" />
+   <wvobject fp_name="/pid_controller_tf/adc_os_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">adc_os_out[2:0]</obj_property>
+      <obj_property name="ObjectShortName">adc_os_out[2:0]</obj_property>
+   </wvobject>
    <wvobject fp_name="divider139" type="divider">
       <obj_property name="label">ADC INPUT</obj_property>
       <obj_property name="DisplayName">label</obj_property>
