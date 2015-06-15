@@ -23,6 +23,8 @@ SUPER IMPORTANT TODO
 
 '''
 Block Update Todo
+- make it so continuos is always transfering and when you move back to single from block
+  the old data is displayed
 - properly handle x-axis scaling
 - add ok address mappings for pipe and focus wep
 - test update_error_data_block method
@@ -301,7 +303,7 @@ class PIDChannel:
 		self.osf_log_ovr = new_val
 
 		# send adc_os to fpga and update modules
-		self.okc.SetAndUpdateWireIn(epm.adc_os_wep, self.osf_log_ovr)
+		self.okc.SetAndUpdateWireIn(epm.osf_osm_wep, self.osf_log_ovr)
 		self.okc.SetWireInValue(epm.osf_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
