@@ -10,6 +10,9 @@ module router #(
 	parameter N_OUT	= 8,										// number of output channels
 	parameter ACTV_INIT = 1										// initial output activation
 	)(
+	// inputs <- top level entity
+	input wire								clk_in				// system clock
+
 	// inputs <- pid core
 	input wire	[W_CHAN*N_IN-1:0]		data_packed_in,	// input channels packed on a single bus
 
@@ -56,9 +59,11 @@ generate
 endgenerate
 
 /* update frontpanel params */
-always @( posedge update_in ) begin
-	src_select[dest_select_in] <= src_select_in;
-	output_active <= output_active_in;
+always @( posedge clk_in ) begin
+	if ( update_in == 1 ) begin
+		src_select[dest_select_in] <= src_select_in;
+		output_active <= output_active_in;
+	end
 end
 
 //////////////////////////////////////////

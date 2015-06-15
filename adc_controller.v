@@ -11,30 +11,29 @@
 
 module adc_controller #(
 	// parameters
-	parameter W_OUT			= 18,						// width of adc data channels
-	parameter N_CHAN			= 8,						// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
-	parameter MIN_T_CYCLE	= 85						// minimum cycle time in number of adc clock cycles
+	parameter W_OUT			= 18,									// width of adc data channels
+	parameter N_CHAN			= 8,									// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
+	parameter MIN_T_CYCLE	= 85									// minimum cycle time in number of adc clock cycles
 	)(
 	// inputs <- top level entity
-	input wire						clk_in,				// ADC serial clock; max frequency 17MHz
-	input wire						reset_in, 			// system reset
+	input wire						clk_in,							// adc serial clock; max frequency 17mhz
+	input wire						reset_in, 						// system reset
 
 	// inputs <- AD7608
-	input wire						busy_in,				// conversion busy signal
-	input wire						data_a_in,			// serial data channel a
-	input wire						data_b_in,			// serial data channel b
+	input wire						busy_in,							// conversion busy signal
+	input wire						data_a_in,						// serial data channel a
+	input wire						data_b_in,						// serial data channel b
 
 	// inputs <- frontpanel controller
-	input wire	[2:0]				os_in,				// sets adc oversampling mode
-	input wire						update_in,			// pulse triggers update of frontpanel parameters
-	input wire						cstart_in,			// pulse starts continuous adc conversion cycle
+	input wire	[2:0]				os_in,							// sets adc oversampling mode
+	input wire						cstart_in,						// pulse starts continuous adc conversion cycle
 
 	// outputs -> AD7608
-	output wire	[2:0]				os_out,				// oversampling signal to adc
-	output wire						convst_out,			// convert start signal to adc
-	output wire						reset_out,			// reset signal to adc
-	output wire						sclk_out, 			// serial clock signal to adc
-	output wire						n_cs_out,			// chip select signal to adc
+	output wire	[2:0]				os_out,							// oversampling signal to adc
+	output wire						convst_out,						// convert start signal to adc
+	output wire						reset_out,						// reset signal to adc
+	output wire						sclk_out, 						// serial clock signal to adc
+	output wire						n_cs_out,						// chip select signal to adc
 
 	// outputs -> pid core
 	output wire				[N_CHAN-1:0]	data_valid_out,	// one-hot encoded output data valid signal
@@ -46,41 +45,38 @@ module adc_controller #(
 // local parameters
 //////////////////////////////////////////
 
-localparam RD_LENGTH		= W_OUT*(N_CHAN/2);		// bits of data to be read per serial port in a single cycle
-localparam OS_MIN			= 3'b1;						// set minimum oversampling ratio of 2^1 to support 8 channels //DEBUG set back to 1 after testing
+localparam RD_LENGTH		= W_OUT*(N_CHAN/2);					// bits of data to be read per serial port in a single cycle
+localparam OS_MIN			= 3'b1;									// set minimum oversampling ratio of 2^1 to support 8 channels //DEBUG set back to 1 after testing
 
 /* state parameters */
-localparam	CV_ST_IDLE		= 3'd0,		// wait for module enable signal to begin continuous conversion
-				CV_ST_CONVST 	= 3'd1,		// pulse convert start signal to begin conversion
-				CV_ST_CONV		= 3'd2;		// wait for ADC to finish conversion
+localparam	CV_ST_IDLE		= 3'd0,								// wait for module enable signal to begin continuous conversion
+				CV_ST_CONVST 	= 3'd1,								// pulse convert start signal to begin conversion
+				CV_ST_CONV		= 3'd2;								// wait for ADC to finish conversion
 
-localparam	RD_ST_IDLE		= 3'd0,		// wait for busy signal to begin read
-				RD_ST_READ		= 3'd1,		// read adc data off serial lines
-				RD_ST_WAIT		= 3'd2;		// wait for busy signal to deassert
+localparam	RD_ST_IDLE		= 3'd0,								// wait for busy signal to begin read
+				RD_ST_READ		= 3'd1,								// read adc data off serial lines
+				RD_ST_WAIT		= 3'd2;								// wait for busy signal to deassert
 
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
-/* registers */
-reg	[2:0]					os_cur = OS_MIN;
-
 /* state registers */
-reg	[7:0] 				cv_counter = 0; 					// convert state machine counter
-reg	[2:0] 				cv_cur_state = CV_ST_IDLE;		// convert state machine current state
-reg	[2:0] 				cv_next_state = CV_ST_IDLE;	// convert state machine next state
+reg	[7:0] 				cv_counter = 0; 						// convert state machine counter
+reg	[2:0] 				cv_cur_state = CV_ST_IDLE;			// convert state machine current state
+reg	[2:0] 				cv_next_state = CV_ST_IDLE;		// convert state machine next state
 
-reg	[7:0]					rd_counter = 0;					// read state machine counter
-reg	[2:0]					rd_cur_state = RD_ST_IDLE;		// read state machine current state
-reg	[2:0]					rd_next_state = RD_ST_IDLE;	// read state machine next state
+reg	[7:0]					rd_counter = 0;						// read state machine counter
+reg	[2:0]					rd_cur_state = RD_ST_IDLE;			// read state machine current state
+reg	[2:0]					rd_next_state = RD_ST_IDLE;		// read state machine next state
 
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
 
 /* adc control */
-assign os_out 				= os_cur;
-assign reset_out 			= reset_in;
+assign os_out 		= (os_in < OS_MIN) ? OS_MIN : os_in;	// enforce minimum oversample rate
+assign reset_out	= reset_in;
 
 /* data valid out */
 genvar i;
@@ -94,11 +90,6 @@ endgenerate
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
-
-/* oversampling mode register */
-always @( posedge update_in ) begin
-	os_cur <= (os_in < OS_MIN) ? OS_MIN : os_in;	// enforce minimum oversample rate
-end
 
 /* serial read shift register */
 always @( posedge clk_in ) begin

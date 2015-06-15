@@ -25,8 +25,8 @@ module pid_controller #(
 	// - set number of DDS channels to reflect hardware
 	//   configuration
 	// --------------------------------------------------
-	parameter N_ADC			= 2,	// number of adc channels
-	parameter N_DAC			= 2,	// number of dac channels
+	parameter N_ADC			= 2,	// number of adc channels (must be >= 2)
+	parameter N_DAC			= 2,	// number of dac channels (must be >= 2)
 	parameter N_DDS			= 0,	// number of dds channels
 	parameter W_ADC_DATA		= 18, // width of adc data word
 	parameter W_DAC_DATA		= 16,	// width of dac data word
@@ -277,7 +277,6 @@ adc_cont (
 	.data_a_in			(adc_data_a_in),
 	.data_b_in			(adc_data_b_in),
 	.os_in				(adc_os),
-	.update_in			(module_update),
 	.cstart_in			(adc_cstart | adc_cstart_tf_in),
 	.os_out				(adc_os_out),
 	.convst_out			(adc_convst_out),
@@ -392,6 +391,7 @@ router #(
 	.N_OUT				(N_OUT),
 	.ACTV_INIT			(RTR_ACTV_INIT))
 rtr (
+	.clk_in				(clk_50),
 	.data_packed_in	(rtr_input_packed),
 	.src_select_in		(rtr_src_sel),
 	.output_active_in	(rtr_output_active),

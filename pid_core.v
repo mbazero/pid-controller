@@ -148,12 +148,7 @@ end
 
 /* frontpanel parameter registers */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
-		setpoint <= 0;
-		p_coef	<= 0;
-		i_coef	<= 0;
-		d_coef	<= 0;
-	end else if (( update_in == 1 ) & ( update_en_in == 1 )) begin
+	if (( update_in == 1 ) & ( update_en_in == 1 )) begin
 		setpoint	<= setpoint_in;
 		p_coef	<= p_coef_in;
 		i_coef	<= i_coef_in;

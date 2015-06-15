@@ -103,10 +103,7 @@ end
 
 /* latch frontpanel parameters on update signal */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin // module retains parameters when it becomes deactivated
-		osm_cur		<= 0;
-		cycle_delay	<= 0;
-	end else if (( update_in == 1 ) & ( update_en_in == 1 )) begin
+	if (( update_in == 1 ) & ( update_en_in == 1 )) begin
 		osm_cur 		<= osm_in;
 		cycle_delay	<= cycle_delay_in;
 	end
