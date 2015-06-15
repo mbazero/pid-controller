@@ -48,7 +48,7 @@ epm = EndpointMap(EP_MAP_PATH)
 class PIDLockArray:
 	def __init__(self, okc, num_dac_chan, num_dds_chan):
 		# adc params
-		self.adc_os = 0
+		self.adc_os = 1
 		self.adc_update_rate = 200e3
 		self.num_dac_chan = num_dac_chan
 		self.num_out_chans = num_dac_chan + num_dds_chan
@@ -140,6 +140,9 @@ class PIDLockArray:
 		# store old adc_os value
 		adc_os_old = self.adc_os
 		self.adc_os = new_val
+
+		print "decimal: " + str(new_val)
+		print "binary:  " + format(self.adc_os, '04b')
 
 		# send adc_os to fpga and update modules
 		self.okc.SetAndUpdateWireIn(epm.adc_os_wep, self.adc_os)

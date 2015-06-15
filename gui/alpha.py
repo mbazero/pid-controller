@@ -131,19 +131,18 @@ class GlobalParams(QGroupBox):
 		#################### adc_os #######################
 
 		# create combo box for ADC oversampling ratios
-		self.adc_os_ops 	= ['Off',
-									'2',
-									'4',
-									'8',
-									'16',
-									'32',
-									'64']
+		self.adc_os_ops 	= [	'2',
+								'4',
+								'8',
+								'16',
+								'32',
+								'64']
 		self.adc_os_wgt = QComboBox(self)
 		self.adc_os_wgt.addItems(self.adc_os_ops)
 		self.form_layout.addRow('ADC Oversample Ratio:', self.adc_os_wgt)
 
 		# connect adc_os signal to handler
-		self.adc_os_wgt.currentIndexChanged.connect(pla.handle_adc_os)
+		self.adc_os_wgt.currentIndexChanged.connect(lambda: pla.handle_adc_os(self.adc_os_wgt.currentIndex() + 1))
 
 		#################### num_locks #######################
 		#self.locks_dec = range(1, self.num_out_chans)

@@ -3,6 +3,8 @@
 // two_dds_test -- mba 2014
 
 // TODO
+// - resolve issue with clock/non-clock loads on mod update
+// - make sure frontpanel params retain their state on reset (when you reset, you still want fp params to reflect state shwon in gui)
 // - refactor fuck out of frontpanel_controller
 // - test reset
 // - add ability to update phase, freq, and amp simulatenously
@@ -48,7 +50,6 @@ module pid_controller #(
 	// - to run a timing sim, assert TSIM_EN and set
 	//   initial values as desired
 	// --------------------------------------------------
-	parameter ADC_OS_INIT	= 1,
 	parameter OSF_ACTIVATE	= 0,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
@@ -268,8 +269,7 @@ endgenerate
 /* adc controller */
 adc_controller #(
 	.W_OUT				(W_ADC_DATA),
-	.N_CHAN				(N_ADC),
-	.OS_INIT				(ADC_OS_INIT))
+	.N_CHAN				(N_ADC))
 adc_cont (
 	.clk_in				(clk17_in),
 	.reset_in			(sys_reset),

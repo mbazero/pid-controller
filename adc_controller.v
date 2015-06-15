@@ -13,9 +13,7 @@ module adc_controller #(
 	// parameters
 	parameter W_OUT			= 18,						// width of adc data channels
 	parameter N_CHAN			= 8,						// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
-	parameter MIN_T_CYCLE	= 85,						// minimum cycle time in number of adc clock cycles
-																// adc data sheet lists the min cycle time as 5us. max adc clock rate is 17MHz. 5us*17M = 85
-	parameter OS_INIT			= 1						// initial oversample mode
+	parameter MIN_T_CYCLE	= 85						// minimum cycle time in number of adc clock cycles
 	)(
 	// inputs <- top level entity
 	input wire						clk_in,				// ADC serial clock; max frequency 17MHz
@@ -65,7 +63,7 @@ localparam	RD_ST_IDLE		= 3'd0,		// wait for busy signal to begin read
 //////////////////////////////////////////
 
 /* registers */
-reg	[2:0]					os_cur = (OS_INIT >= OS_MIN) ? OS_INIT : OS_MIN;
+reg	[2:0]					os_cur = OS_MIN;
 
 /* state registers */
 reg	[7:0] 				cv_counter = 0; 					// convert state machine counter
@@ -98,11 +96,8 @@ endgenerate
 //////////////////////////////////////////
 
 /* oversampling mode register */
-always @( posedge update_in or posedge reset_in ) begin
-	if ( reset_in == 1 )
-		os_cur <= OS_MIN;
-	else if ( update_in == 1 )
-		os_cur <= (os_in >= OS_MIN) ? os_in : OS_MIN;	// enforce minimum oversample rate
+always @( posedge update_in ) begin
+	os_cur <= (os_in < OS_MIN) ? OS_MIN : os_in;	// enforce minimum oversample rate
 end
 
 /* serial read shift register */
