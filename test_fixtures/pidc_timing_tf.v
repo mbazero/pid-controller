@@ -7,6 +7,7 @@ module pidc_timing_tf;
 	// Endpoint map
 	`include "ep_map.vh"
 	`include "parameters.vh"
+	`include "sim_tasks.v"
 
 	// Parameters
 	localparam	W_DATA	= 18;
@@ -15,7 +16,7 @@ module pidc_timing_tf;
 	localparam	TX_LEN	= W_DATA*N_CHAN/2;
 
 	// Simulation structures
-	reg signed [W_DATA-1:0]	chan[0:N_CHAN-1];
+	wire signed [W_DATA-1:0]	chan[0:N_CHAN-1];
 	reg [TX_LEN-1:0] 	data_a_tx;
 	reg [TX_LEN-1:0] 	data_b_tx;
 	reg [15:0] wire_out;
@@ -52,19 +53,49 @@ module pidc_timing_tf;
 	wire [15:0] hi_inout;
 	wire hi_aa;
 
-	//DEBUG
-	wire adc_dv;
-	wire cs_dv;
-	wire osf_dv;
-	wire signed [17:0] pid_data;
-	wire signed [15:0] opp_dac_data;
-	reg signed [17:0] pid_data_reg;
-	wire pid_dv;
-	wire opp_dac_dv;
-	wire diq_dv;
+	// ADC params
+	localparam	ADC_OS_INIT		= 1;
+
+	// OSF params
+	localparam	OSF_ACTIVATE	= 1;
+	localparam	OSF_OSM_INIT	= 0;
+	localparam	OSF_CDLY_INIT	= 0;
+
+	// PID params
+	localparam	PID_LOCK_EN		= 1;
+	localparam	PID_SETP_INIT	= 0;
+	localparam	PID_PCF_INIT	= 10;
+	localparam	PID_ICF_INIT	= 3;
+	localparam	PID_DCF_INIT	= 0;
+
+	// RTR params
+	localparam	RTR_ACTV_INIT	= 1;
+
+	// OPP params
+	localparam	DAC_MAX_INIT	= 52428;
+	localparam	DAC_MIN_INIT	= 13107;
+	localparam	DAC_OUT_INIT	= 26214;
+	localparam	DAC_MLT_INIT	= 1;
+	localparam	DAC_RS_INIT		= 0;
 
 	// Instantiate the Unit Under Test (UUT)
-	pid_controller uut (
+	pid_controller #(
+		.ADC_OS_INIT	(ADC_OS_INIT),
+		.OSF_ACTIVATE	(OSF_ACTIVATE),
+		.OSF_OSM_INIT	(OSF_OSM_INIT),
+		.OSF_CDLY_INIT	(OSF_CDLY_INIT),
+		.PID_LOCK_EN	(PID_LOCK_EN),
+		.PID_SETP_INIT (PID_SETP_INIT),
+		.PID_PCF_INIT	(PID_PCF_INIT),
+		.PID_ICF_INIT	(PID_ICF_INIT),
+		.PID_DCF_INIT	(PID_DCF_INIT),
+		.RTR_ACTV_INIT	(RTR_ACTV_INIT),
+		.DAC_MAX_INIT	(DAC_MAX_INIT),
+		.DAC_MIN_INIT	(DAC_MIN_INIT),
+		.DAC_OUT_INIT	(DAC_OUT_INIT),
+		.DAC_MLT_INIT	(DAC_MLT_INIT),
+		.DAC_RS_INIT	(DAC_RS_INIT))
+	uut (
 		.clk50_in(clk50_in),
 		.clk17_in(clk17_in),
 		.adc_busy_in(adc_busy_in),
@@ -90,16 +121,7 @@ module pidc_timing_tf;
 		.hi_out(hi_out),
 		.hi_inout(hi_inout),
 		.hi_aa(hi_aa),
-		//DEBUG
-		.adc_cstart_tf_in(adc_cstart_tf_in),
-		.adc_dv_out(adc_dv),
-		.cs_dv_out(cs_dv),
-		.osf_dv_out(osf_dv),
-		.pid_dv_out(pid_dv),
-		.pid_data_out(pid_data),
-		.opp_dac_dv_out(opp_dac_dv),
-		.opp_dac_data_out(opp_dac_data),
-		.diq_dv_out(diq_dv)
+		.adc_cstart_tf_in(adc_cstart_tf_in)
 	);
 
 	// generate ~17MHz clock
@@ -112,37 +134,66 @@ module pidc_timing_tf;
 	assign adc_data_a_in = data_a_tx[TX_LEN-1];
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
-	// set channel values
-	initial begin
-		chan[0] = -655;
-		chan[1] = 0;
-		chan[2] = 0;
-		chan[3] = 0;
-		chan[4] = 0;
-		chan[5] = 0;
-		chan[6] = 0;
-		chan[7] = 0;
-	end
+	// misc params
+	localparam REPS = 100;
+	parameter pipeOutSize = 2048;
+	reg [7:0] pipeOut = 0;
 
-	// misc structures
-	reg [15:0] output_init = 0;
-	reg [15:0] output_min = 0;
-	reg [15:0] output_max = 0;
+	// pid parameters
+	reg signed [15:0] setpoint = PID_SETP_INIT;
+	reg signed [15:0]	p_coef = PID_PCF_INIT;
+	reg signed [15:0]	i_coef = PID_ICF_INIT;
+	reg signed [15:0]	d_coef = PID_DCF_INIT;
 
-	reg signed [15:0] setpoint = 0, p_coef = 10, i_coef = 3, d_coef = 0;
-	integer error = 0, error_prev = 0, integral = 0, derivative = 0, u_expected = 0, e_count = 0;
+	// opp parameters
+	reg signed [47:0] output_init = DAC_OUT_INIT;
+	reg signed [47:0] output_min = DAC_MIN_INIT;
+	reg signed [47:0] output_max = DAC_MAX_INIT;
+	reg signed [15:0] multiplier = DAC_MLT_INIT;
+	reg [15:0] right_shift = DAC_RS_INIT;
+
+	// pid verification
+	reg signed [63:0] pid_data_reg = 0;
+	reg signed [63:0] error = 0;
+	reg signed [63:0]	error_prev = 0;
+	reg signed [63:0]	integral = 0;
+	reg signed [63:0]	derivative = 0;
+	reg signed [63:0]	pid_expected = 0;
+	reg signed [63:0]	e_count = 0;
+	reg [15:0] target = 0;
+	reg lock_en = | PID_LOCK_EN;
 	integer i;
-	reg [15:0] pipeOutWord;
-	reg signed [15:0] wireOutValue;
 
-	// dac received data
-	reg [31:0] r_instr;
+	// output verification
+	reg [15:0] dac_data_reg = 0;
+
+	// pipe verification
+	reg signed [15:0] pipeOutWord;
+	reg signed [15:0] wireOutValue;
+	reg signed [15:0] pipe_expected[REPS-1:0];
+	integer rep_count = 0;
+
+	// output verification
+	reg signed [127:0] proc_stage[5:0];
+
+	// dac received data verification
+	reg [31:0] r_instr = 0;
 	wire [15:0] r_data;
 	wire [3:0] r_prefix, r_control, r_address, r_feature;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
-	// simulation params
-	localparam REPS = 10;
+	// adc channel assignments
+	reg signed [15:0] chan_1_reg = 0;
+	//assign chan[0] = r_data - target;
+	//assign chan[0] = 655;
+	assign chan[0] = chan_1_reg;
+	assign chan[1] = 0;
+	assign chan[2] = 0;
+	assign chan[3] = 0;
+	assign chan[4] = 0;
+	assign chan[5] = 0;
+	assign chan[6] = 0;
+	assign chan[7] = 0;
 
 	initial begin : main
 		// Initialize Inputs
@@ -161,73 +212,10 @@ module pidc_timing_tf;
 		@(posedge clk17_in) adc_cstart_tf_in = 1'b1;
 		@(posedge clk17_in) adc_cstart_tf_in = 1'b0;
 
-		fork : sim
 
-			// adc data transmission simulation
-			repeat(REPS) begin
-				// wait for convst_out to pulse and then assert busy
-				@(posedge adc_convst_out) begin
-					@(posedge clk17_in) adc_busy_in = 1;
-				end
-
-				// set random chan[0] value
-				//chan[0] = $random % 100;
-
-				// simulate serial transmission from adc to fpga
-				@(negedge adc_n_cs_out) begin
-					data_a_tx = {chan[0], chan[1], chan[2], chan[3]};
-					data_b_tx = {chan[4], chan[5], chan[6], chan[7]};
-				end
-
-				// wait one cycle before transmitting
-				@(posedge clk17_in);
-
-				// simulate serial data transmission
-				repeat (71) begin
-					@(negedge clk17_in)
-					data_a_tx = data_a_tx << 1;
-					data_b_tx = data_b_tx << 1;
-				end
-
-				// simulate conversion end
-				#200;
-				@(posedge clk17_in) adc_busy_in = 0;
-
-			end
-
-			// check pid value
-			repeat(REPS) begin
-				@(posedge pid_dv) begin
-					pid_data_reg = pid_data;
-					e_count = e_count + 1;
-					error = setpoint - chan[0];
-					#1;
-					integral = integral + error;
-					derivative = error - error_prev;
-					#1;
-					u_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
-					error_prev = error;
-					#1;
-					if(u_expected == pid_data_reg) begin
-						$display("PID Success\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
-					end else begin
-						$display("PID Failure\t(%d, %d)\t--\tExpected: %d\tReceived: %d", error, integral, u_expected, pid_data_reg);
-					end
-				end
-			end
-
-			// simulate received dac data
-			repeat(REPS) begin
-				@(negedge dac_nsync_out) begin
-					repeat(32) begin
-						@(negedge dac_sclk_out) begin
-							r_instr = {r_instr[30:0], dac_din_out}; // shift data in
-						end
-					end
-
-				end
-			end
-
+		fork
+			adc_transmit(REPS);
+			check_rcv(REPS);
 		join
 
 		$stop;

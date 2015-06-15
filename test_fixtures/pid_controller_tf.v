@@ -7,9 +7,11 @@
 // - add PID coefficients as parameters and connect them to UUT port
 
 module pid_controller_tf;
-	// Endpoint map
+
 	`include "ep_map.vh"
 	`include "parameters.vh"
+	`include "sim_tasks.v"
+	`include "ok_sim/okHostCalls.v"
 
 	// Parameters
 	localparam	W_DATA	= 18;
@@ -135,7 +137,7 @@ module pid_controller_tf;
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
 	// misc params
-	localparam REPS = 10;
+	localparam REPS = 100;
 
 	// pid parameters
 	reg signed [15:0] setpoint = 0;
@@ -156,7 +158,7 @@ module pid_controller_tf;
 	reg signed [63:0]	error_prev = 0;
 	reg signed [63:0]	integral = 0;
 	reg signed [63:0]	derivative = 0;
-	reg signed [63:0]	u_expected = 0;
+	reg signed [63:0]	pid_expected = 0;
 	reg signed [63:0]	e_count = 0;
 	reg [15:0] target = 0;
 	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
@@ -184,8 +186,8 @@ module pid_controller_tf;
 	// adc channel assignments
 	reg signed [15:0] chan_1_reg = 0;
 	//assign chan[0] = r_data - target;
-	//assign chan[0] = 655;
-	assign chan[0] = chan_1_reg;
+	assign chan[0] = 39321;
+	//assign chan[0] = chan_1_reg;
 	assign chan[1] = 0;
 	assign chan[2] = 0;
 	assign chan[3] = 0;
@@ -252,8 +254,8 @@ module pid_controller_tf;
 		dac_data_reg = output_init;
 		output_min = 1;
 		output_max = 52428;
-		multiplier = 9;
-		right_shift = 9;
+		multiplier = 1;
+		right_shift = 2;
 
 		SetWireInValue(opp_init0_wep, output_init[15:0], mask); // set output init
 		SetWireInValue(opp_init1_wep, output_init[31:16], mask);
@@ -328,43 +330,9 @@ module pid_controller_tf;
 		end
 	endtask
 
-	task adc_transmit;
-		input [31:0] reps;
 
-		begin
-			// adc data transmission simulation
-			repeat(reps) begin
-				// wait for convst_out to pulse and then assert busy
-				@(posedge adc_convst_out) begin
-					@(posedge clk17_in) adc_busy_in = 1;
-				end
 
-				chan_1_reg = $random;
-
-				// simulate serial transmission from adc to fpga
-				@(negedge adc_n_cs_out) begin
-					data_a_tx = {chan[0], chan[1], chan[2], chan[3]};
-					data_b_tx = {chan[4], chan[5], chan[6], chan[7]};
-				end
-
-				// wait one cycle before transmitting
-				@(posedge clk17_in);
-
-				// simulate serial data transmission
-				repeat (71) begin
-					@(negedge clk17_in)
-					data_a_tx = data_a_tx << 1;
-					data_b_tx = data_b_tx << 1;
-				end
-
-				// simulate conversion end
-				#200;
-				@(posedge clk17_in) adc_busy_in = 0;
-
-			end
-		end
-	endtask
-
+	/* Read from opal kelly pipe */
 	task pipe_read;
 		input [31:0] reps;
 
@@ -378,6 +346,7 @@ module pid_controller_tf;
 		end
 	endtask
 
+	/* Verifiy PID values */
 	task check_pid;
 		input [31:0] reps;
 
@@ -385,20 +354,12 @@ module pid_controller_tf;
 		repeat(reps) begin
 			@(posedge pid_dv) begin
 				pid_data_reg = pid_controller_tf.uut.pid_data[0];
-				e_count = e_count + 1;
-				error = setpoint - chan[0];
-				#1;
-				integral = integral + error;
-				derivative = error - error_prev;
-				#1;
-				u_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
-				error_prev = error;
-				#1;
-				assert_equals(u_expected, pid_data_reg, "PID");
+				assert_equals(pid_expected, pid_data_reg, "PID");
 			end
 		end
 	endtask
 
+	/* Print controller state */
 	task print_state;
 		input [31:0] reps;
 
@@ -433,20 +394,13 @@ module pid_controller_tf;
 		end
 	endtask
 
+	/* Verify output */
 	task check_output;
 		input [31:0] reps;
 
 		repeat(reps) begin
-			// compute expected output value
-			@(posedge pid_dv) begin
-				#1;
-				proc_stage[0] = pid_data_reg * multiplier;
-				proc_stage[1] = proc_stage[0] >>> right_shift;
-				proc_stage[2] = proc_stage[1] + dac_data_reg;
-				proc_stage[3] = (lock_en == 1) ? proc_stage[2] : output_init;
-				proc_stage[4] = (proc_stage[3] > output_max) ? output_max : proc_stage[3];
-				proc_stage[5] = (proc_stage[4] < output_min) ? output_min : proc_stage[4];
 
+			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
 				$display("***************EXP PIPE***************");
 				$display(proc_stage[0]);
 				$display(proc_stage[1]);
@@ -455,9 +409,7 @@ module pid_controller_tf;
 				$display(proc_stage[4]);
 				$display(proc_stage[5]);
 				$display("**************************************");
-			end
 
-			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
 				$display("***************RCV PIPE***************");
 				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.data_out_prev);
 				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_0);
@@ -479,43 +431,5 @@ module pid_controller_tf;
 		end
 	endtask
 
-	task check_rcv;
-		input [31:0] reps;
-
-		repeat(reps) begin
-			// simulate dac receiving data
-			@(negedge dac_nsync_out) begin
-				repeat(32) begin
-					@(negedge dac_sclk_out) begin
-						r_instr = {r_instr[30:0], dac_din_out}; // shift data in
-					end
-				end
-			end
-			#1 assert_equals(dac_data_reg, r_data, "Receive");
-		end
-	endtask
-
-	task assert_equals;
-		input [127:0] expected;
-		input [127:0] received;
-		input [20*8-1:0] test_name;
-
-		begin
-
-			$display("%s Test:", test_name);
-			$display("Expected: %d", $signed(expected));
-			$display("Received: %d", $signed(received));
-
-			if(expected == received) begin
-				$display("Success");
-			end else begin
-				$display("Failure");
-				$stop;
-			end
-		end
-	endtask
-
-
-	`include "ok_sim/okHostCalls.v"
-
 endmodule
+

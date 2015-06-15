@@ -480,7 +480,7 @@ class PIDChannel:
 
 		print 'OPP multiplier changed from ' + str(opp_mult_old) + ' to ' + str(self.opp_mult)
 
-	def handle_opp_rs(self, text):
+	def handle_opp_right_shift(self, text):
 		opp_right_shift_old = self.opp_right_shift
 
 		try:

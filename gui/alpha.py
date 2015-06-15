@@ -550,17 +550,17 @@ class OutputWidget(QGroupBox):
 		self.opp_mult_wgt.textChanged.connect(lambda: pid.handle_opp_mult(self.opp_mult_wgt.text()))
 
 		#################### opp_right_shift #######################
-		self.opp_rs_wgt = QLineEdit(self)
+		self.opp_right_shift_wgt = QLineEdit(self)
 
 		# create and apply input validator
-		rs_validator = QIntValidator(0, 2**16 - 1)
-		self.opp_rs_wgt.setValidator(rs_validator)
+		right_shift_validator = QIntValidator(0, 2**16 - 1)
+		self.opp_right_shift_wgt.setValidator(right_shift_validator)
 
-		self.opp_rs_wgt.setPlaceholderText(str(-2**9) + ' to ' + str(2**9 - 1))
-		self.form_layout.addRow('Right shift:', self.opp_rs_wgt)
+		self.opp_right_shift_wgt.setPlaceholderText(str(0) + ' to ' + str(2**16 - 1))
+		self.form_layout.addRow('Right shift:', self.opp_right_shift_wgt)
 
 		# handler
-		self.opp_rs_wgt.textChanged.connect(lambda: pid.handle_opp_rs(self.opp_rs_wgt.text()))
+		self.opp_right_shift_wgt.textChanged.connect(lambda: pid.handle_opp_right_shift(self.opp_right_shift_wgt.text()))
 
 		# add form layout to main layout
 		self.layout.addLayout(self.form_layout)

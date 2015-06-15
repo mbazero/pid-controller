@@ -23,8 +23,8 @@ module pid_controller #(
 	// - set number of DDS channels to reflect hardware
 	//   configuration
 	// --------------------------------------------------
-	parameter N_ADC			= 8,	// number of adc channels
-	parameter N_DAC			= 8,	// number of dac channels
+	parameter N_ADC			= 2,	// number of adc channels
+	parameter N_DAC			= 2,	// number of dac channels
 	parameter N_DDS			= 0,	// number of dds channels
 	parameter W_ADC_DATA		= 18, // width of adc data word
 	parameter W_DAC_DATA		= 16,	// width of dac data word
@@ -48,10 +48,11 @@ module pid_controller #(
 	// - to run a timing sim, assert TSIM_EN and set
 	//   initial values as desired
 	// --------------------------------------------------
-	parameter TSIM_EN			= 0,
 	parameter ADC_OS_INIT	= 1,
+	parameter OSF_ACTIVATE	= 0,
 	parameter OSF_OSM_INIT	= 0,
 	parameter OSF_CDLY_INIT	= 0,
+	parameter PID_LOCK_EN	= 0,
 	parameter PID_SETP_INIT = 0,
 	parameter PID_PCF_INIT	= 0,
 	parameter PID_ICF_INIT	= 0,
@@ -161,7 +162,6 @@ wire	[W_ADC_DATA-1:0]		cs_data_b;
 
 /* oversample filter */
 wire	[N_ADC-1:0]				osf_activate;
-wire	[N_ADC-1:0]				osf_activate_dbg = TSIM_EN; // asserted for timing simulation only
 wire	[N_ADC-1:0]				osf_update_en;
 wire	[W_OSF_CD-1:0]			osf_cycle_delay;
 wire	[W_OSF_OSM-1:0]		osf_osm;
@@ -189,7 +189,6 @@ wire	[W_COMPV*N_OUT-1:0]	rtr_output_packed;
 wire	[W_COMP-1:0]			rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
 wire	[N_OUT-1:0]				rtr_lock_en;
-wire	[N_OUT-1:0]				rtr_lock_en_dbg = TSIM_EN; // assert for timing simulation only
 
 /* output preprocessor */
 wire	[N_OUT-1:0]				opp_update_en;
@@ -323,7 +322,7 @@ generate
 			.data_valid_in		(cs_data_valid[l]),
 			.cycle_delay_in	(osf_cycle_delay),
 			.osm_in				(osf_osm),
-			.activate_in		(osf_activate[l] | osf_activate_dbg[l]),
+			.activate_in		(osf_activate[l]),
 			.update_en_in		(osf_update_en[l]),
 			.update_in			(module_update),
 			.data_out			(osf_data[l]),
@@ -432,7 +431,7 @@ generate
 			.output_init_in	(opp_init[W_DAC_DATA:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
-			.lock_en_in			(rtr_lock_en[x] | rtr_lock_en_dbg[x]),
+			.lock_en_in			(rtr_lock_en[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
 			.data_out			({opp_dac_data_sign[x], opp_dac_data[x]}),
@@ -611,7 +610,9 @@ frontpanel_interface #(
 	.W_MLT					(W_OPP_MLT),
 	.W_EP						(W_EP),
 	.N_DAC					(N_DAC),
-	.W_DAC					(W_DAC_DATA))
+	.W_DAC					(W_DAC_DATA),
+	.PID_LOCK_EN			(PID_LOCK_EN),
+	.OSF_ACTIVATE			(OSF_ACTIVATE))
 fp_io (
 	.clk50_in				(clk50_in),
 	.clk17_in				(clk17_in),

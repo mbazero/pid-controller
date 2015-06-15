@@ -15,7 +15,7 @@ module dac_instr_queue #(
 	// parameters
 	parameter W_DATA		= 16,									// width of dac data signal
 	parameter W_CHS		= 3,									// width of dac channel select signal
-	parameter N_CHAN		= 8									// number of DAC channels
+	parameter N_CHAN		= 8									// number of DAC channels (must be >1)
 	)(
 	// inputs <-- top level entity
 	input wire								clk_in,				// system clock
@@ -39,19 +39,21 @@ module dac_instr_queue #(
 //////////////////////////////////////////
 
 localparam W_DINS = W_DATA + W_CHS;							// width of dac write instruction
+localparam N_LOWER = N_CHAN/2;
+localparam N_UPPER = N_CHAN - N_LOWER;
 
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
 /* upper split data */
-wire [W_DATA*N_CHAN/2-1:0] data_packed_upper;			// upper half of input data bus
-wire [N_CHAN/2-1:0]			dv_upper; 						// upper half of data valid bus
+wire [W_DATA*N_UPPER-1:0]	data_packed_upper;			// upper half of input data bus
+wire [N_UPPER-1:0]			dv_upper; 						// upper half of data valid bus
 wire								dv_rdc_upper;					// reduction OR of upper data valid bus
 
 /* lower split data */
-wire [W_DATA*N_CHAN/2-1:0]	data_packed_lower;			// lower half of input data bus
-wire [N_CHAN/2-1:0]			dv_lower; 						// lower half of data valid bus
+wire [W_DATA*N_LOWER-1:0]	data_packed_lower;			// lower half of input data bus
+wire [N_LOWER-1:0]			dv_lower; 						// lower half of data valid bus
 wire								dv_rdc_lower;					// reduction OR of lower data valid bus
 
 /* mux data out */
@@ -80,12 +82,12 @@ wire fifo_data_valid;
 //////////////////////////////////////////
 
 /* split input data bus into upper and lower halfs */
-assign data_packed_upper = data_packed_in[W_DATA*N_CHAN-1:W_DATA*N_CHAN/2];
-assign data_packed_lower = data_packed_in[W_DATA*N_CHAN/2-1:0];
+assign data_packed_upper = data_packed_in[W_DATA*N_CHAN-1:W_DATA*N_LOWER];
+assign data_packed_lower = data_packed_in[W_DATA*N_LOWER-1:0];
 
 /* split data valid input into upper and lower half */
-assign dv_upper = data_valid_in[N_CHAN-1:N_CHAN/2];
-assign dv_lower = data_valid_in[N_CHAN/2-1:0];
+assign dv_upper = data_valid_in[N_CHAN-1:N_LOWER];
+assign dv_lower = data_valid_in[N_LOWER-1:0];
 
 /* compute reduction or of data valid signals */
 assign dv_rdc_upper = | dv_upper;
@@ -131,7 +133,7 @@ end
 mux_n_chan #(
 	.W_CHAN				(W_DATA),
 	.W_SEL				(W_CHS),
-	.N_IN					(N_CHAN/2))
+	.N_IN					(N_UPPER))
 mux_upper (
 	.data_packed_in	(data_packed_upper),
 	.chan_select_in	(mux_sel_upper),
@@ -142,7 +144,7 @@ mux_upper (
 mux_n_chan #(
 	.W_CHAN				(W_DATA),
 	.W_SEL				(W_CHS),
-	.N_IN					(N_CHAN/2))
+	.N_IN					(N_LOWER))
 mux_lower (
 	.data_packed_in	(data_packed_lower),
 	.chan_select_in	(mux_sel_lower),

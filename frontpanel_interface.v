@@ -11,7 +11,7 @@
 // - if time: consolodate smaller signals to single endpoint
 
 module frontpanel_interface #(
-	// parameters
+	// general parameters
 	parameter N_ADC		= 8,									// number of active adc channels
 	parameter N_OUT		= 8,									// number of output channels
 	parameter W_ADC_DATA	= 18,									// width of adc channels
@@ -20,7 +20,11 @@ module frontpanel_interface #(
 	parameter W_MLT		= 10,									// width of opp multiplier
 	parameter W_EP			= 16,									// width of opal kelly endpoint
 	parameter N_DAC		= 8,									// number of dac channels
-	parameter W_DAC		= 16									// width of dac data channel
+	parameter W_DAC		= 16,									// width of dac data channel
+
+	// simulation parameters
+	parameter PID_LOCK_EN	= 0,
+	parameter OSF_ACTIVATE	= 0
 	)(
 	// inputs <- top level entity
 	input	wire										clk50_in,
@@ -98,7 +102,8 @@ localparam N_PIPES = 2; // number of opal kelly pipes
 //////////////////////////////////////////
 
 /* split osf data */
-wire	[W_ADC_DATA-1:0]	osf_data[N_ADC-1:0];
+wire	[W_ADC_DATA-1:0]	osf_data_in[N_ADC-1:0];
+reg	[W_ADC_DATA-1:0]	osf_data_reg[N_ADC-1:0];
 wire	[W_ADC_DATA-1:0]	osf_data_active;	// osf data channel active for bulk transfer mode
 wire							osf_dv_active;
 
@@ -158,12 +163,12 @@ wire	[15:0]	sys_reset_trig;
 genvar a;
 generate
 	for ( a = 0; a < N_ADC; a = a + 1) begin : osf_data_split
-		assign osf_data[a] 	= osf_data_packed_in[ a*W_ADC_DATA +: W_ADC_DATA ];
+		assign osf_data_in[a] = osf_data_packed_in[ a*W_ADC_DATA +: W_ADC_DATA ];
 	end
 endgenerate
 
 /* multiplex active osf data channel */
-assign osf_data_active		= osf_data[0];
+assign osf_data_active		= osf_data_in[0]; //TODO proper multiplexing here
 assign osf_dv_active			= osf_data_valid_in[0];
 
 /* adc controller */
@@ -171,14 +176,14 @@ assign adc_os_out 			= adc_os_wire[2:0];
 assign adc_cstart_out		= adc_cstart_trig[0];
 
 /* oversample filter */
-assign osf_activate_out		= osf_activate_wire[N_ADC-1:0];
+assign osf_activate_out		= osf_activate_wire[N_ADC-1:0] | OSF_ACTIVATE;
 assign osf_cycle_delay_out	= osf_cycle_delay_wire[W_OSF_CD-1:0];
 assign osf_osm_out			= osf_osm_wire[W_OSF_OSM-1:0];
 assign osf_update_en_out	= osf_update_en_wire[N_ADC-1:0];
 
 /* pid core */
 assign pid_clear_out			= pid_clear_trig[N_ADC-1:0];
-assign pid_lock_en_out		= pid_lock_en_wire[N_ADC-1:0];
+assign pid_lock_en_out		= pid_lock_en_wire[N_ADC-1:0] | PID_LOCK_EN;
 assign pid_setpoint_out		= pid_setpoint_wire;
 assign pid_p_coef_out 		= pid_p_coef_wire;
 assign pid_i_coef_out 		= pid_i_coef_wire;
@@ -209,6 +214,24 @@ assign sys_reset_out			= sys_reset_trig[0];
 assign i2c_sda   = 1'bz;
 assign i2c_scl   = 1'bz;
 assign hi_muxsel = 1'b0;
+
+//////////////////////////////////////////
+// sequential logic
+//////////////////////////////////////////
+
+/* osf data registers */
+genvar i;
+generate
+	for ( i = 0; i < N_ADC; i = i + 1 ) begin : osf_reg_arr
+		always @( posedge clk50_in ) begin
+			if ( sys_reset_out == 1 ) begin
+				osf_data_reg[i] <= 0;
+			end else if ( osf_data_valid_in[i] == 1 ) begin
+				osf_data_reg[i] <= osf_data_in[i];
+			end
+		end
+	end
+endgenerate
 
 //////////////////////////////////////////
 // modules
@@ -280,7 +303,7 @@ generate
 			.ok1				(ok1),
 			.ok2				(ok2x[j*17 +: 17]),
 			.ep_addr			(osf_data0_owep + j[7:0]),
-			.ep_datain		(osf_data[j][W_ADC_DATA-1 -: W_EP])
+			.ep_datain		(osf_data_reg[j][W_ADC_DATA-1 -: W_EP])
 			);
 	end
 endgenerate
