@@ -352,6 +352,16 @@ class InputWidget(QGroupBox):
 		# connect signal to slot
 		self.osf_activate_wgt.toggled.connect(pid.handle_chan_activate)
 
+		#################### channel reset #######################
+		self.chan_reset_wgt = QPushButton('Reset Channel', self)
+		self.layout.addWidget(self.chan_reset_wgt)
+
+		# set tooltip
+		self.chan_reset_wgt.setToolTip('Resets channel by clearing PID and OPP memory.');
+
+		# connect signal to slot
+		self.chan_reset_wgt.toggled.connect(pid.handle_chan_reset)
+
 		# set vbox as widget's main layout
 		self.setLayout(self.layout)
 

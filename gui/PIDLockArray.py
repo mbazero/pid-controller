@@ -307,6 +307,10 @@ class PIDChannel:
 
 			print self.cname + ' deactivated'
 
+	def handle_chan_reset(self, toggled):
+		handle_opp_clear()
+		handle_pid_clear()
+
 	#################### osf handlers #######################
 	def handle_osf_ovr(self, new_val):
 		osf_log_ovr_old = self.osf_log_ovr
@@ -506,6 +510,11 @@ class PIDChannel:
 		self.okc.ModUpdate()
 
 		print 'OPP right shift changed from ' + str(opp_right_shift_old) + ' to ' + str(self.opp_right_shift)
+
+	def handle_opp_clear(self):
+		self.okc.ActivateTriggerIn(epm.opp_clear_tep, 1 << self.rtr_src_sel)
+		print self.cname + 'OPP memory cleared'
+
 
 	#################### helper functions #######################
 	def map_val(self, val, vrange, mrange):
