@@ -46,7 +46,6 @@ module adc_controller #(
 //////////////////////////////////////////
 
 localparam RD_LENGTH		= W_OUT*(N_CHAN/2);					// bits of data to be read per serial port in a single cycle
-localparam OS_MIN			= 3'b1;									// set minimum oversampling ratio of 2^1 to support 8 channels //DEBUG set back to 1 after testing
 
 /* state parameters */
 localparam	CV_ST_IDLE		= 3'd0,								// wait for module enable signal to begin continuous conversion
@@ -75,8 +74,8 @@ reg	[2:0]					rd_next_state = RD_ST_IDLE;		// read state machine next state
 //////////////////////////////////////////
 
 /* adc control */
-assign os_out 		= (os_in < OS_MIN) ? OS_MIN : os_in;	// enforce minimum oversample rate
 assign reset_out	= reset_in;
+assign os_out		= os_in;
 
 /* data valid out */
 genvar i;

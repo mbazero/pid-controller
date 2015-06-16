@@ -64,6 +64,7 @@ module frontpanel_interface #(
 	output wire				[47:0]				opp_init_out,					// dm
 	output wire				[W_MLT-1:0]			opp_multiplier_out, 			// dm
 	output wire				[W_EP-1:0]			opp_right_shift_out,
+	output wire				[N_OUT-1:0]			opp_clear_out,
 	output wire				[N_OUT-1:0]			opp_update_en_out, 			// computed on opp param change
 
 	// outputs -> dac controller
@@ -145,6 +146,7 @@ wire	[15:0]	opp_min_wire[0:3];
 wire	[15:0] 	opp_init_wire[0:3];
 wire	[15:0]	opp_multiplier_wire;
 wire	[15:0]	opp_right_shift_wire;
+wire	[15:0]	opp_clear_trig;
 wire	[15:0] 	opp_update_en_wire;
 
 /* dac controller */
@@ -201,6 +203,7 @@ assign opp_max_out			= {opp_max_wire[2], opp_max_wire[1], opp_max_wire[0]};
 assign opp_init_out			= {opp_init_wire[2], opp_init_wire[1], opp_init_wire[0]};
 assign opp_multiplier_out	= opp_multiplier_wire[W_MLT-1:0];
 assign opp_right_shift_out	= opp_right_shift_wire;
+assign opp_clear_out			= opp_clear_trig[N_OUT-1:0];
 assign opp_update_en_out	= opp_update_en_wire[N_OUT-1:0];
 
 /* dac controller */
@@ -475,6 +478,13 @@ okWireIn opp_right_shift_owi (
 	.ok1				(ok1),
 	.ep_addr			(opp_right_shift_wep),
 	.ep_dataout		(opp_right_shift_wire)
+	);
+
+okTriggerIn opp_clear_ti (
+	.ok1				(ok1),
+	.ep_addr			(opp_clear_tep),
+	.ep_clk			(clk50_in),
+	.ep_trigger		(opp_clear_trig)
 	);
 
 okWireIn opp_update_en_owi (

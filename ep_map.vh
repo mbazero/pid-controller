@@ -1,5 +1,5 @@
 parameter adc_os_wep					= 8'h01;
-parameter adc_cstart_tep			= 8'h53;
+parameter adc_cstart_tep			= 8'h40;
 
 parameter osf_activate_wep			= 8'h02;
 parameter osf_cycle_delay_wep		= 8'h03;
@@ -8,7 +8,7 @@ parameter osf_update_en_wep		= 8'h05;
 parameter osf_data0_owep			= 8'h20;
 parameter osf_block_data_pep		= 8'ha3;
 
-parameter pid_clear_tep				= 8'h55;
+parameter pid_clear_tep				= 8'h41;
 parameter pid_lock_en_wep			= 8'h06;
 parameter pid_setpoint_wep			= 8'h07;
 parameter pid_p_coef_wep			= 8'h08;
@@ -30,11 +30,12 @@ parameter opp_max0_wep				= 8'h15;
 parameter opp_max1_wep				= 8'h16;
 parameter opp_max2_wep				= 8'h17;
 parameter opp_multiplier_wep		= 8'h18;
+parameter opp_clear_tep				= 8'h42;
 parameter opp_right_shift_wep		= 8'h19;
 parameter opp_update_en_wep		= 8'h1a;
 
-parameter dac_ref_set_tep			= 8'h56;
+parameter dac_ref_set_tep			= 8'h43;
 
-parameter module_update_tep		= 8'h57;
+parameter module_update_tep		= 8'h44;
 
-parameter sys_reset_tep				= 8'h58;
+parameter sys_reset_tep				= 8'h45;

@@ -196,6 +196,7 @@ wire	[47:0]					opp_min;
 wire	[47:0]					opp_init;
 wire	[W_OPP_MLT-1:0]		opp_multiplier;
 wire	[W_EP-1:0]				opp_right_shift;
+wire	[N_OUT-1:0]				opp_clear;
 wire	[W_DAC_DATA-1:0]		opp_dac_data[0:N_DAC-1];
 wire	[W_DDS_FREQ-1:0]		opp_freq_data[0:N_DDS-1];
 wire	[W_DDS_PHASE-1:0]		opp_phase_data[0:N_DDS-1];
@@ -389,7 +390,7 @@ router #(
 	.N_OUT				(N_OUT),
 	.ACTV_INIT			(RTR_ACTV_INIT))
 rtr (
-	.clk_in				(clk_50),
+	.clk_in				(clk50_in),
 	.data_packed_in	(rtr_input_packed),
 	.src_select_in		(rtr_src_sel),
 	.output_active_in	(rtr_output_active),
@@ -424,12 +425,13 @@ generate
 			.reset_in			(sys_reset),
 			.pid_sum_in			(rtr_data[x]),
 			.data_valid_in		(rtr_data_valid[x]),
+			.lock_en_in			(rtr_lock_en[x]),
 			.output_max_in		(opp_max[W_DAC_DATA:0]),
 			.output_min_in		(opp_min[W_DAC_DATA:0]),
 			.output_init_in	(opp_init[W_DAC_DATA:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
-			.lock_en_in			(rtr_lock_en[x]),
+			.clear_in			(opp_clear[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
 			.data_out			({opp_dac_data_sign[x], opp_dac_data[x]}),
@@ -502,14 +504,15 @@ generate
 			.reset_in			(sys_reset),
 			.pid_sum_in			(rtr_data[F]),
 			.data_valid_in		(rtr_data_valid[F]),
-			.update_en_in		(opp_update_en[F]),
-			.update_in			(module_update),
 			.lock_en_in			(rtr_lock_en[F]),
 			.output_max_in		(opp_max[W_DDS_FREQ-1:0]),
 			.output_min_in		(opp_min[W_DDS_FREQ-1:0]),
 			.output_init_in	(opp_init[W_DDS_FREQ-1:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
+			.clear_in			(opp_clear[F]),
+			.update_en_in		(opp_update_en[F]),
+			.update_in			(module_update),
 			.data_out			(opp_freq_data[y]),
 			.data_valid_out	(opp_freq_data_valid[y])
 			);
@@ -531,14 +534,15 @@ generate
 			.reset_in			(sys_reset),
 			.pid_sum_in			(rtr_data[P]),
 			.data_valid_in		(rtr_data_valid[P]),
-			.update_en_in		(opp_update_en[P]),
-			.update_in			(module_update),
 			.lock_en_in			(rtr_lock_en[P]),
 			.output_max_in		(opp_max[W_DDS_PHASE-1:0]),
 			.output_min_in		(opp_min[W_DDS_PHASE-1:0]),
 			.output_init_in	(opp_init[W_DDS_PHASE-1:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
+			.clear_in			(opp_clear[P]),
+			.update_en_in		(opp_update_en[P]),
+			.update_in			(module_update),
 			.data_out			(opp_phase_data[y]),
 			.data_valid_out	(opp_phase_data_valid[y])
 			);
@@ -560,14 +564,15 @@ generate
 			.reset_in			(sys_reset),
 			.pid_sum_in			(rtr_data[A]),
 			.data_valid_in		(rtr_data_valid[A]),
-			.update_en_in		(opp_update_en[A]),
-			.update_in			(module_update),
 			.lock_en_in			(rtr_lock_en[A]),
 			.output_max_in		(opp_max[W_DDS_AMP-1:0]),
 			.output_min_in		(opp_min[W_DDS_AMP-1:0]),
 			.output_init_in	(opp_init[W_DDS_AMP-1:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
+			.clear_in			(opp_clear[A]),
+			.update_en_in		(opp_update_en[A]),
+			.update_in			(module_update),
 			.data_out			(opp_amp_data[y]),
 			.data_valid_out	(opp_amp_data_valid[y])
 			);
@@ -637,6 +642,7 @@ fp_io (
 	.opp_init_out			(opp_init),
 	.opp_multiplier_out	(opp_multiplier),
 	.opp_right_shift_out	(opp_right_shift),
+	.opp_clear_out			(opp_clear),
 	.opp_update_en_out	(opp_update_en),
 	.dac_ref_set_out		(dac_ref_set),
 	.module_update_out	(module_update),

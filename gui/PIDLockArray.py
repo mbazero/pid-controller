@@ -416,7 +416,7 @@ class PIDChannel:
 
 	def handle_pid_clear(self):
 		self.okc.ActivateTriggerIn(epm.pid_clear_tep, 1 << self.rtr_src_sel)
-		print self.cname + ' PID filter cleared'
+		print self.cname + 'PID memory cleared'
 
 
 	#################### opp handlers #######################

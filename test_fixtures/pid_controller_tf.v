@@ -294,13 +294,6 @@ module pid_controller_tf;
 
 		#200;
 
-		// Set osf oversample mode
-		SetWireInValue(osf_osm_wep, 6, mask); // log ovr = 0
-		SetWireInValue(osf_update_en_wep, 1, mask); // sensitize OSF channel 0
-
-		UpdateWireIns;
-		ActivateTriggerIn(module_update_tep, 0);
-
 		fork
 			adc_transmit(REPS);
 			pipe_read(REPS);
