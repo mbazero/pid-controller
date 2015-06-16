@@ -415,7 +415,7 @@ class PIDChannel:
 		print self.channel_type + ' Channel ' + str(self.channel_no) + ' D coefficient updated from ' + str(pid_d_coef_old) + ' to ' + str(self.pid_d_coef)
 
 	def handle_pid_clear(self):
-		# implement okc clear commands
+		self.okc.ActivateTriggerIn(epm.pid_clear_tep, 1 << self.rtr_src_sel)
 		print self.cname + ' PID filter cleared'
 
 
