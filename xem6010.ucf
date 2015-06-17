@@ -67,11 +67,11 @@ NET "clk50_in"   LOC="AB13"  | IOSTANDARD="LVCMOS33";
 NET "clk17_in"   LOC="Y11"   | IOSTANDARD="LVCMOS33";
 #NET "clk3"   LOC="AB11"  | IOSTANDARD="LVCMOS33";
 
-NET "clk50_in" TNM_NET = "clk50_group";
-NET "clk17_in" TNM_NET = "clk17_group";
+NET "clk50_in" TNM_NET = "clk50_in";
+NET "clk17_in" TNM_NET = "clk17_in";
 
-TIMESPEC "TS_clk50" = PERIOD "clk50_group" 33.33 ns HIGH 50%; # 50MHz clock had to be scaled down to 30MHz due to timing issues
-TIMESPEC "TS_clk17" = PERIOD "clk17_group" 60 ns HIGH 50%;
+TIMESPEC "TS_clk50" = PERIOD "clk50_in" 33.33 ns HIGH 50%; # 50MHz clock had to be scaled down to 30MHz due to timing issues
+TIMESPEC "TS_clk17" = PERIOD "clk17_in" 60 ns HIGH 50%;
 
 ############################################################################
 ## Peripherals
@@ -94,7 +94,7 @@ NET "dac_nsync_out"		LOC="A14"	| IOSTANDARD=LVCMOS33;
 NET "dac_sclk_out"		LOC="B18"	| IOSTANDARD=LVCMOS33;
 NET "dac_din_out"			LOC="A16"	| IOSTANDARD=LVCMOS33;
 
-NET "dac_din_out" OFFSET = OUT 7 ns AFTER "dac_sclk_out" HIGH; # a bit faster than actually necessary
+NET "dac_din_out" OFFSET = OUT 11 ns AFTER "clk50_in" RISING; # a bit faster than actually necessary
 
 ## DAC (HOTWIRE) ################################################################
 #NET "dac_nldac_out"		LOC="A13"	| IOSTANDARD=LVCMOS33;
@@ -116,8 +116,8 @@ NET "adc_os_out[2]"	LOC="B16"	| IOSTANDARD=LVCMOS33;
 NET "adc_reset_out"	LOC="C9"		| IOSTANDARD=LVCMOS33;
 NET "adc_sclk_out"	LOC="A7"		| IOSTANDARD=LVCMOS33;
 
-NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_sclk_out" HIGH; # not sure if these vals are correct...
-NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_sclk_out" HIGH; # not sure if these vals are correct...
+NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
+NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
 
 # DAC DEBUG ################################################################
 #NET "dac_sclk_db"		LOC="H20"	| IOSTANDARD=LVCMOS33;
