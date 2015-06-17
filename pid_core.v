@@ -147,8 +147,8 @@ always @( posedge clk_in ) begin
 end
 
 /* frontpanel parameter registers */
-always @( posedge clk_in ) begin
-	if (( update_in == 1 ) & ( update_en_in == 1 )) begin
+always @( posedge update_in ) begin
+	if ( update_en_in == 1 ) begin
 		setpoint	<= setpoint_in;
 		p_coef	<= p_coef_in;
 		i_coef	<= i_coef_in;

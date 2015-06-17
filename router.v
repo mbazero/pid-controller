@@ -58,10 +58,8 @@ generate
 endgenerate
 
 /* update frontpanel params */
-always @( posedge clk_in ) begin
-	if ( update_in == 1 ) begin
-		src_select[dest_select_in] <= src_select_in;
-	end
+always @( posedge update_in ) begin
+	src_select[dest_select_in] <= src_select_in;
 end
 
 //////////////////////////////////////////
