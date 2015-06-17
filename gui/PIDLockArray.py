@@ -290,16 +290,23 @@ class PIDChannel:
 	def handle_chan_activate(self, toggled):
 		# TODO: move pla activation functionality to method in PLA class
 
+		# TODO: crazy refactor (paired with handle_rtr_src_sel refactor)
 		if (toggled == True): # channel activated
 			self.activated = True # set local activation state
-			self.okc.SetAndUpdateWireIn(epm.osf_activate_wep, 1) # TODO: proper update signal creation
+			self.okc.SetWireInValue(epm.osf_activate_wep, 1 << self.rtr_src_sel) # TODO: proper update signal creation
+			self.okc.SetWireInValue(epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
+			self.okc.UpdateWireIns()
+			self.okc.ModUpdate()
 
 			self.pla.active_chans.append(self) # add self to list of active channels
 			self.pla.activated.set() # set pla activated event
 			print self.cname + ' activated'
 		else: # channel deactivated
 			self.activated = False # set local activation state
-			self.okc.SetAndUpdateWireIn(epm.osf_activate_wep, 0) # TODO: proper update signal
+			self.okc.SetWireInValue(epm.osf_activate_wep, 0) # TODO make sure this only deactivates the target channel
+			self.okc.SetWireInValue(epm.rtr_output_active_wep, 0)	# activate destination channel
+			self.okc.UpdateWireIns()
+			self.okc.ModUpdate()
 
 			self.pla.active_chans.remove(self) # remove self from list of active channels
 			if not self.pla.active_chans : # clear pla activated event if no activated channels remain
@@ -345,9 +352,10 @@ class PIDChannel:
 
 		print 'New RTR Source: ' + str(index)
 
+		# TODO need to refactor this like crazy
 		self.okc.SetWireInValue(epm.rtr_src_sel_wep, self.rtr_src_sel)		# set source channel
 		self.okc.SetWireInValue(epm.rtr_dest_sel_wep, self.rtr_dest_sel)	# set destination channel
-		self.okc.SetWireInValue(epm.rtr_output_active_wep, 1)	# set destination channel
+		self.okc.SetWireInValue(epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
 		self.okc.UpdateWireIns()												# update wire in values
 		self.okc.ModUpdate()												# update modules
 
