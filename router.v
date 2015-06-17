@@ -31,7 +31,6 @@ module router #(
 //////////////////////////////////////////
 
 reg	[W_SEL-1:0]		src_select		[0:N_OUT-1];		// registered source channels
-reg	[N_OUT-1:0]		output_active = ACTV_INIT;			// registed output channel activations
 wire	[W_CHAN-1:0]	mux_data_out	[0:N_OUT-1]; 		// mux output channels
 wire	[W_CHAN-1:0]	data_out			[0:N_OUT-1]; 		// final output channels
 
@@ -62,7 +61,6 @@ endgenerate
 always @( posedge clk_in ) begin
 	if ( update_in == 1 ) begin
 		src_select[dest_select_in] <= src_select_in;
-		output_active <= output_active_in;
 	end
 end
 
@@ -83,7 +81,7 @@ generate
 			.chan_select_in	(src_select[k]),
 			.data_out			(mux_data_out[k])
 			);
-		assign data_out[k] = (output_active[k] == 1) ? mux_data_out[k] : {W_CHAN{1'b0}}; // only pass mux output if output channel is activated
+		assign data_out[k] = (output_active_in[k] == 1) ? mux_data_out[k] : {W_CHAN{1'b0}}; // only pass mux output if output channel is activated
 	end
 endgenerate
 
