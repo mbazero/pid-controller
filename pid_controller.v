@@ -124,18 +124,7 @@ module pid_controller #(
 
 	// inputs <- test fixture
 	input wire							adc_cstart_tf_in,
-
-	// debug
-	output wire dac_sclk_db,
-	output wire dac_nsync_db,
-	output wire dac_din_db,
-	output wire dac_nldac_db
 	);
-
-assign dac_sclk_db = clk50_in;
-assign dac_nsync_db = dac_nsync_out;
-assign dac_din_db = dac_din_out;
-assign dac_nldac_db = dac_nldac_out;
 
 //////////////////////////////////////////
 // local parameters

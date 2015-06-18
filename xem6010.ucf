@@ -126,10 +126,10 @@ NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
 #NET "dac_nldac_db"	LOC="G17"	| IOSTANDARD=LVCMOS33;
 
 # DAC DEBUG ################################################################
-NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;
-NET "dac_nsync_db"	LOC="T22"	| IOSTANDARD=LVCMOS33;
-NET "dac_din_db"		LOC="P21"	| IOSTANDARD=LVCMOS33;
-NET "dac_nldac_db"	LOC="P22"	| IOSTANDARD=LVCMOS33;
+#NET "dac_sclk_db"		LOC="T21"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nsync_db"	LOC="T22"	| IOSTANDARD=LVCMOS33;
+#NET "dac_din_db"		LOC="P21"	| IOSTANDARD=LVCMOS33;
+#NET "dac_nldac_db"	LOC="P22"	| IOSTANDARD=LVCMOS33;
 
 ## ADC DEBUG ################################################################
 #NET "adc_n_cs_db"		LOC="A13"		| IOSTANDARD=LVCMOS33;
