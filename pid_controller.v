@@ -123,7 +123,7 @@ module pid_controller #(
 	output wire							hi_muxsel,
 
 	// inputs <- test fixture
-	input wire							adc_cstart_tf_in,
+	input wire							adc_cstart_tf_in
 	);
 
 //////////////////////////////////////////

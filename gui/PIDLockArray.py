@@ -2,7 +2,6 @@ import threading
 import random
 import struct
 import binascii
-from endpoint_map import EndpointMap
 
 # trigger id mappings
 ADC_CSTART 		= 0
@@ -174,6 +173,9 @@ class PIDChannel:
 		# pla
 		self.pla = pla
 
+		# endpoint map
+		self.epm = pla.epm
+
 		# opal kelly controller reference
 		self.okc = okc
 
@@ -250,7 +252,7 @@ class PIDChannel:
 	# get new error data from wire outs (continuous transfer)
 	def update_error_data(self):
 		if self.rtr_src_sel >= 0 :
-			osf_data_owep = pla.epm.osf_data0_owep + self.rtr_src_sel
+			osf_data_owep = self.epm.osf_data0_owep + self.rtr_src_sel
 
 			# get unsigned adc error data from wireout
 			data_raw_us = self.okc.GetWireOutValue(osf_data_owep)
@@ -267,7 +269,7 @@ class PIDChannel:
 		if self.rtr_src_sel >= 0 :
 			block_size = 1024
 			buf = bytearray(block_size*2)
-			self.okc.xem.ReadFromPipeOut(pla.epm.osf_block_data_pep, buf)
+			self.okc.xem.ReadFromPipeOut(self.epm.osf_block_data_pep, buf)
 
 			# unpack byte array as array of signed shorts
 			fmt_str = '<' + str(block_size) + 'h'
@@ -290,8 +292,8 @@ class PIDChannel:
 		# TODO: crazy refactor (paired with handle_rtr_src_sel refactor)
 		if (toggled == True): # channel activated
 			self.activated = True # set local activation state
-			self.okc.SetWireInValue(pla.epm.osf_activate_wep, 1 << self.rtr_src_sel) # TODO: proper update signal creation
-			self.okc.SetWireInValue(pla.epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
+			self.okc.SetWireInValue(self.epm.osf_activate_wep, 1 << self.rtr_src_sel) # TODO: proper update signal creation
+			self.okc.SetWireInValue(self.epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
 			self.okc.UpdateWireIns()
 			self.okc.ModUpdate()
 
@@ -300,8 +302,8 @@ class PIDChannel:
 			print self.cname + ' activated'
 		else: # channel deactivated
 			self.activated = False # set local activation state
-			self.okc.SetWireInValue(pla.epm.osf_activate_wep, 0) # TODO make sure this only deactivates the target channel
-			self.okc.SetWireInValue(pla.epm.rtr_output_active_wep, 0)	# activate destination channel
+			self.okc.SetWireInValue(self.epm.osf_activate_wep, 0) # TODO make sure this only deactivates the target channel
+			self.okc.SetWireInValue(self.epm.rtr_output_active_wep, 0)	# activate destination channel
 			self.okc.UpdateWireIns()
 			self.okc.ModUpdate()
 
@@ -321,8 +323,8 @@ class PIDChannel:
 		self.osf_log_ovr = new_val
 
 		# send adc_os to fpga and update modules
-		self.okc.SetAndUpdateWireIn(pla.epm.osf_osm_wep, self.osf_log_ovr)
-		self.okc.SetWireInValue(pla.epm.osf_update_en_wep, 1 << self.rtr_src_sel)
+		self.okc.SetAndUpdateWireIn(self.epm.osf_osm_wep, self.osf_log_ovr)
+		self.okc.SetWireInValue(self.epm.osf_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -336,8 +338,8 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		self.okc.SetAndUpdateWireIn(pla.epm.osf_cycle_delay_wep, self.osf_cycle_delay)
-		self.okc.SetWireInValue(pla.epm.osf_update_en_wep, 1 << self.rtr_src_sel)
+		self.okc.SetAndUpdateWireIn(self.epm.osf_cycle_delay_wep, self.osf_cycle_delay)
+		self.okc.SetWireInValue(self.epm.osf_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -350,9 +352,9 @@ class PIDChannel:
 		print 'New RTR Source: ' + str(index)
 
 		# TODO need to refactor this like crazy
-		self.okc.SetWireInValue(pla.epm.rtr_src_sel_wep, self.rtr_src_sel)		# set source channel
-		self.okc.SetWireInValue(pla.epm.rtr_dest_sel_wep, self.rtr_dest_sel)	# set destination channel
-		self.okc.SetWireInValue(pla.epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
+		self.okc.SetWireInValue(self.epm.rtr_src_sel_wep, self.rtr_src_sel)		# set source channel
+		self.okc.SetWireInValue(self.epm.rtr_dest_sel_wep, self.rtr_dest_sel)	# set destination channel
+		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
 		self.okc.UpdateWireIns()												# update wire in values
 		self.okc.ModUpdate()												# update modules
 
@@ -370,8 +372,8 @@ class PIDChannel:
 
 		pid_setpoint_norm = int(self.map_val(self.pid_setpoint, [-5, 5], [-2**15, 2**15-1]))
 
-		self.okc.SetWireInValue(pla.epm.pid_setpoint_wep, pid_setpoint_norm)
-		self.okc.SetWireInValue(pla.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
+		self.okc.SetWireInValue(self.epm.pid_setpoint_wep, pid_setpoint_norm)
+		self.okc.SetWireInValue(self.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -386,8 +388,8 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		self.okc.SetWireInValue(pla.epm.pid_p_coef_wep, self.pid_p_coef)
-		self.okc.SetWireInValue(pla.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
+		self.okc.SetWireInValue(self.epm.pid_p_coef_wep, self.pid_p_coef)
+		self.okc.SetWireInValue(self.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -401,8 +403,8 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		self.okc.SetWireInValue(pla.epm.pid_i_coef_wep, self.pid_i_coef)
-		self.okc.SetWireInValue(pla.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
+		self.okc.SetWireInValue(self.epm.pid_i_coef_wep, self.pid_i_coef)
+		self.okc.SetWireInValue(self.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -416,15 +418,15 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		self.okc.SetWireInValue(pla.epm.pid_d_coef_wep, self.pid_d_coef)
-		self.okc.SetWireInValue(pla.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
+		self.okc.SetWireInValue(self.epm.pid_d_coef_wep, self.pid_d_coef)
+		self.okc.SetWireInValue(self.epm.pid_update_en_wep, 1 << self.rtr_src_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
 		print self.channel_type + ' Channel ' + str(self.channel_no) + ' D coefficient updated from ' + str(pid_d_coef_old) + ' to ' + str(self.pid_d_coef)
 
 	def handle_pid_clear(self):
-		self.okc.ActivateTriggerIn(pla.epm.pid_clear_tep, 1 << self.rtr_src_sel)
+		self.okc.ActivateTriggerIn(self.epm.pid_clear_tep, 1 << self.rtr_src_sel)
 		print self.cname + 'PID memory cleared'
 
 
@@ -432,10 +434,10 @@ class PIDChannel:
 	def handle_opp_lock_en(self, state): #TODO change name to handle_pid_lock_en
 		if (state > 0) :
 			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PID filter activated'
-			self.okc.SetAndUpdateWireIn(pla.epm.pid_lock_en_wep, 1)
+			self.okc.SetAndUpdateWireIn(self.epm.pid_lock_en_wep, 1)
 		else :
 			print self.channel_type + ' Channel ' + str(self.channel_no) + ' PID filter deactivated'
-			self.okc.SetAndUpdateWireIn(pla.epm.pid_lock_en_wep, 0)
+			self.okc.SetAndUpdateWireIn(self.epm.pid_lock_en_wep, 0)
 
 	def handle_opp_init(self, text):
 		opp_init_old = self.opp_init
@@ -447,8 +449,8 @@ class PIDChannel:
 
 		opp_init_norm = int(self.map_val(self.opp_init, [0, 5], [0, 2**16-1]))
 
-		self.okc.SetWireInValue(pla.epm.opp_init0_wep, opp_init_norm)
-		self.okc.SetWireInValue(pla.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
+		self.okc.SetWireInValue(self.epm.opp_init0_wep, opp_init_norm)
+		self.okc.SetWireInValue(self.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -464,8 +466,8 @@ class PIDChannel:
 
 		opp_min_norm = int(self.map_val(self.opp_min, [0, 5], [0, 2**16-1]))
 
-		self.okc.SetWireInValue(pla.epm.opp_min0_wep, opp_min_norm)
-		self.okc.SetWireInValue(pla.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
+		self.okc.SetWireInValue(self.epm.opp_min0_wep, opp_min_norm)
+		self.okc.SetWireInValue(self.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 		print 'OPP min set to: ' + str(opp_min_norm)
@@ -480,8 +482,8 @@ class PIDChannel:
 
 		opp_max_norm = int(self.map_val(self.opp_max, [0, 5], [0, 2**16-1]))
 
-		self.okc.SetWireInValue(pla.epm.opp_max0_wep, opp_max_norm)
-		self.okc.SetWireInValue(pla.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
+		self.okc.SetWireInValue(self.epm.opp_max0_wep, opp_max_norm)
+		self.okc.SetWireInValue(self.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 		print 'OPP max set to: ' + str(opp_max_norm)
@@ -494,8 +496,8 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		self.okc.SetWireInValue(pla.epm.opp_multiplier_wep, self.opp_mult)
-		self.okc.SetWireInValue(pla.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
+		self.okc.SetWireInValue(self.epm.opp_multiplier_wep, self.opp_mult)
+		self.okc.SetWireInValue(self.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -509,15 +511,15 @@ class PIDChannel:
 		except ValueError:
 			return
 
-		self.okc.SetWireInValue(pla.epm.opp_right_shift_wep, self.opp_right_shift)
-		self.okc.SetWireInValue(pla.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
+		self.okc.SetWireInValue(self.epm.opp_right_shift_wep, self.opp_right_shift)
+		self.okc.SetWireInValue(self.epm.opp_update_en_wep, 1 << self.rtr_dest_sel)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
 		print 'OPP right shift changed from ' + str(opp_right_shift_old) + ' to ' + str(self.opp_right_shift)
 
 	def handle_opp_clear(self):
-		self.okc.ActivateTriggerIn(pla.epm.opp_clear_tep, 1 << self.rtr_src_sel)
+		self.okc.ActivateTriggerIn(self.epm.opp_clear_tep, 1 << self.rtr_src_sel)
 		print self.cname + 'OPP memory cleared'
 
 

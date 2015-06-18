@@ -6,6 +6,7 @@ import OpalKellyController
 import PIDLockArray
 import pyqtgraph as pg
 import numpy as np
+from endpoint_map import EndpointMap
 
 
 import random
@@ -155,12 +156,12 @@ class GlobalParams(QGroupBox):
 		self.poll_period_wgt = QLineEdit(self)
 
 		# create and add input validator
-		ppv = QDoubleValidator(0.0, 10.0, 1)
+		ppv = QDoubleValidator(0.0, 10.0, 2)
 		self.poll_period_wgt.setValidator(ppv)
 
 		self.poll_period_wgt.setText(str(pla.polling_period))
 
-		self.form_layout.addRow('Polling period: ', self.poll_period_wgt)
+		self.form_layout.addRow('Polling period (s): ', self.poll_period_wgt)
 
 		# add form layout to main layout
 		self.layout.addLayout(self.form_layout)
