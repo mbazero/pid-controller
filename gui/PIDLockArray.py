@@ -58,11 +58,13 @@ class PIDLockArray:
 		# activated event barrier
 		# set when channel is activated
 		# worker thread is awakened when set
-		self.activated = threading.Event();
-		self.activated.clear();
+		self.activated = threading.Event()
+		self.activated.clear()
 
 		# list of active channels
-		self.active_chans = [];
+		self.active_chans = []
+		self.active_inputs = 0 # bitmap of active input channels
+		self.active_outputs = 0 # bitmap of active output channels
 
 		# dac output array
 		self.dac_array = [PIDChannel(self, self.okc, 'DAC', dac_count) for dac_count in range(num_dac_chan)]
@@ -83,6 +85,42 @@ class PIDLockArray:
 		self.block_update = False
 
 	#################### general #######################
+	def activate_channel(self, chan):
+		# update source and destination bitmaps
+		if chan.rtr_src_sel >= 0 :
+			active_inputs += (1 << chan.rtr_src_sel)
+		active_outputs += (1 << chan.rtr_dst_sel)
+
+		# update wire ins
+		self.okc.SetWireInValue(self.epm.osf_activate_wep, active_inputs)
+		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, active_outputs)
+		self.okc.UpdateWireIns()
+		self.okc.ModUpdate()
+
+		# set channel activation state
+		chan.activated = True
+		self.active_chans.append(chan)
+		self.activated.set()
+
+	def deactivate_channel(self, chan):
+		# update source and destination bitmaps
+		if chan.rtr_src_sel >= 0 :
+			active_inputs -= (1 << chan.rtr_src_sel)
+		active_outputs -= (1 << chan.rtr_dst_sel)
+
+		# update wire ins
+		self.okc.SetWireInValue(self.epm.osf_activate_wep, active_inputs)
+		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, active_outputs)
+		self.okc.UpdateWireIns()
+		self.okc.ModUpdate()
+
+		# set channel activation state
+		chan.activated = False
+		self.active_chans.remove(self)
+		if not self.active_chans :
+			self.pla.activated.clear()
+
+
 	def handle_poll_period(self, text):
 		self.polling_period = float(text)
 
@@ -157,6 +195,7 @@ class PIDLockArray:
 		print 'DAC reference set'
 
 	def handle_sys_reset(self):
+		# TODO de-toggle adc_start and channel activated...or do the reset manually
 		self.okc.ActivateTriggerIn(self.epm.sys_reset_tep, 0)
 		print 'System reset'
 
@@ -193,7 +232,7 @@ class PIDChannel:
 		self.focused = True if self.channel_no == 0 else False
 
         # router params
-		self.rtr_src_sel 		= 8
+		self.rtr_src_sel 		= -1
 		self.rtr_dest_sel		= channel_no
 
 		# osf params
@@ -287,30 +326,13 @@ class PIDChannel:
 
 	#################### general handlers #######################
 	def handle_chan_activate(self, toggled):
-		# TODO: move pla activation functionality to method in PLA class
 
-		# TODO: crazy refactor (paired with handle_rtr_src_sel refactor)
-		if (toggled == True): # channel activated
-			self.activated = True # set local activation state
-			self.okc.SetWireInValue(self.epm.osf_activate_wep, 1 << self.rtr_src_sel) # TODO: proper update signal creation
-			self.okc.SetWireInValue(self.epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
-			self.okc.UpdateWireIns()
-			self.okc.ModUpdate()
-
-			self.pla.active_chans.append(self) # add self to list of active channels
-			self.pla.activated.set() # set pla activated event
+		if (toggled == True):
+			pla.activate_channel(self)
 			print self.cname + ' activated'
-		else: # channel deactivated
-			self.activated = False # set local activation state
-			self.okc.SetWireInValue(self.epm.osf_activate_wep, 0) # TODO make sure this only deactivates the target channel
-			self.okc.SetWireInValue(self.epm.rtr_output_active_wep, 0)	# activate destination channel
-			self.okc.UpdateWireIns()
-			self.okc.ModUpdate()
 
-			self.pla.active_chans.remove(self) # remove self from list of active channels
-			if not self.pla.active_chans : # clear pla activated event if no activated channels remain
-				self.pla.activated.clear()
-
+		else:
+			pla.deactivate_channel(self)
 			print self.cname + ' deactivated'
 
 	def handle_chan_reset(self, toggled):
@@ -347,14 +369,20 @@ class PIDChannel:
 
 	#################### router handler #######################
 	def handle_rtr_src_sel(self, index):
+		rtr_src_sel_old = self.rtr_src_sel
 		self.rtr_src_sel = index - 1
 
-		print 'New RTR Source: ' + str(index)
-
-		# TODO need to refactor this like crazy
+		# update routing
 		self.okc.SetWireInValue(self.epm.rtr_src_sel_wep, self.rtr_src_sel)		# set source channel
 		self.okc.SetWireInValue(self.epm.rtr_dest_sel_wep, self.rtr_dest_sel)	# set destination channel
-		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, 1 << self.rtr_dest_sel)	# activate destination channel
+
+		# update input activation
+		if self.activated :
+			pla.active_inputs -= (1 << rtr_src_sel_old)
+			pla.active_inputs += self.rtr_src_sel
+			self.okc.SetWireInValue(self.epm.rtr_output_active_wep, pla.active_inputs)
+
+		# update wire ins
 		self.okc.UpdateWireIns()												# update wire in values
 		self.okc.ModUpdate()												# update modules
 
