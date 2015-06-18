@@ -88,12 +88,15 @@ class PIDLockArray:
 	def activate_channel(self, chan):
 		# update source and destination bitmaps
 		if chan.rtr_src_sel >= 0 :
-			active_inputs += (1 << chan.rtr_src_sel)
-		active_outputs += (1 << chan.rtr_dst_sel)
+			self.active_inputs += (1 << chan.rtr_src_sel)
+		self.active_outputs += (1 << chan.rtr_dest_sel)
+
+		print "active inputs: " + format(self.active_inputs, '016b')
+		print "active outputs: " + format(self.active_outputs, '016b')
 
 		# update wire ins
-		self.okc.SetWireInValue(self.epm.osf_activate_wep, active_inputs)
-		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, active_outputs)
+		self.okc.SetWireInValue(self.epm.osf_activate_wep, self.active_inputs)
+		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, self.active_outputs)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
@@ -105,20 +108,20 @@ class PIDLockArray:
 	def deactivate_channel(self, chan):
 		# update source and destination bitmaps
 		if chan.rtr_src_sel >= 0 :
-			active_inputs -= (1 << chan.rtr_src_sel)
-		active_outputs -= (1 << chan.rtr_dst_sel)
+			self.active_inputs -= (1 << chan.rtr_src_sel)
+		self.active_outputs -= (1 << chan.rtr_dest_sel)
 
 		# update wire ins
-		self.okc.SetWireInValue(self.epm.osf_activate_wep, active_inputs)
-		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, active_outputs)
+		self.okc.SetWireInValue(self.epm.osf_activate_wep, self.active_inputs)
+		self.okc.SetWireInValue(self.epm.rtr_output_active_wep, self.active_outputs)
 		self.okc.UpdateWireIns()
 		self.okc.ModUpdate()
 
 		# set channel activation state
 		chan.activated = False
-		self.active_chans.remove(self)
+		self.active_chans.remove(chan)
 		if not self.active_chans :
-			self.pla.activated.clear()
+			self.activated.clear()
 
 
 	def handle_poll_period(self, text):
@@ -328,11 +331,11 @@ class PIDChannel:
 	def handle_chan_activate(self, toggled):
 
 		if (toggled == True):
-			pla.activate_channel(self)
+			self.pla.activate_channel(self)
 			print self.cname + ' activated'
 
 		else:
-			pla.deactivate_channel(self)
+			self.pla.deactivate_channel(self)
 			print self.cname + ' deactivated'
 
 	def handle_chan_reset(self, toggled):
@@ -341,6 +344,9 @@ class PIDChannel:
 
 	#################### osf handlers #######################
 	def handle_osf_ovr(self, new_val):
+		if self.rtr_src_sel < 0 :
+			return
+
 		osf_log_ovr_old = self.osf_log_ovr
 		self.osf_log_ovr = new_val
 
@@ -353,6 +359,9 @@ class PIDChannel:
 		print self.channel_type + ' Channel ' + str(self.channel_no) + ' oversample ratio updated from ' + str(2**osf_log_ovr_old) + ' to ' + str(2**self.osf_log_ovr)
 
 	def handle_osf_cycle_delay(self, text):
+		if self.rtr_src_sel < 0 :
+			return
+
 		osf_cycle_delay_old = self.osf_cycle_delay
 
 		try:
@@ -391,6 +400,9 @@ class PIDChannel:
 
 	#################### pid handlers #######################
 	def handle_pid_setpoint(self, text):
+		if self.rtr_src_sel < 0 :
+			return
+
 		pid_setpoint_old = self.pid_setpoint
 
 		try:
@@ -409,6 +421,9 @@ class PIDChannel:
 		print 'Normalized setpoint value: ' + str(pid_setpoint_norm)
 
 	def handle_pid_p_coef(self, text):
+		if self.rtr_src_sel < 0 :
+			return
+
 		pid_p_coef_old = self.pid_p_coef
 
 		try:
@@ -424,6 +439,9 @@ class PIDChannel:
 		print self.channel_type + ' Channel ' + str(self.channel_no) + ' P coefficient updated from ' + str(pid_p_coef_old) + ' to ' + str(self.pid_p_coef)
 
 	def handle_pid_i_coef(self, text):
+		if self.rtr_src_sel < 0 :
+			return
+
 		pid_i_coef_old = self.pid_i_coef
 
 		try:
@@ -439,6 +457,9 @@ class PIDChannel:
 		print self.channel_type + ' Channel ' + str(self.channel_no) + ' I coefficient updated from ' + str(pid_i_coef_old) + ' to ' + str(self.pid_i_coef)
 
 	def handle_pid_d_coef(self, text):
+		if self.rtr_src_sel < 0 :
+			return
+
 		pid_d_coef_old = self.pid_d_coef
 
 		try:
@@ -454,6 +475,9 @@ class PIDChannel:
 		print self.channel_type + ' Channel ' + str(self.channel_no) + ' D coefficient updated from ' + str(pid_d_coef_old) + ' to ' + str(self.pid_d_coef)
 
 	def handle_pid_clear(self):
+		if self.rtr_src_sel < 0 :
+			return
+
 		self.okc.ActivateTriggerIn(self.epm.pid_clear_tep, 1 << self.rtr_src_sel)
 		print self.cname + 'PID memory cleared'
 

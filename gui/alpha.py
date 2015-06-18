@@ -64,6 +64,11 @@ class MainWindow(QWidget):
 	def __init__(self, pla, num_dac_chan, num_dds_chan):
 		# calculate number of output channels
 		num_out_chans = num_dac_chan + num_dds_chan
+		self.num_dac_chan = num_dac_chan
+		self.num_dds_chan = num_dds_chan
+
+		# pid model
+		self.pla = pla
 
 		# initialize widget
 		QWidget.__init__(self)
@@ -74,7 +79,7 @@ class MainWindow(QWidget):
 
 		# create tab layout
 		self.tab_widget = QTabWidget()
-		self.tab_widget.currentChanged.connect(pla.handle_tab_changed)
+		self.tab_widget.currentChanged.connect(self.handle_tab_changed)
 
 		# create lock channel GUIs
 		dac_array = pla.dac_array
@@ -103,8 +108,22 @@ class MainWindow(QWidget):
 		# initialize worker thread to manage graph updating
 		self.workThread = WorkerThread(pla)
 		self.chan_focus = self.dac_chans[0] # TODO: implement the proper selection algorithm
-		self.connect(self.workThread, SIGNAL("newPlotData()"), self.chan_focus.updateGraph)
+		self.connect(self.workThread, SIGNAL("newPlotData()"), self.updateGraph)
 		self.workThread.start()
+
+	def handle_tab_changed(self, index):
+		self.chan_focus = self.indexToChan(index)
+		self.pla.handle_tab_changed(index)
+
+	def indexToChan(self, index):
+		print "Tab index " + str(index)
+		if index >= self.num_dac_chan :
+			return self.dds_chans[index - self.num_dac_chan]
+		else :
+			return self.dac_chans[index]
+
+	def updateGraph(self):
+		self.chan_focus.updateGraph()
 
 	def closeEvent(self, event):
 		# might want to added some explict calls here to kill worker threads
