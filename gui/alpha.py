@@ -614,13 +614,17 @@ def main():
 	# debug flag
 	debug = 1
 
+	# generate endpoint map
+	EP_MAP_PATH		= '../ep_map.vh'
+	epm = EndpointMap(EP_MAP_PATH)
+
 	# instantiate opal kelly controller
-	okc = OpalKellyController.OpalKellyController(debug)
+	okc = OpalKellyController.OpalKellyController(epm, debug)
 	if (False == okc.InitializeDevice()):
 		exit
 
 	# instantiate PID lock array
-	pla = PIDLockArray.PIDLockArray(okc, num_dac_chans, num_dds_chans)
+	pla = PIDLockArray.PIDLockArray(epm, okc, num_dac_chans, num_dds_chans)
 
 	# instantiate GUI and run it
 	gui = MainWindow(pla, num_dac_chans, num_dds_chans)

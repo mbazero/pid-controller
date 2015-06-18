@@ -4,11 +4,12 @@ import threading
 # TODO
 # - remove mod update function and implement in PLA
 
-module_update_ti		= 0x57
-
 # controls low-level communication with opal kelly board
 class OpalKellyController:
-	def __init__(self, debug=0):
+	def __init__(self, epm, debug=0):
+		# endpoint map
+		self.epm = epm
+
 		# set debug state
 		self.debug = debug
 
@@ -79,7 +80,7 @@ class OpalKellyController:
 		self.xemLock.release()
 
 	def ModUpdate(self) :
-		self.ActivateTriggerIn(module_update_ti , 0)
+		self.ActivateTriggerIn(self.epm.module_update_tep , 0)
 
 	def GetWireOutValue(self, ep):
 		self.xemLock.acquire()
