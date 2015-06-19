@@ -1,7 +1,10 @@
 `timescale 1ns / 1ps
 
 // clk_sync -- mba 2014
-// synchronizes 17MHz ADC serial clock with 48MHz system clock
+// -----------------------------------------------------------
+// synchronizes ADC serial clock with system clock
+// -----------------------------------------------------------
+
 
 module clk_sync #(
 	// parameters

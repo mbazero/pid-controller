@@ -1,6 +1,10 @@
 `timescale 1ns / 1ps
 
 // router -- mba 2014
+// -----------------------------------------------------------
+// Routes data streams from ADC input channels to DAC/DDS
+// output channels.
+// -----------------------------------------------------------
 
 module router #(
 	// parameters

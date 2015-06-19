@@ -7,7 +7,6 @@
 
 // TODO
 // - add option to set push direction
-// - remove lock enable from here and top level
 
 module pid_core #(
 	// parameters

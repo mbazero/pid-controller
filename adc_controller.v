@@ -1,13 +1,10 @@
 `timescale 1ns / 1ps
 
 // adc_controller -- mba 2014
-// runs AD7608 in continuous conversion mode
-
-// TODO
-// - AD7608 datasheet lists a maximum time from the last CS rising edge to busy falling
-// edge. I don't think this time is satisfied for large oversample ratios.
-// Investigate why this time restriction exists and perhaps change CS start
-// time if it's important.
+// -----------------------------------------------------------
+// runs AD7608 in continuous conversion mode and reads data
+// concurrently during conversion
+// -----------------------------------------------------------
 
 module adc_controller #(
 	// parameters

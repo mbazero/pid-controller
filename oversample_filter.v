@@ -1,6 +1,10 @@
 `timescale 1ns / 1ps
 
 // oversample_filter -- mba 2014
+// -----------------------------------------------------------
+// Computes a moving average of input data with a variable
+// number of samples.
+// -----------------------------------------------------------
 
 module oversample_filter #(
 	// parameters

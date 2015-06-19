@@ -1,7 +1,9 @@
 `timescale 1ns / 1ps
 
 // dac_controller -- mba 2014
-// send instructions to DAC8568
+// -----------------------------------------------------------
+// Sends update instructions to DAC8568 chip.
+// -----------------------------------------------------------
 
 module dac_controller #(
 	// parameters

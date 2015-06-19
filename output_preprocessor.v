@@ -2,6 +2,7 @@
 
 // output_preprocessor -- mba 2014
 // -----------------------------------------------------------
+// Processes data stream before it is sent to DAC/DDS outputs.
 // Adds PID sum to previous output value and enforces max and
 // min output bounds.
 // -----------------------------------------------------------
