@@ -41,11 +41,11 @@ module dac_controller #(
 //////////////////////////////////////////
 
 /* state parameters */
-localparam	ST_IDLE			= 3'd0,				// idle state: wait for new data
-				ST_SYNC_DATA	= 3'd1,				// data sync state: prepare dac for data transfer
-				ST_SYNC_REF		= 3'd2,				// ref set sync state: prepare dac for reference set
-				ST_TX				= 3'd3,				// transmit state: transmit dac update instruction
-				ST_DAC_DONE		= 3'd4;				// dac done state: pusle dac_done signal to indicate operation completion
+localparam	ST_IDLE			= 3'd0,				// wait for new data
+				ST_SYNC_DATA	= 3'd1,				// prepare dac for data transfer
+				ST_SYNC_REF		= 3'd2,				// prepare dac for reference set
+				ST_TX				= 3'd3,				// transmit dac update instruction
+				ST_DAC_DONE		= 3'd4;				// pulse dac_done signal to indicate operation completion
 
 //////////////////////////////////////////
 // internal structures
@@ -135,7 +135,8 @@ end
 // modules
 //////////////////////////////////////////
 
-/* dac sclk forwarding buffer */
+/* dac sclk forwarding buffer
+   helps prevent clock skew issues */
 ODDR2 #(
 	.DDR_ALIGNMENT	("NONE"),
 	.INIT				(1'b0),
@@ -187,10 +188,10 @@ always @( * ) begin
 			end
 		end
 		ST_SYNC_DATA: begin
-				next_state <= ST_TX;
+			next_state <= ST_TX;
 		end
 		ST_SYNC_REF: begin
-				next_state <= ST_TX;
+			next_state <= ST_TX;
 		end
 		ST_TX: begin
 			if ( counter == 31 ) begin
@@ -198,7 +199,7 @@ always @( * ) begin
 			end
 		end
 		ST_DAC_DONE: begin
-				next_state <= ST_IDLE;
+			next_state <= ST_IDLE;
 		end
 	endcase
 end

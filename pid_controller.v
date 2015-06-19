@@ -403,7 +403,7 @@ rtr (
 *	[ 0 						: N_DAC - 1					] - DAC Channels
 *	[ N_DAC					: N_DAC + N_DDS - 1		] - DDS Frequency Channels
 *	[ N_DAC + N_DDS		: N_DAC + 2*N_DDS - 1	] - DDS Phase Channels
-*	[ N_DAC + 2*N_DDS		: N_OUT						] - DDS Amplitude Channels */
+*	[ N_DAC + 2*N_DDS		: N_OUT - 1					] - DDS Amplitude Channels */
 
 /* dac preprocessor array */
 genvar x;

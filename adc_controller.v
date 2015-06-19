@@ -102,7 +102,8 @@ end
 // modules
 //////////////////////////////////////////
 
-/* adc sclk forwarding buffer */
+/* adc sclk forwarding buffer
+   helps prevent clock skew issues */
 ODDR2 #(
 	.DDR_ALIGNMENT	("NONE"),
 	.INIT				(1'b1),
