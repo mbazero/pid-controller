@@ -390,7 +390,6 @@ router #(
 	.N_OUT				(N_OUT),
 	.ACTV_INIT			(RTR_ACTV_INIT))
 rtr (
-	.clk_in				(clk50_in),
 	.data_packed_in	(rtr_input_packed),
 	.src_select_in		(rtr_src_sel),
 	.output_active_in	(rtr_output_active),

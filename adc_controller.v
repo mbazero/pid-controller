@@ -107,7 +107,7 @@ end
 /* data valid out */
 genvar i;
 generate
-	for ( i = 0; i < N_CHAN/2; i = i+1 ) begin : dv0_arr
+	for ( i = 0; i < N_CHAN/2; i = i+1 ) begin : dv_arr
 		always @( posedge clk_in ) begin
 			if (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) )) begin
 				data_valid_out[i]				<= 1;
