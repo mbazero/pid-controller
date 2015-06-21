@@ -10,9 +10,9 @@ task adc_transmit;
 				@(posedge clk17_in) adc_busy_in = 1;
 			end
 
-			chan_1_reg = $random;
+			chan_reg = $random;
 
-			#1 $display("ADC data: %d", chan_1_reg);
+			#1 $display("Chan reg: %d", chan_reg);
 
 			#1 compute_exp_pid();
 
@@ -46,10 +46,11 @@ endtask
 task compute_exp_pid;
 	begin
 		e_count = e_count + 1;
-		error = setpoint - chan[0];
+		error = setpoint - chan[src];
 		#1 integral = integral + error;
 		derivative = error - error_prev;
 		#1 pid_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
+		#1 pid_expected = (lock_en) ? pid_expected : 0;
 		error_prev = error;
 	end
 endtask
@@ -83,29 +84,6 @@ task check_rcv;
 		#1 assert_equals(proc_stage[5], r_data, "Receive");
 	end
 endtask
-
-//task print_pipes;
-	//begin
-		//$display("***************EXP PIPE***************");
-		//$display(proc_stage[0]);
-		//$display(proc_stage[1]);
-		//$display(proc_stage[2]);
-		//$display(proc_stage[3]);
-		//$display(proc_stage[4]);
-		//$display(proc_stage[5]);
-		//$display("**************************************");
-
-		//$display("***************RCV PIPE***************");
-		//$display(pidc_timing_tf.uut.dac_opp_array[0].dac_opp.data_out_prev);
-		//$display(pidc_timing_tf.uut.dac_opp_array[0].dac_opp.proc_stage_0);
-		//$display(pidc_timing_tf.uut.dac_opp_array[0].dac_opp.proc_stage_1);
-		//$display(pidc_timing_tf.uut.dac_opp_array[0].dac_opp.proc_stage_2);
-		//$display(pidc_timing_tf.uut.dac_opp_array[0].dac_opp.proc_stage_3);
-		//$display(pidc_timing_tf.uut.dac_opp_array[0].dac_opp.proc_stage_4);
-		//$display(pidc_timing_tf.uut.dac_opp_array[0].dac_opp.proc_stage_5);
-		//$display("**************************************");
-	//end
-//endtask
 
 task assert_equals;
 	input [127:0] expected;

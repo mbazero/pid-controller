@@ -12,6 +12,7 @@ MODULE_UPDATE	= 4
 
 '''
 SUPER IMPORTANT TODO
+- make all module params update at once (e.g. when you update p coef in PID core you update all PID core params)
 - properly handle updating for multiple channels
 - e.g. when update signal is pulsed for an opp module, all frontpanel params are updated, not just one
 '''

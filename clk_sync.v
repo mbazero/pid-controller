@@ -64,6 +64,7 @@ assign data_valid_out = data_valid & {N_ADC{ cur_state == ST_SEND }};
 //////////////////////////////////////////
 
 /* latch all data and data valid vectors when any channel asserts data_valid */
+// TODO change this to be synchronous with clk
 always @( posedge data_valid_rdc or posedge reset_in ) begin
 	if ( reset_in == 1 ) begin
 		data_valid <= 0;

@@ -137,7 +137,13 @@ module pid_controller_tf;
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
 	// misc params
-	localparam REPS = 100;
+	localparam REPS = 10;
+
+	// routing params
+	localparam src = 3;
+	localparam dest = 0;
+	wire [15:0] src_map = 1 << src;
+	wire [15:0] dest_map = 1 << dest;
 
 	// pid parameters
 	reg signed [15:0] setpoint = 0;
@@ -161,8 +167,8 @@ module pid_controller_tf;
 	reg signed [63:0]	pid_expected = 0;
 	reg signed [63:0]	e_count = 0;
 	reg [15:0] target = 0;
-	wire pid_dv = pid_controller_tf.uut.pid_data_valid[0];
-	reg lock_en = 0;
+	reg lock_en = 1;
+	wire [15:0] lock_en_map = (lock_en == 1) ? src_map : 0;
 	integer i;
 
 	// output verification
@@ -184,17 +190,19 @@ module pid_controller_tf;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
 	// adc channel assignments
-	reg signed [15:0] chan_1_reg = 0;
-	//assign chan[0] = r_data - target;
-	assign chan[0] = 39321;
-	//assign chan[0] = chan_1_reg;
-	assign chan[1] = 0;
-	assign chan[2] = 0;
-	assign chan[3] = 0;
-	assign chan[4] = 0;
-	assign chan[5] = 0;
-	assign chan[6] = 0;
-	assign chan[7] = 0;
+	reg signed [15:0] chan_reg = 0;
+	genvar m;
+	generate
+	for ( m = 0; m < N_CHAN; m = m + 1 ) begin : chan_arr
+		if ( m == src ) begin
+			//assign chan[src] = r_data - target;
+			assign chan[src] = 39321;
+			//assign chan[src] = chan_reg;
+		end else begin
+			assign chan[m] = 0;
+		end
+	end
+	endgenerate
 
 	initial begin : main
 		// Initialize Inputs
@@ -212,20 +220,19 @@ module pid_controller_tf;
 		ActivateTriggerIn(sys_reset_tep, 0);
 
 		// Set ADC oversampling mode
-		SetWireInValue(adc_os_wep, 1, mask);	// os = 0
+		SetWireInValue(adc_os_wep, 1, mask);	// os = 1
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
-		// Set OSF ratio and activate channel 0
-		SetWireInValue(osf_activate_wep, 1, mask); // set OSF[0] activation
+		// Set OSF ratio and activate source channel
+		SetWireInValue(osf_activate_wep, src_map, mask); // activate source
 		SetWireInValue(osf_cycle_delay_wep, 0, mask); // cycle delay = 0
 		SetWireInValue(osf_osm_wep, 0, mask); // log ovr = 0
-		SetWireInValue(osf_update_en_wep, 1, mask); // sensitize OSF channel 0
+		SetWireInValue(osf_update_en_wep, src_map, mask); // sensitize source
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
-
 
 		// Set channel 0 PID params
 		setpoint = 0;
@@ -236,15 +243,15 @@ module pid_controller_tf;
 		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
 		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
 		SetWireInValue(pid_d_coef_wep, d_coef, mask);	// d = 0
-		SetWireInValue(pid_update_en_wep, 16'd1, mask);	// sensitize PID channel 0
+		SetWireInValue(pid_update_en_wep, src_map, mask);	// sensitize src PID
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
-		// Route input channel 0 to output channel 0 and activate output 0
-		SetWireInValue(rtr_src_sel_wep, 16'd0, mask);	// router source
-		SetWireInValue(rtr_dest_sel_wep, 16'd0, mask);	// router destination
-		SetWireInValue(rtr_output_active_wep, 16'd1, mask);	// activate channel 0
+		// Route source to destination
+		SetWireInValue(rtr_src_sel_wep, src, mask);	// router source
+		SetWireInValue(rtr_dest_sel_wep, dest, mask);	// router destination
+		SetWireInValue(rtr_output_active_wep, dest_map, mask);	// activate destination
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
@@ -273,20 +280,15 @@ module pid_controller_tf;
 
 		SetWireInValue(opp_right_shift_wep, right_shift, mask); // set right_shift
 
-		SetWireInValue(opp_update_en_wep, 16'd1, mask);	// sensitize OPP channel 0
+		SetWireInValue(opp_update_en_wep, dest_map, mask);	// sensitize OPP channel 0
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
-		// trigger adc reference set
+		// trigger dac reference set
 		ActivateTriggerIn(dac_ref_set_tep, 0);
 
 		// activate pid lock 0
-		lock_en = 1;
-		SetWireInValue(pid_lock_en_wep, lock_en, mask);
-		UpdateWireIns;
-
-		// activate adc channel 0
-		SetWireInValue(osf_activate_wep, 16'd1, mask);
+		SetWireInValue(pid_lock_en_wep, lock_en_map, mask);
 		UpdateWireIns;
 
 		// trigger adc cstart
@@ -296,7 +298,7 @@ module pid_controller_tf;
 
 		fork
 			adc_transmit(REPS);
-			pipe_read(REPS);
+			wire_out_read(REPS);
 			check_pid(REPS);
 			print_state(REPS);
 			change_target(REPS);
@@ -314,8 +316,8 @@ module pid_controller_tf;
 
 		begin
 			repeat(reps) begin
-				@(posedge pid_controller_tf.uut.osf_data_valid[0]) begin
-					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[0][17 -: 16];
+				@(posedge pid_controller_tf.uut.osf_data_valid[src]) begin
+					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[src][17 -: 16];
 					rep_count = rep_count + 1;
 				end
 			end
@@ -331,15 +333,13 @@ module pid_controller_tf;
 		end
 	endtask
 
-
-
 	/* Read from opal kelly pipe */
-	task pipe_read;
+	task wire_out_read;
 		input [31:0] reps;
 
 		// simulate pipe continuous read
 		repeat(reps) begin
-			@(posedge pid_dv) begin
+			@(posedge pid_controller_tf.uut.pid_data_valid[src]) begin
 				UpdateWireOuts;
 				wireOutValue = GetWireOutValue(osf_data0_owep);
 				//$display("Wire out val: %d", wireOutValue);
@@ -353,8 +353,8 @@ module pid_controller_tf;
 
 		// check pid value
 		repeat(reps) begin
-			@(posedge pid_dv) begin
-				pid_data_reg = pid_controller_tf.uut.pid_data[0];
+			@(posedge pid_controller_tf.uut.pid_data_valid[src]) begin
+				pid_data_reg = pid_controller_tf.uut.pid_data[src];
 				assert_equals(pid_expected, pid_data_reg, "PID");
 			end
 		end
@@ -366,16 +366,16 @@ module pid_controller_tf;
 
 		// print internal state
 		repeat(reps) begin
-			@(posedge pid_controller_tf.uut.cs_data_valid[0]) begin
+			@(posedge pid_controller_tf.uut.cs_data_valid[src]) begin
 				$display("ITERATION #%d", e_count);
 				$display("----------------------------------");
 				$display("ADC Value:\t%d", $signed(pid_controller_tf.uut.cs_data_a));
 			end
-			@(posedge pid_controller_tf.uut.pid_data_valid[0]) begin
-				$display("PID Value:\t%d", $signed(pid_controller_tf.uut.pid_data[0]));
+			@(posedge pid_controller_tf.uut.pid_data_valid[src]) begin
+				$display("PID Value:\t%d", $signed(pid_controller_tf.uut.pid_data[src]));
 			end
-			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
-				$display("OPP Value:\t%d", pid_controller_tf.uut.opp_dac_data[0]);
+			@(posedge pid_controller_tf.uut.opp_dac_data_valid[dest]) begin
+				$display("OPP Value:\t%d", pid_controller_tf.uut.opp_dac_data[dest]);
 				$display("Target Value:\t%d", target);
 				$display("----------------------------------");
 			end
@@ -387,7 +387,7 @@ module pid_controller_tf;
 
 		// change target after 15 reps
 		repeat(reps) begin
-			@(posedge pid_dv) begin
+			@(posedge pid_controller_tf.uut.pid_data_valid[src]) begin
 				if(e_count == 15) begin
 					//target = 26214;
 				end
@@ -401,8 +401,12 @@ module pid_controller_tf;
 
 		repeat(reps) begin
 
-			@(posedge pid_controller_tf.uut.opp_dac_data_valid[0]) begin
+			@(posedge pid_controller_tf.uut.opp_dac_data_valid[dest]) begin
 				$display("***************EXP PIPE***************");
+				$display("Prev: %d", dac_data_reg);
+				$display("Min:  %d", output_min);
+				$display("Init: %d", output_init);
+				$display("Max:  %d", output_max);
 				$display(proc_stage[0]);
 				$display(proc_stage[1]);
 				$display(proc_stage[2]);
@@ -412,16 +416,19 @@ module pid_controller_tf;
 				$display("**************************************");
 
 				$display("***************RCV PIPE***************");
-				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.data_out_prev);
-				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_0);
-				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_1);
-				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_2);
-				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_3);
-				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_4);
-				$display(pid_controller_tf.uut.dac_opp_array[0].dac_opp.proc_stage_5);
+				$display("Prev: %d", pid_controller_tf.uut.dac_opp_array[dest].dac_opp.data_out_prev);
+				$display("Min:  %d", pid_controller_tf.uut.dac_opp_array[dest].dac_opp.output_min);
+				$display("Init: %d", pid_controller_tf.uut.dac_opp_array[dest].dac_opp.output_init);
+				$display("Max:  %d", pid_controller_tf.uut.dac_opp_array[dest].dac_opp.output_max);
+				$display(pid_controller_tf.uut.dac_opp_array[dest].dac_opp.proc_stage_0);
+				$display(pid_controller_tf.uut.dac_opp_array[dest].dac_opp.proc_stage_1);
+				$display(pid_controller_tf.uut.dac_opp_array[dest].dac_opp.proc_stage_2);
+				$display(pid_controller_tf.uut.dac_opp_array[dest].dac_opp.proc_stage_3);
+				$display(pid_controller_tf.uut.dac_opp_array[dest].dac_opp.proc_stage_4);
+				$display(pid_controller_tf.uut.dac_opp_array[dest].dac_opp.proc_stage_5);
 				$display("**************************************");
 
-				dac_data_reg = pid_controller_tf.uut.opp_dac_data[0];
+				dac_data_reg = pid_controller_tf.uut.opp_dac_data[dest];
 			end
 
 			#1 assert_equals(proc_stage[5], dac_data_reg, "Output");
