@@ -304,15 +304,16 @@ class ChannelControl(QWidget):
 	# TODO refactor this...I don't like how channel control has access to the pla
 	def updateGraph(self):
 		self.plotItem.clear()
-		# self.plotItem.plot(y)
-		if self.pid.focused and self.pla.block_update :
-			self.plotItem.plot(self.pid.block_error_data_x, self.pid.block_error_data)
-			self.std_dev.setText(str(np.std(self.pid.block_error_data)))
-			self.mean.setText(str(np.mean(self.pid.block_error_data)))
-		else :
-			self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
-			self.std_dev.setText(str(np.std(self.pid.error_data)))
-			self.mean.setText(str(np.mean(self.pid.error_data)))
+
+		if self.pid.rtr_src_sel >= 0 :
+			if self.pid.focused and self.pla.block_update :
+				self.plotItem.plot(self.pid.block_error_data_x, self.pid.block_error_data)
+				self.std_dev.setText(str(np.std(self.pid.block_error_data)))
+				self.mean.setText(str(np.mean(self.pid.block_error_data)))
+			else :
+				self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
+				self.std_dev.setText(str(np.std(self.pid.error_data)))
+				self.mean.setText(str(np.mean(self.pid.error_data)))
 
 # Source params widget
 class InputWidget(QGroupBox):

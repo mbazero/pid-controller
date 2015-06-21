@@ -141,11 +141,18 @@ class PIDLockArray:
 
    # update focused tab based on tab change
 	def handle_tab_changed(self, index):
-		self.indexToChan(self.focused_chan).set_unfocused() # unfocus old channel
-		self.indexToChan(index).set_focused() # focus new channel
-		self.focused_chan = index # set focused_chan field
+		# unfocus old channel
+		self.indexToChan(self.focused_chan).set_unfocused()
 
-		self.update_focus_on_fpga()
+		# focus new channel
+		self.focused_chan = index
+		new_focused_chan = self.indexToChan(self.focused_chan)
+		new_focused_chan.set_focused()
+
+		# update focus on fpga
+		new_focus_src = new_focused_chan.rtr_src_sel
+		if new_focus_src >= 0 :
+			self.okc.SetAndUpdateWireIn(self.epm.focused_chan_wep, new_focus_src)
 
 	# set block transfer to true
 	def handle_block_update(self, toggled):
@@ -155,16 +162,6 @@ class PIDLockArray:
 		else :
 			self.block_update = False
 			print 'Block Update Mode Disabled'
-
-	# update focused tab on fpga (set regardless of channel activation status)
-	def update_focus_on_fpga(self):
-		# construct focus signal
-		sig_focus = 1 << self.focused_chan
-		# send focus signal to fpga
-		'''
-		' Focus is unimplemented on hardware as of yet. Uncomment below line when it is implemented.
-		'''
-		# self.okc.SetAndUpdateWireIn(self.epm.focused_chan_wep, sig_focus)
 
 	#################### initialization #######################
 	def init_params (self):
@@ -382,15 +379,23 @@ class PIDChannel:
 		rtr_src_sel_old = self.rtr_src_sel
 		self.rtr_src_sel = index - 1
 
+		src_valid = (self.rtr_src_sel >= 0)
+		old_src_valid = (rtr_src_sel_old >= 0)
+
 		# update routing
-		self.okc.SetWireInValue(self.epm.rtr_src_sel_wep, self.rtr_src_sel)		# set source channel
-		self.okc.SetWireInValue(self.epm.rtr_dest_sel_wep, self.rtr_dest_sel)	# set destination channel
+		if src_valid :
+			self.okc.SetWireInValue(self.epm.rtr_src_sel_wep, self.rtr_src_sel)		# set source channel
+			self.okc.SetWireInValue(self.epm.rtr_dest_sel_wep, self.rtr_dest_sel)	# set destination channel
 
 		# update input activation
 		if self.activated :
-			pla.active_inputs -= (1 << rtr_src_sel_old)
-			pla.active_inputs += self.rtr_src_sel
-			self.okc.SetWireInValue(self.epm.rtr_output_active_wep, pla.active_inputs)
+			if (old_src_valid) : self.pla.active_inputs -= (1 << rtr_src_sel_old)
+			if (src_valid) : self.pla.active_inputs += (1 << self.rtr_src_sel)
+			self.okc.SetWireInValue(self.epm.osf_activate_wep, self.pla.active_inputs)
+
+		# update focus
+		if self.focused and src_valid:
+			self.okc.SetWireInValue(self.epm.focused_chan_wep, self.rtr_src_sel)
 
 		# update wire ins
 		self.okc.UpdateWireIns()												# update wire in values
