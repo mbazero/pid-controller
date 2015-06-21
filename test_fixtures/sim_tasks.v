@@ -12,8 +12,6 @@ task adc_transmit;
 
 			chan_reg = $random;
 
-			#1 $display("Chan reg: %d", chan_reg);
-
 			#1 compute_exp_pid();
 
 			#1 compute_exp_output();
@@ -35,7 +33,7 @@ task adc_transmit;
 			end
 
 			// simulate conversion end
-			#200;
+			#2000;
 			@(posedge clk17_in) adc_busy_in = 0;
 
 		end

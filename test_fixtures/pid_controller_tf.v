@@ -141,7 +141,7 @@ module pid_controller_tf;
 
 	// routing params
 	localparam src = 3;
-	localparam dest = 0;
+	localparam dest = 5;
 	wire [15:0] src_map = 1 << src;
 	wire [15:0] dest_map = 1 << dest;
 
@@ -196,8 +196,8 @@ module pid_controller_tf;
 	for ( m = 0; m < N_CHAN; m = m + 1 ) begin : chan_arr
 		if ( m == src ) begin
 			//assign chan[src] = r_data - target;
-			assign chan[src] = 39321;
-			//assign chan[src] = chan_reg;
+			//assign chan[src] = 39321;
+			assign chan[src] = chan_reg;
 		end else begin
 			assign chan[m] = 0;
 		end
