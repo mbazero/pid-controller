@@ -261,6 +261,9 @@ class ChannelControl(QWidget):
 		# initialize plot widget
 		self.initGraph()
 
+		# initialize plot statistics
+		self.initStats()
+
 		# create HBox layout; add channel control components
 		self.cc_layout = QHBoxLayout()
 		self.cc_layout.addWidget(inputControl)
@@ -271,6 +274,7 @@ class ChannelControl(QWidget):
 		self.layout = QVBoxLayout()
 		self.layout.addLayout(self.cc_layout)
 		self.layout.addWidget(self.plotWidget)
+		self.layout.addLayout(self.stats_layout)
 
 		# set the VBox layout as the tab's primary layout
 		self.setLayout(self.layout)
@@ -283,14 +287,32 @@ class ChannelControl(QWidget):
 		self.plotItem.setLabel('left', 'ADC Output', 'V')
 		self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
 
+	def initStats(self):
+		self.stats_layout = QHBoxLayout()
+
+		self.std_dev_fl = QFormLayout()
+		self.std_dev = QLabel('0')
+		self.std_dev_fl.addRow('std dev: ', self.std_dev)
+
+		self.mean_fl = QFormLayout()
+		self.mean = QLabel('0')
+		self.mean_fl.addRow('mean: ', self.mean)
+
+		self.stats_layout.addLayout(self.std_dev_fl)
+		self.stats_layout.addLayout(self.mean_fl)
+
 	# TODO refactor this...I don't like how channel control has access to the pla
 	def updateGraph(self):
 		self.plotItem.clear()
 		# self.plotItem.plot(y)
 		if self.pid.focused and self.pla.block_update :
 			self.plotItem.plot(self.pid.block_error_data_x, self.pid.block_error_data)
+			self.std_dev.setText(str(np.std(self.pid.block_error_data)))
+			self.mean.setText(str(np.mean(self.pid.block_error_data)))
 		else :
 			self.plotItem.plot(self.pid.error_data_x, self.pid.error_data)
+			self.std_dev.setText(str(np.std(self.pid.error_data)))
+			self.mean.setText(str(np.mean(self.pid.error_data)))
 
 # Source params widget
 class InputWidget(QGroupBox):
