@@ -39,3 +39,5 @@ parameter dac_ref_set_tep			= 8'h43;
 parameter module_update_tep		= 8'h44;
 
 parameter sys_reset_tep				= 8'h45;
+
+parameter focused_chan_wep			= 8'h1b;

@@ -155,6 +155,9 @@ wire	[15:0]	dac_ref_set_trig;
 /* all modules */
 wire	[15:0] 	module_update_trig;
 wire	[15:0]	sys_reset_trig;
+wire	[15:0]	focused_chan_wire;
+reg	[15:0]	focused_chan = 0;
+reg				osf_pipe_reset = 0;
 
 
 //////////////////////////////////////////
@@ -170,8 +173,8 @@ generate
 endgenerate
 
 /* multiplex active osf data channel */
-assign osf_data_active		= osf_data_in[0]; //TODO proper multiplexing here
-assign osf_dv_active			= osf_data_valid_in[0];
+assign osf_data_active		= osf_data_in[focused_chan];
+assign osf_dv_active			= osf_data_valid_in[focused_chan];
 
 /* adc controller */
 assign adc_os_out 			= adc_os_wire[2:0];
@@ -236,6 +239,18 @@ generate
 	end
 endgenerate
 
+/* osf pipe controls */
+always @( posedge clk50_in or posedge sys_reset_out ) begin
+	if ( sys_reset_out == 1 ) begin
+		osf_pipe_reset	<= 1;
+	end else if ( focused_chan != focused_chan_wire ) begin
+		osf_pipe_reset	<= 1;
+		focused_chan	<= focused_chan_wire;
+	end else begin
+		osf_pipe_reset	<= 0;
+	end
+end
+
 //////////////////////////////////////////
 // modules
 //////////////////////////////////////////
@@ -269,7 +284,7 @@ okPipeOut osf_pipe (
 pipe_tx_fifo osf_pipe_fifo (
 		.ti_clk_in		(ticlk),
 		.sys_clk_in		(clk50_in),
-		.reset_in		(sys_reset_out), // TODO add reset when active channel changes
+		.reset_in		(osf_pipe_reset),
 		.data_valid_in	(osf_dv_active),
 		.data_in			(osf_data_active[W_ADC_DATA-1 -: W_EP]),
 		.pipe_read_in	(osf_pipe_read),
@@ -514,6 +529,12 @@ okTriggerIn sys_reset_ti (
 	.ep_addr			(sys_reset_tep),
 	.ep_clk			(clk17_in),
 	.ep_trigger		(sys_reset_trig)
+	);
+
+okWireIn focused_chan_owi (
+	.ok1				(ok1),
+	.ep_addr			(focused_chan_wep),
+	.ep_dataout		(focused_chan_wire)
 	);
 
 endmodule

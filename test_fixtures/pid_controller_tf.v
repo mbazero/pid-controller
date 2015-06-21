@@ -284,6 +284,10 @@ module pid_controller_tf;
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
+		// set focused channel
+		SetWireInValue(focused_chan_wep, src, mask);
+		UpdateWireIns;
+
 		// trigger dac reference set
 		ActivateTriggerIn(dac_ref_set_tep, 0);
 
