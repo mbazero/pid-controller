@@ -33,7 +33,7 @@ module adc_controller #(
 	output wire						n_cs_out,						// chip select signal to adc
 
 	// outputs -> pid core
-	output wire				[N_CHAN-1:0]	data_valid_out,	// one-hot encoded output data valid signal
+	output reg				[N_CHAN-1:0]	data_valid_out,	// one-hot encoded output data valid signal
 	output reg signed		[W_OUT-1:0]		data_a_out,			// channel a data out
 	output reg signed		[W_OUT-1:0]		data_b_out			// channel b data out
    );
@@ -57,6 +57,10 @@ localparam	RD_ST_IDLE		= 3'd0,								// wait for busy signal to begin read
 // internal structures
 //////////////////////////////////////////
 
+/* shift registers */
+reg	[W_OUT-1:0]			data_a_shift = 0;						// data a shift register
+reg	[W_OUT-1:0]			data_b_shift = 0;						// data b shift register
+
 /* state registers */
 reg	[7:0] 				cv_counter = 0; 						// convert state machine counter
 reg	[2:0] 				cv_cur_state = CV_ST_IDLE;			// convert state machine current state
@@ -74,29 +78,47 @@ reg	[2:0]					rd_next_state = RD_ST_IDLE;		// read state machine next state
 assign reset_out	= reset_in;
 assign os_out		= os_in;
 
-/* data valid out */
-genvar i;
-generate
-	for ( i = 0; i < N_CHAN/2; i = i+1 ) begin : data_out_arr
-		assign data_valid_out[i] 				= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
-		assign data_valid_out[i+N_CHAN/2]	= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
-	end
-endgenerate
-
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
 
-/* serial read shift register */
+/* serial read shift registers */
 always @( posedge clk_in ) begin
+	if ( reset_in == 1 ) begin
+		data_a_shift <= 0;
+		data_b_shift <= 0;
+	end else if ( n_cs_out == 0 ) begin
+		data_a_shift <= {data_a_shift[W_OUT-2:0], data_a_in};
+		data_b_shift <= {data_b_shift[W_OUT-2:0], data_b_in};
+	end
+end
+
+/* data out */
+always @( negedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		data_a_out <= 0;
 		data_b_out <= 0;
-	end else if ( n_cs_out == 0 ) begin
-		data_a_out <= {data_a_out[W_OUT-2:0], data_a_in};
-		data_b_out <= {data_b_out[W_OUT-2:0], data_b_in};
+	end else if (( rd_cur_state == RD_ST_READ ) & ( rd_counter % W_OUT == 0 )) begin
+		data_a_out <= data_a_shift;
+		data_b_out <= data_b_shift;
 	end
 end
+
+/* data valid out */
+genvar i;
+generate
+	for ( i = 0; i < N_CHAN/2; i = i+1 ) begin : dv0_arr
+		always @( posedge clk_in ) begin
+			if (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) )) begin
+				data_valid_out[i]				<= 1;
+				data_valid_out[i+N_CHAN/2]	<= 1;
+			end else begin
+				data_valid_out[i]				<= 0;
+				data_valid_out[i+N_CHAN/2]	<= 0;
+			end
+		end
+	end
+endgenerate
 
 //////////////////////////////////////////
 // modules

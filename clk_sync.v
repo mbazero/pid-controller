@@ -31,9 +31,9 @@ module clk_sync #(
 //////////////////////////////////////////
 
 /* state parameters */
-localparam	ST_WAIT_PE	= 3'd0,	// wait for data_valid_rdc to go high
-				ST_SEND		= 3'd1,	// assert data_valid_out synchronous with 50MHz clock
-				ST_WAIT_NE	= 3'd2;	// wait for data_valid_in to go low
+localparam	ST_WAIT_PE	= 3'd0,					// wait for data_valid_rdc to go high
+				ST_SEND		= 3'd1,					// assert data_valid_out synchronous with 50MHz clock
+				ST_WAIT_NE	= 3'd2;					// wait for data_valid_in to go low
 
 //////////////////////////////////////////
 // internal structures
@@ -64,7 +64,6 @@ assign data_valid_out = data_valid & {N_ADC{ cur_state == ST_SEND }};
 //////////////////////////////////////////
 
 /* latch all data and data valid vectors when any channel asserts data_valid */
-// TODO change this to be synchronous with clk
 always @( posedge data_valid_rdc or posedge reset_in ) begin
 	if ( reset_in == 1 ) begin
 		data_valid <= 0;
