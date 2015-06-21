@@ -203,9 +203,9 @@ wire	[W_DDS_PHASE-1:0]		opp_phase_data[0:N_DDS-1];
 wire	[W_DDS_AMP-1:0]		opp_amp_data[0:N_DDS-1];
 wire	[N_DAC-1:0]				opp_dac_data_valid;
 wire	[N_DAC-1:0]				opp_dac_data_sign;
-wire	[N_DDS-1:0]				opp_freq_data_valid;
-wire	[N_DDS-1:0]				opp_phase_data_valid;
-wire	[N_DDS-1:0]				opp_amp_data_valid;
+wire	[N_DDS-1:0]				opp_freq_dv;
+wire	[N_DDS-1:0]				opp_phase_dv;
+wire	[N_DDS-1:0]				opp_amp_dv;
 
 /* dac instruction queue */
 wire	[W_DAC_DATA*N_DAC-1:0]	diq_input_packed;
@@ -514,7 +514,7 @@ generate
 			.update_en_in		(opp_update_en[F]),
 			.update_in			(module_update),
 			.data_out			(opp_freq_data[y]),
-			.data_valid_out	(opp_freq_data_valid[y])
+			.data_valid_out	(opp_freq_dv[y])
 			);
 
 		/* phase output preprocessor */
@@ -544,7 +544,7 @@ generate
 			.update_en_in		(opp_update_en[P]),
 			.update_in			(module_update),
 			.data_out			(opp_phase_data[y]),
-			.data_valid_out	(opp_phase_data_valid[y])
+			.data_valid_out	(opp_phase_dv[y])
 			);
 
 		/* amplitude output preprocessor */
@@ -574,7 +574,7 @@ generate
 			.update_en_in		(opp_update_en[A]),
 			.update_in			(module_update),
 			.data_out			(opp_amp_data[y]),
-			.data_valid_out	(opp_amp_data_valid[y])
+			.data_valid_out	(opp_amp_dv[y])
 			);
 	end
 endgenerate
@@ -589,9 +589,9 @@ generate
 			.freq_in				(opp_freq_data[z]),
 			.phase_in			(opp_phase_data[z]),
 			.amp_in				(opp_amp_data[z]),
-			.freq_valid_in		(opp_freq_data_valid[z]),
-			.phase_valid_in	(opp_phase_data_valid[z]),
-			.amp_valid_in		(opp_amp_data_valid[z]),
+			.freq_dv_in			(opp_freq_dv[z]),
+			.phase_dv_in		(opp_phase_dv[z]),
+			.amp_dv_in			(opp_amp_dv[z]),
 			.sclk_out			(dds_sclk_out[z]),
 			.reset_out			(dds_reset_out[z]),
 			.csb_out				(dds_csb_out[z]),

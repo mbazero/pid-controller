@@ -14,9 +14,6 @@ module router #(
 	parameter N_OUT	= 8,										// number of output channels
 	parameter ACTV_INIT = 1										// initial output activation
 	)(
-	// inputs <- top level entity
-	input wire								clk_in,				// system clock
-
 	// inputs <- pid core
 	input wire	[W_CHAN*N_IN-1:0]		data_packed_in,	// input channels packed on a single bus
 
