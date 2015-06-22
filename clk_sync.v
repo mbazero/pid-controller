@@ -12,6 +12,7 @@ module clk_sync #(
 	parameter N_ADC	= 8							// number of active adc channels
 	)(
 	// inputs <- top level entity
+	input wire						adc_clk_in,		// 17MHz adc serial clock
 	input wire						sys_clk_in,		// 50MHz system clock
 	input wire						reset_in,		// system reset
 
@@ -32,8 +33,9 @@ module clk_sync #(
 
 /* state parameters */
 localparam	ST_WAIT_PE	= 3'd0,					// wait for data_valid_rdc to go high
-				ST_SEND		= 3'd1,					// assert data_valid_out synchronous with 50MHz clock
-				ST_WAIT_NE	= 3'd2;					// wait for data_valid_in to go low
+				ST_HOLD		= 3'd1,					// latch and hold data to satisfy hold time
+				ST_SEND		= 3'd2,					// assert data_valid_out synchronous with 50MHz clock
+				ST_WAIT_NE	= 3'd3;					// wait for data_valid_in to go low
 
 //////////////////////////////////////////
 // internal structures
@@ -64,10 +66,12 @@ assign data_valid_out = data_valid & {N_ADC{ cur_state == ST_SEND }};
 //////////////////////////////////////////
 
 /* latch all data and data valid vectors when any channel asserts data_valid */
-always @( posedge data_valid_rdc or posedge reset_in ) begin
+always @( posedge sys_clk_in ) begin
 	if ( reset_in == 1 ) begin
 		data_valid <= 0;
-	end else begin
+		data_a_out <= 0;
+		data_b_out <= 0;
+	end else if (( cur_state == ST_WAIT_PE ) & ( data_valid_rdc == 1 )) begin
 		data_a_out <= data_a_in;
 		data_b_out <= data_b_in;
 		data_valid <= data_valid_in;
@@ -91,7 +95,8 @@ end
 always @( * ) begin
 	next_state <= cur_state; // default assignment if no case statement is satisfied
 	case ( cur_state )
-		ST_WAIT_PE: if ( data_valid_rdc == 1 )	next_state <= ST_SEND;
+		ST_WAIT_PE: if ( data_valid_rdc == 1 )	next_state <= ST_HOLD;
+		ST_HOLD:											next_state <= ST_SEND;
 		ST_SEND: 										next_state <= ST_WAIT_NE;
 		ST_WAIT_NE:	if ( data_valid_rdc == 0 )	next_state <= ST_WAIT_PE;
 	endcase

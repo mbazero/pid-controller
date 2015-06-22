@@ -292,6 +292,7 @@ clk_sync #(
 	.W_DATA				(W_ADC_DATA),
 	.N_ADC				(N_ADC))
 cs (
+	.adc_clk_in			(clk17_in),
 	.sys_clk_in			(clk50_in),
 	.reset_in			(sys_reset),
 	.data_valid_in		(adc_data_valid),
