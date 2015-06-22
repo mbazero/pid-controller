@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-`include "parameters.vh"
 
 // two_dds_test -- mba 2014
 
@@ -64,6 +63,12 @@ module pid_controller (
 	// inputs <- test fixture
 	input wire							adc_cstart_tf_in
 	);
+
+//////////////////////////////////////////
+// includes
+//////////////////////////////////////////
+
+`include "parameters.vh"
 
 //////////////////////////////////////////
 // local parameters

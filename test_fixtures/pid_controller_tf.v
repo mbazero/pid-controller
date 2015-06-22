@@ -140,8 +140,8 @@ module pid_controller_tf;
 	localparam REPS = 10;
 
 	// routing params
-	localparam src = 3;
-	localparam dest = 7;
+	localparam src = 0;
+	localparam dest = 1;
 	wire [15:0] src_map = 1 << src;
 	wire [15:0] dest_map = 1 << dest;
 
