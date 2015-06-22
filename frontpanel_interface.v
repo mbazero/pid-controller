@@ -157,7 +157,7 @@ wire	[15:0] 	module_update_trig;
 wire	[15:0]	sys_reset_trig;
 wire	[15:0]	focused_chan_wire;
 reg	[15:0]	focused_chan = 0;
-reg				osf_pipe_reset = 0;
+reg				osf_pipe_reset = 1;
 
 
 //////////////////////////////////////////

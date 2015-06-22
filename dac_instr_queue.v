@@ -69,7 +69,7 @@ wire [W_CHS-1:0] chan_upper, chan_lower;					// upper and lower channel signals
 wire [W_DINS-1:0] dinstr_upper, dinstr_lower;			// dac instruction signals for upper and lower channels
 
 /* upper channel delay registers */
-reg [W_DINS-1:0] dinstr_upper_reg = 0;
+reg [W_DINS-1:0] dinstr_upper_reg;
 reg dv_rdc_upper_reg = 0;
 
 /* fifo wires */
