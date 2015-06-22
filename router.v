@@ -78,9 +78,10 @@ generate
 		mux_inst (
 			.data_packed_in	(data_packed_in),
 			.chan_select_in	(src_select[k]),
+			.enable_in			(output_active[k]),
 			.data_out			(mux_data_out[k])
 			);
-		assign data_out[k] = (output_active_in[k] == 1) ? mux_data_out[k] : {W_CHAN{1'b0}}; // only pass mux output if output channel is activated
+		assign data_out[k] = mux_data_out[k];
 	end
 endgenerate
 
