@@ -79,7 +79,8 @@ task check_rcv;
 		end
 		#1 dac_data_reg = r_data;
 		//#1 print_pipes();
-		#1 assert_equals(proc_stage[5], r_data, "Receive");
+		#1 assert_equals(proc_stage[5], r_data, "Received Data");
+		#1 assert_equals(dest, r_address, "Received Address");
 	end
 endtask
 

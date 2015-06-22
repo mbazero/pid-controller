@@ -9,11 +9,11 @@
 module pid_controller_tf;
 
 	`include "ep_map.vh"
-	`include "parameters.vh"
 	`include "sim_tasks.v"
 	`include "ok_sim/okHostCalls.v"
 
 	// Parameters
+	localparam	MASK		= 32'hffffffff;
 	localparam	W_DATA	= 18;
 	localparam 	N_CHAN	= 8;
 	localparam	T_CYCLE 	= 85;
@@ -141,7 +141,7 @@ module pid_controller_tf;
 
 	// routing params
 	localparam src = 3;
-	localparam dest = 5;
+	localparam dest = 7;
 	wire [15:0] src_map = 1 << src;
 	wire [15:0] dest_map = 1 << dest;
 
@@ -220,16 +220,16 @@ module pid_controller_tf;
 		ActivateTriggerIn(sys_reset_tep, 0);
 
 		// Set ADC oversampling mode
-		SetWireInValue(adc_os_wep, 1, mask);	// os = 1
+		SetWireInValue(adc_os_wep, 1, MASK);	// os = 1
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
 		// Set OSF ratio and activate source channel
-		SetWireInValue(osf_activate_wep, src_map, mask); // activate source
-		SetWireInValue(osf_cycle_delay_wep, 0, mask); // cycle delay = 0
-		SetWireInValue(osf_osm_wep, 0, mask); // log ovr = 0
-		SetWireInValue(osf_update_en_wep, src_map, mask); // sensitize source
+		SetWireInValue(osf_activate_wep, src_map, MASK); // activate source
+		SetWireInValue(osf_cycle_delay_wep, 0, MASK); // cycle delay = 0
+		SetWireInValue(osf_osm_wep, 0, MASK); // log ovr = 0
+		SetWireInValue(osf_update_en_wep, src_map, MASK); // sensitize source
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
@@ -239,19 +239,19 @@ module pid_controller_tf;
 		p_coef = 10;
 		i_coef = 3;
 		d_coef = 2;
-		SetWireInValue(pid_setpoint_wep, setpoint, mask);	// setpoint = 3
-		SetWireInValue(pid_p_coef_wep, p_coef, mask);	// p = 10
-		SetWireInValue(pid_i_coef_wep, i_coef, mask);	// i = 3
-		SetWireInValue(pid_d_coef_wep, d_coef, mask);	// d = 0
-		SetWireInValue(pid_update_en_wep, src_map, mask);	// sensitize src PID
+		SetWireInValue(pid_setpoint_wep, setpoint, MASK);	// setpoint = 3
+		SetWireInValue(pid_p_coef_wep, p_coef, MASK);	// p = 10
+		SetWireInValue(pid_i_coef_wep, i_coef, MASK);	// i = 3
+		SetWireInValue(pid_d_coef_wep, d_coef, MASK);	// d = 0
+		SetWireInValue(pid_update_en_wep, src_map, MASK);	// sensitize src PID
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
 		// Route source to destination
-		SetWireInValue(rtr_src_sel_wep, src, mask);	// router source
-		SetWireInValue(rtr_dest_sel_wep, dest, mask);	// router destination
-		SetWireInValue(rtr_output_active_wep, dest_map, mask);	// activate destination
+		SetWireInValue(rtr_src_sel_wep, src, MASK);	// router source
+		SetWireInValue(rtr_dest_sel_wep, dest, MASK);	// router destination
+		SetWireInValue(rtr_output_active_wep, dest_map, MASK);	// activate destination
 
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
@@ -264,35 +264,35 @@ module pid_controller_tf;
 		multiplier = 1;
 		right_shift = 2;
 
-		SetWireInValue(opp_init0_wep, output_init[15:0], mask); // set output init
-		SetWireInValue(opp_init1_wep, output_init[31:16], mask);
-		SetWireInValue(opp_init2_wep, output_init[47:32], mask);
+		SetWireInValue(opp_init0_wep, output_init[15:0], MASK); // set output init
+		SetWireInValue(opp_init1_wep, output_init[31:16], MASK);
+		SetWireInValue(opp_init2_wep, output_init[47:32], MASK);
 
-		SetWireInValue(opp_min0_wep, output_min[15:0], mask); // set output min
-		SetWireInValue(opp_min1_wep, output_min[31:16], mask);
-		SetWireInValue(opp_min2_wep, output_min[47:32], mask);
+		SetWireInValue(opp_min0_wep, output_min[15:0], MASK); // set output min
+		SetWireInValue(opp_min1_wep, output_min[31:16], MASK);
+		SetWireInValue(opp_min2_wep, output_min[47:32], MASK);
 
-		SetWireInValue(opp_max0_wep, output_max[15:0], mask); // set output max
-		SetWireInValue(opp_max1_wep, output_max[31:16], mask);
-		SetWireInValue(opp_max2_wep, output_max[47:32], mask);
+		SetWireInValue(opp_max0_wep, output_max[15:0], MASK); // set output max
+		SetWireInValue(opp_max1_wep, output_max[31:16], MASK);
+		SetWireInValue(opp_max2_wep, output_max[47:32], MASK);
 
-		SetWireInValue(opp_multiplier_wep, multiplier, mask); // set multiplier
+		SetWireInValue(opp_multiplier_wep, multiplier, MASK); // set multiplier
 
-		SetWireInValue(opp_right_shift_wep, right_shift, mask); // set right_shift
+		SetWireInValue(opp_right_shift_wep, right_shift, MASK); // set right_shift
 
-		SetWireInValue(opp_update_en_wep, dest_map, mask);	// sensitize OPP channel 0
+		SetWireInValue(opp_update_en_wep, dest_map, MASK);	// sensitize OPP channel 0
 		UpdateWireIns;
 		ActivateTriggerIn(module_update_tep, 0);
 
 		// set focused channel
-		SetWireInValue(focused_chan_wep, src, mask);
+		SetWireInValue(focused_chan_wep, src, MASK);
 		UpdateWireIns;
 
 		// trigger dac reference set
 		ActivateTriggerIn(dac_ref_set_tep, 0);
 
 		// activate pid lock 0
-		SetWireInValue(pid_lock_en_wep, lock_en_map, mask);
+		SetWireInValue(pid_lock_en_wep, lock_en_map, MASK);
 		UpdateWireIns;
 
 		// trigger adc cstart
