@@ -3,12 +3,7 @@
 // dac_instr_queue -- mba 2014
 // -----------------------------------------------------------
 // Queues DAC write instructions for the DAC controller which
-// can only process one instruction at a time. Specifically
-// written for the AD7608 as configured on the MIST breakout
-// board, which outputs two data words at a time according to
-// the channel pattern 1-5, 2-6, 3-7, 4-8. Thus, this module
-// supports simultaneous processing of DAC instructions on
-// channels 1-4 and channels 5-8.
+// can only process one instruction at a time.
 // -----------------------------------------------------------
 
 module dac_instr_queue #(
@@ -42,144 +37,112 @@ localparam W_DINS = W_DATA + W_CHS;							// width of dac write instruction
 localparam N_LOWER = N_CHAN/2;
 localparam N_UPPER = N_CHAN - N_LOWER;
 
+/* state parameters */
+localparam	ST_IDLE			= 1'd0,							// wait for data valid
+				ST_WRITE			= 1'd1;							// write data to FIFO
+
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
-/* upper split data */
-wire [W_DATA*N_UPPER-1:0]	data_packed_upper;			// upper half of input data bus
-wire [N_UPPER-1:0]			dv_upper; 						// upper half of data valid bus
-wire								dv_rdc_upper;					// reduction OR of upper data valid bus
+reg	[W_DATA*N_CHAN-1:0]		data_packed_reg = 0;
+reg	[N_CHAN-1:0]				data_valid_reg = 0;
+wire	[W_DATA-1:0]				mux_dout;
+wire									data_valid_rdc;
+wire									fifo_wr_en;
 
-/* lower split data */
-wire [W_DATA*N_LOWER-1:0]	data_packed_lower;			// lower half of input data bus
-wire [N_LOWER-1:0]			dv_lower; 						// lower half of data valid bus
-wire								dv_rdc_lower;					// reduction OR of lower data valid bus
-
-/* mux data out */
-wire [W_DATA-1:0] mux_dout_upper, mux_dout_lower;		// mux output data for upper and lower channels
-
-/* mux selects */
-wire [W_CHS-1:0] mux_sel_upper, mux_sel_lower;			// mux select signals for upper and lower channels
-
-/* channel numbers (generated from data valid) */
-wire [W_CHS-1:0] chan_upper, chan_lower;					// upper and lower channel signals
-
-/* dac instruction signals */
-wire [W_DINS-1:0] dinstr_upper, dinstr_lower;			// dac instruction signals for upper and lower channels
-
-/* upper channel delay registers */
-reg [W_DINS-1:0] dinstr_upper_reg;
-reg dv_rdc_upper_reg = 0;
-
-/* fifo wires */
-wire [W_DINS-1:0] fifo_din, fifo_dout;
-wire fifo_wr_en, fifo_rd_en;
-wire fifo_data_valid;
+/* state registers */
+reg	[W_CHS-1:0]					counter = 0;
+reg	[2:0]							cur_state = ST_IDLE;
+reg	[2:0]							next_state = ST_IDLE;
 
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
 
-/* split input data bus into upper and lower halfs */
-assign data_packed_upper = data_packed_in[W_DATA*N_CHAN-1:W_DATA*N_LOWER];
-assign data_packed_lower = data_packed_in[W_DATA*N_LOWER-1:0];
+/* reduction or data valid */
+assign data_valid_rdc = | data_valid_in;
 
-/* split data valid input into upper and lower half */
-assign dv_upper = data_valid_in[N_CHAN-1:N_LOWER];
-assign dv_lower = data_valid_in[N_LOWER-1:0];
-
-/* compute reduction or of data valid signals */
-assign dv_rdc_upper = | dv_upper;
-assign dv_rdc_lower = | dv_lower;
-
-/* convert one-hot data valid signals to binary select signals */
-assign mux_sel_upper = bin_from_oh ( dv_upper );
-assign mux_sel_lower = bin_from_oh ( dv_lower );
-
-/* convert select signals to channel signals */
-assign chan_upper = mux_sel_upper + 4;
-assign chan_lower = mux_sel_lower;
-
-/* combine data and channel signals to form dac instruction */
-assign dinstr_upper = { chan_upper, mux_dout_upper };
-assign dinstr_lower = { chan_lower, mux_dout_lower };
-
-/* fifo signals */
-assign fifo_din 	= ( dv_rdc_lower ) ? dinstr_lower : dinstr_upper_reg;
-assign fifo_wr_en = dv_rdc_lower | dv_rdc_upper_reg;
-
-/* output signals */
-assign { chan_out, data_out }	= fifo_dout;
-assign data_valid_out 			= fifo_data_valid;
+/* fifo write enable */
+assign fifo_wr_en = (cur_state == ST_WRITE) ? data_valid_reg[counter] : 0;
 
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
 
-/* register upper channel data signals for one cycle before
- * the fifo mux to allow the lower channel signals to be written
- * first in the case of simultaneous arrival */
+/* input data registers */
 always @( posedge clk_in ) begin
-	dinstr_upper_reg	<= dinstr_upper;
-	dv_rdc_upper_reg	<= dv_rdc_upper;
+	if ( reset_in ) begin
+		data_packed_reg	<= 0;
+		data_valid_reg		<= 0;
+	end else if ( data_valid_rdc ) begin
+		data_packed_reg	<= data_packed_in;
+		data_valid_reg		<= data_valid_in;
+	end
+end
+
+/* channel counter */
+always @( posedge clk_in ) begin
+	if ( reset_in == 1 | cur_state == ST_IDLE ) begin
+		counter <= 0;
+	end else begin
+		counter <= counter + 1'b1;
+	end
 end
 
 //////////////////////////////////////////
 // modules
 //////////////////////////////////////////
 
-/* upper channels mux */
+/* channel multiplexer */
 mux_n_chan #(
 	.W_CHAN				(W_DATA),
 	.W_SEL				(W_CHS),
-	.N_IN					(N_UPPER))
-mux_upper (
-	.data_packed_in	(data_packed_upper),
-	.chan_select_in	(mux_sel_upper),
-	.data_out			(mux_dout_upper)
-	);
-
-/* lower channels mux */
-mux_n_chan #(
-	.W_CHAN				(W_DATA),
-	.W_SEL				(W_CHS),
-	.N_IN					(N_LOWER))
-mux_lower (
-	.data_packed_in	(data_packed_lower),
-	.chan_select_in	(mux_sel_lower),
-	.data_out			(mux_dout_lower)
+	.N_IN					(N_CHAN))
+mux (
+	.data_packed_in	(data_packed_reg),
+	.chan_select_in	(counter),
+	.enable_in			(cur_state == ST_WRITE),
+	.data_out			(mux_dout)
 	);
 
 /* fifo */
 fifo_19 instr_queue (
 	.clk		(clk_in),
 	.rst		(reset_in),
-	.din		(fifo_din),
+	.din		({counter, mux_dout}),
 	.wr_en	(fifo_wr_en),
 	.rd_en	(rd_ack_in),
-	.dout		(fifo_dout),
+	.dout		({chan_out, data_out}),
 	.full		(),
 	.empty	(),
-	.valid	(fifo_data_valid)
+	.valid	(data_valid_out)
 	);
 
 //////////////////////////////////////////
-// functions
+// state machine
 //////////////////////////////////////////
 
-/* four-bit one hot to two-bit binary converter*/
-function [W_CHS-1:0] bin_from_oh;
-	input [3:0] one_hot;
-	begin
-		case ( one_hot )
-			4'b0001 : bin_from_oh = 0;
-			4'b0010 : bin_from_oh = 1;
-			4'b0100 : bin_from_oh = 2;
-			4'b1000 : bin_from_oh = 3;
-			default : bin_from_oh = 0;
-		endcase
+/* state sequential logic */
+always @( posedge clk_in ) begin
+	if ( reset_in == 1 ) begin
+		cur_state <= ST_IDLE;
+	end else begin
+		cur_state <= next_state;
 	end
-endfunction
+end
+
+/* next state combinational logic */
+always @( * ) begin
+	next_state <= cur_state; // default assignment if no case and condition is satisfied
+	case ( cur_state )
+		ST_IDLE: begin
+			if ( data_valid_rdc == 1 )			next_state <= ST_WRITE;
+		end
+		ST_WRITE: begin
+			if ( counter == N_CHAN-1 )			next_state <= ST_IDLE;
+		end
+	endcase
+end
 
 endmodule

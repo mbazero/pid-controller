@@ -48,8 +48,8 @@ module output_preprocessor #(
 // local parameters
 //////////////////////////////////////////
 
-localparam MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
-localparam MIN_OUTPUT = ~MAX_OUTPUT;
+localparam	MAX_OUTPUT = {1'b0, {W_OUT-1{1'b1}}};
+localparam	MIN_OUTPUT = ~MAX_OUTPUT;
 
 /* state parameters */
 localparam 	ST_IDLE 			= 3'd0,							// module idle, wait for valid data
