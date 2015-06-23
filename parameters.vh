@@ -6,7 +6,7 @@
 // --------------------------------------------------
 parameter N_ADC			= 2;	// number of adc channels (must be >= 2)
 parameter N_DAC			= 2;	// number of dac channels (must be >= 2)
-parameter N_DDS			= 0;	// number of dds channels
+parameter N_DDS			= 1;	// number of dds channels
 parameter W_ADC_DATA		= 18; // width of adc data word
 parameter W_DAC_DATA		= 16;	// width of dac data word
 parameter W_DDS_FREQ		= 48; // width of dds frequency word
