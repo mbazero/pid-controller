@@ -59,7 +59,7 @@ localparam	RD_ST_IDLE		= 3'd0,								// wait for busy signal to begin read
 //////////////////////////////////////////
 
 /* full width data valid signal */
-reg	[N_CHAN_RD-1:0]	data_valid;
+wire	[N_CHAN_RD-1:0]	data_valid;
 
 /* state registers */
 reg	[7:0] 				cv_counter = 0; 						// convert state machine counter
