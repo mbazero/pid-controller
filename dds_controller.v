@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-// dds_controller -- mba 2014
+// dds_controller -- mba 2015
 // -----------------------------------------------------------
 // Sends update instructions to AD9912 DDS chip.
 // -----------------------------------------------------------

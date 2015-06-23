@@ -12,7 +12,6 @@ module clk_sync #(
 	parameter N_ADC	= 8							// number of active adc channels
 	)(
 	// inputs <- top level entity
-	input wire						adc_clk_in,		// 17MHz adc serial clock
 	input wire						sys_clk_in,		// 50MHz system clock
 	input wire						reset_in,		// system reset
 

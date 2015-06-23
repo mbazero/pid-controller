@@ -64,7 +64,7 @@ reg	[2:0]							next_state = ST_IDLE;
 assign data_valid_rdc = | data_valid_in;
 
 /* fifo write enable */
-assign fifo_wr_en = (cur_state == ST_WRITE) ? data_valid_reg[counter] : 0;
+assign fifo_wr_en = (cur_state == ST_WRITE) ? data_valid_reg[counter] : 1'b0;
 
 //////////////////////////////////////////
 // sequential logic

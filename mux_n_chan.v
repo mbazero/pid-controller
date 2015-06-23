@@ -37,6 +37,6 @@ generate
 endgenerate
 
 /* data out */
-assign data_out = (enable_in) ? channel[chan_select_in] : 0;
+assign data_out = (enable_in) ? channel[chan_select_in] : 1'b0;
 
 endmodule

@@ -10,6 +10,7 @@ module pid_controller_tf;
 
 	`include "ep_map.vh"
 	`include "sim_tasks.v"
+	`include "parameters.vh"
 	`include "ok_sim/okHostCalls.v"
 
 	// Parameters
@@ -140,7 +141,7 @@ module pid_controller_tf;
 	localparam REPS = 10;
 
 	// routing params
-	localparam src = 0;
+	localparam src = 1;
 	localparam dest = 1;
 	wire [15:0] src_map = 1 << src;
 	wire [15:0] dest_map = 1 << dest;
@@ -194,10 +195,14 @@ module pid_controller_tf;
 	genvar m;
 	generate
 	for ( m = 0; m < N_CHAN; m = m + 1 ) begin : chan_arr
-		if ( m == src ) begin
+		if ( m == src & src < N_CHAN/2) begin
 			//assign chan[src] = r_data - target;
 			//assign chan[src] = 39321;
 			assign chan[src] = chan_reg;
+		end else if ( m == src+N_CHAN/2 & src >= N_CHAN/2) begin
+			//assign chan[src+4] = r_data - target;
+			//assign chan[src+4] = 39321;
+			assign chan[src+4] = chan_reg;
 		end else begin
 			assign chan[m] = 0;
 		end

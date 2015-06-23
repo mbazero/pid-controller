@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="62" />
+   <WVObjectSize size="64" />
    <wvobject fp_name="/pid_controller_tf/adc_os_out" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">adc_os_out[2:0]</obj_property>
       <obj_property name="ObjectShortName">adc_os_out[2:0]</obj_property>
@@ -176,6 +176,16 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/\pid_array[0].pid_inst /lock_en_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lock_en_in</obj_property>
+      <obj_property name="ObjectShortName">lock_en_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider63" type="divider">
+      <obj_property name="label">PID[1] OUTPUT</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\pid_array[1].pid_inst /lock_en_in" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">lock_en_in</obj_property>
       <obj_property name="ObjectShortName">lock_en_in</obj_property>
    </wvobject>
