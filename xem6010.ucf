@@ -76,7 +76,7 @@ TIMESPEC "TS_clk17" = PERIOD "clk17_in" 60 ns HIGH 50%;
 ############################################################################
 ## Peripherals
 ############################################################################
-NET "n_out_buf_en"	LOC="K19"	| IOSTANDARD=LVCMOS33;
+NET "obuf_en_out"			LOC="K19"	| IOSTANDARD=LVCMOS33;
 
 ## DAC ################################################################
 NET "dac_nldac_out"		LOC="B14"	| IOSTANDARD=LVCMOS33;

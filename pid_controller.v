@@ -48,7 +48,7 @@ module pid_controller (
 	output wire		[N_DDS-1:0]		dds_io_update_out,
 
 	// outputs -> breakout board
-	output wire							n_out_buf_en,	// breakout board output buffer enable (active low)
+	output wire							obuf_en_out,	// breakout board output buffer enable (active low)
 
 	// inouts <-> frontpanel host interface
 	input wire		[7:0]				hi_in,
@@ -169,7 +169,7 @@ wire	[N_DDS-1:0]				dds_done;
 //////////////////////////////////////////
 
 /* output buffer enable */
-assign n_out_buf_en = 1'b0;
+assign obuf_en_out = 1'b0;
 
 /* pack oversample filter data to single data vector for presentation to frontpanel interface */
 genvar h;
