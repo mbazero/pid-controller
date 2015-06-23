@@ -5,11 +5,6 @@
 // Sends update instructions to AD9912 DDS chip.
 // -----------------------------------------------------------
 
-/*
-TODO
-- add phase and amplitude update functionality
-*/
-
 module dds_controller(
 	// inputs <- top level entity
 	input wire				clk_in,				// system clock
@@ -79,7 +74,7 @@ reg	[2:0] 	next_state = ST_IDLE; 		// next state
 
 /* dds control signals */
 assign reset_out			= reset_in;
-assign csb_out				= ( cur_state != ST_TX );
+assign csb_out				= ~( cur_state == ST_TX );
 assign sdio_out			= tx_data[63];
 assign io_update_out		= ( cur_state == ST_IO_UPDATE );
 
@@ -120,11 +115,11 @@ always @( posedge clk_in ) begin
 			ST_TX: begin
 				if ( counter == 0 ) begin
 					if ( freq_dv == 1 ) begin
-						freq_dv = 0;
+						freq_dv <= 0;
 					end else if ( phase_dv == 1 ) begin
-						phase_dv = 0;
+						phase_dv <= 0;
 					end else if ( amp_dv == 1 ) begin
-						amp_dv = 0;
+						amp_dv <= 0;
 					end
 				end
 			end
@@ -175,8 +170,8 @@ ODDR2 #(
 	.CE				(1'b1),
 	.D0				(1'b1), // VCC
 	.D1				(1'b0), // GND
-	.R					(reset_in),
-	.S					( ~(cur_state == ST_TX ) )
+	.R					(1'b0),
+	.S					(csb_out)
 );
 
 //////////////////////////////////////////

@@ -148,7 +148,7 @@ ODDR2 #(
 	.CE				(1'b1),
 	.D0				(1'b1), // VCC
 	.D1				(1'b0), // GND
-	.R					(reset_in),
+	.R					(1'b0),
 	.S					( ~(cur_state == ST_TX ) )
 );
 
