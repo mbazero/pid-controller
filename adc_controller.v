@@ -9,8 +9,7 @@
 module adc_controller #(
 	// parameters
 	parameter W_OUT			= 18,									// width of adc data channels
-	parameter N_CHAN			= 8,									// number of adc channels to be read, oversample rate must be >=2 to support 8 channels
-	parameter MIN_T_CYCLE	= 85									// minimum cycle time in number of adc clock cycles
+	parameter N_CHAN			= 8									// number of channels to output
 	)(
 	// inputs <- top level entity
 	input wire						clk_in,							// adc serial clock; max frequency 17mhz
@@ -42,7 +41,9 @@ module adc_controller #(
 // local parameters
 //////////////////////////////////////////
 
-localparam RD_LENGTH		= W_OUT*(N_CHAN/2);					// bits of data to be read per serial port in a single cycle
+localparam N_CHAN_RD		= 8;										// number of adc channels to be read (don't change this)
+localparam MIN_T_CYCLE	= 85;										// minimum cycle time in number of adc clock cycles (don't change this)
+localparam RD_LENGTH		= W_OUT*(N_CHAN_RD/2);				// bits of data to be read per serial port in a single cycle
 
 /* state parameters */
 localparam	CV_ST_IDLE		= 3'd0,								// wait for module enable signal to begin continuous conversion
@@ -57,6 +58,9 @@ localparam	RD_ST_IDLE		= 3'd0,								// wait for busy signal to begin read
 // internal structures
 //////////////////////////////////////////
 
+/* full width data valid signal */
+reg	[N_CHAN_RD-1:0]	data_valid;
+
 /* state registers */
 reg	[7:0] 				cv_counter = 0; 						// convert state machine counter
 reg	[2:0] 				cv_cur_state = CV_ST_IDLE;			// convert state machine current state
@@ -70,16 +74,19 @@ reg	[2:0]					rd_next_state = RD_ST_IDLE;		// read state machine next state
 // combinational logic
 //////////////////////////////////////////
 
-/* adc control */
-assign reset_out	= reset_in;
-assign os_out		= os_in;
-
 /* data valid out */
+assign data_valid_out	= data_valid[N_CHAN-1:0];
+
+/* adc control */
+assign reset_out			= reset_in;
+assign os_out				= os_in;
+
+/* full width data valid */
 genvar i;
 generate
-	for ( i = 0; i < N_CHAN/2; i = i+1 ) begin : data_out_arr
-		assign data_valid_out[i] 				= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
-		assign data_valid_out[i+N_CHAN/2]	= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
+	for ( i = 0; i < N_CHAN_RD/2; i = i+1 ) begin : data_out_arr
+		assign data_valid[i] 				= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
+		assign data_valid[i+N_CHAN_RD/2]	= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
 	end
 endgenerate
 
