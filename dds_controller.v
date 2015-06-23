@@ -92,29 +92,39 @@ assign amp_wr_instr		= {1'b0, 2'b01, 13'h040C, {6'd0, amp}};
 // sequential logic
 //////////////////////////////////////////
 
-/* freq data registers */
+/* freq, phase, and amp data/dv registers */
 always @( posedge clk_in ) begin
-	if ( freq_dv_in == 1 ) begin
-		freq		<= freq_in;
-		freq_dv	<= freq_dv_in;
+	if ( reset_in == 1 ) begin
+		freq_dv	<= 0;
+		phase_dv	<= 0;
+		amp_dv	<= 0;
+	end else begin
+		case ( cur_state ) begin
+			ST_IDLE: begin
+				if ( freq_dv_in == 1 ) begin
+					freq		<= freq_in;
+					freq_dv	<= freq_dv_in;
+				end
+				if ( phase_dv_in == 1 ) begin
+					phase		<= phase_in;
+					phase_dv	<= phase_dv_in;
+				end
+				if ( amp_dv_in == 1 ) begin
+					amp		<= amp_in;
+					amp_dv	<= amp_dv_in;
+				end
+			end
+			ST_TX: begin
+				if ( freq_dv == 1 ) begin
+					freq_dv = 0;
+				end else if ( phase_dv == 1 ) begin
+					phase_dv = 0;
+				end else if ( amp_dv == 1 ) begin
+					amp_dv = 0;
+				end
+			end
+		end
 	end
-end
-
-/* phase data registers */
-always @( posedge clk_in ) begin
-	if ( phase_dv_in == 1 ) begin
-		phase		<= phase_in;
-		phase_dv	<= phase_dv;
-	end
-end
-
-/* amplitude data registers */
-always @( posedge clk_in ) begin
-	if ( amp_dv_in == 1 ) begin
-		amp		<= amp_in;
-		amp_dv	<= amp_dv_in;
-	end
-end
 
 /* serial data transmission */
 always @( negedge clk_in ) begin
