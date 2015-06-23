@@ -12,6 +12,7 @@ module pid_controller_tf;
 	`include "sim_tasks.v"
 	`include "parameters.vh"
 	`include "ok_sim/okHostCalls.v"
+	`include "verification_tasks.v"
 
 	// Parameters
 	localparam	MASK		= 32'hffffffff;

@@ -4,6 +4,9 @@
 
 module dac_instr_queue_tf;
 
+	// Includes
+	`include "verification_tasks.v";
+
 	// Parameters
 	localparam W_DATA = 16;
 	localparam W_CHS = 3;
@@ -116,25 +119,5 @@ module dac_instr_queue_tf;
 		$display("Simulation Successful.");
 		$stop;
 	end
-
-	task assert_equals;
-		input [127:0] expected;
-		input [127:0] received;
-		input [20*8-1:0] test_name;
-
-		begin
-
-			$display("%s Test:", test_name);
-			$display("Expected: %d", $signed(expected));
-			$display("Received: %d", $signed(received));
-
-			if(expected == received) begin
-				$display("Success");
-			end else begin
-				$display("Failure");
-				$stop;
-			end
-		end
-	endtask
 
 endmodule

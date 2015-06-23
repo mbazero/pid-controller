@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="dds_controller_tf.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="dds_controller_tf" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="19" />
+   <wvobject fp_name="divider24" type="divider">
+      <obj_property name="label">INPUTS</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/clk_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk_in</obj_property>
+      <obj_property name="ObjectShortName">clk_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/freq_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">freq_in[47:0]</obj_property>
+      <obj_property name="ObjectShortName">freq_in[47:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/freq_dv_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">freq_dv_in</obj_property>
+      <obj_property name="ObjectShortName">freq_dv_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/phase_in" type="array" db_ref_id="1">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">phase_in[13:0]</obj_property>
+      <obj_property name="ObjectShortName">phase_in[13:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <obj_property name="label">phase_in[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/phase_dv_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">phase_dv_in</obj_property>
+      <obj_property name="ObjectShortName">phase_dv_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/amp_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">amp_in[9:0]</obj_property>
+      <obj_property name="ObjectShortName">amp_in[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/amp_dv_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">amp_dv_in</obj_property>
+      <obj_property name="ObjectShortName">amp_dv_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider39" type="divider">
+      <obj_property name="label">INTERNAL</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/clk_in" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk_in</obj_property>
+      <obj_property name="ObjectShortName">clk_in</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/cur_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cur_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cur_state[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/tx_counter" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tx_counter[31:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_counter[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/tx_len" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tx_len[6:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_len[6:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/tx_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tx_data[63:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_data[63:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider25" type="divider">
+      <obj_property name="label">OUTPUTS</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/csb_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">csb_out</obj_property>
+      <obj_property name="ObjectShortName">csb_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/sclk_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sclk_out</obj_property>
+      <obj_property name="ObjectShortName">sclk_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/sdio_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdio_out</obj_property>
+      <obj_property name="ObjectShortName">sdio_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dds_controller_tf/uut/io_update_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">io_update_out</obj_property>
+      <obj_property name="ObjectShortName">io_update_out</obj_property>
+   </wvobject>
+</wave_config>

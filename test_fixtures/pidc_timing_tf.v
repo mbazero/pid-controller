@@ -8,6 +8,7 @@ module pidc_timing_tf;
 	`include "ep_map.vh"
 	`include "parameters.vh"
 	`include "sim_tasks.v"
+	`include "verification_tasks.v"
 
 	// Parameters
 	localparam	W_DATA	= 18;
