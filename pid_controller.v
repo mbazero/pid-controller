@@ -114,7 +114,6 @@ wire	[N_ADC-1:0]				osf_data_valid;
 
 /* pid core */
 wire	[N_ADC-1:0]				pid_update_en;
-wire	[N_ADC-1:0]				pid_clear;
 wire	[15:0]					pid_setpoint;
 wire	[15:0]					pid_p_coef;
 wire	[15:0]					pid_i_coef;
@@ -140,7 +139,6 @@ wire	[47:0]					opp_min;
 wire	[47:0]					opp_init;
 wire	[W_OPP_MLT-1:0]		opp_multiplier;
 wire	[W_EP-1:0]				opp_right_shift;
-wire	[N_OUT-1:0]				opp_clear;
 wire	[W_DAC_DATA-1:0]		opp_dac_data[0:N_DAC-1];
 wire	[W_DDS_FREQ-1:0]		opp_freq_data[0:N_DDS-1];
 wire	[W_DDS_PHASE-1:0]		opp_phase_data[0:N_DDS-1];
@@ -317,7 +315,6 @@ generate
 			.i_coef_in			(pid_i_coef),
 			.d_coef_in			(pid_d_coef),
 			.lock_en_in			(pid_lock_en[m]),
-			.clear_in			(pid_clear[m]),
 			.update_en_in		(pid_update_en[m]),
 			.update_in			(module_update),
 			.data_out			(pid_data[m]),
@@ -374,7 +371,6 @@ generate
 			.output_init_in	(opp_init[W_DAC_DATA:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
-			.clear_in			(opp_clear[x]),
 			.update_en_in		(opp_update_en[x]),
 			.update_in			(module_update),
 			.data_out			({opp_dac_data_sign[x], opp_dac_data[x]}),
@@ -453,7 +449,6 @@ generate
 			.output_init_in	(opp_init[W_DDS_FREQ-1:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
-			.clear_in			(opp_clear[F]),
 			.update_en_in		(opp_update_en[F]),
 			.update_in			(module_update),
 			.data_out			(opp_freq_data[y]),
@@ -483,7 +478,6 @@ generate
 			.output_init_in	(opp_init[W_DDS_PHASE-1:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
-			.clear_in			(opp_clear[P]),
 			.update_en_in		(opp_update_en[P]),
 			.update_in			(module_update),
 			.data_out			(opp_phase_data[y]),
@@ -513,7 +507,6 @@ generate
 			.output_init_in	(opp_init[W_DDS_AMP-1:0]),
 			.multiplier_in		(opp_multiplier),
 			.right_shift_in	(opp_right_shift),
-			.clear_in			(opp_clear[A]),
 			.update_en_in		(opp_update_en[A]),
 			.update_in			(module_update),
 			.data_out			(opp_amp_data[y]),
@@ -571,7 +564,6 @@ fp_io (
 	.osf_activate_out		(osf_activate),
 	.osf_update_en_out	(osf_update_en),
 	.pid_lock_en_out		(pid_lock_en),
-	.pid_clear_out			(pid_clear),
 	.pid_setpoint_out		(pid_setpoint),
 	.pid_p_coef_out		(pid_p_coef),
 	.pid_i_coef_out		(pid_i_coef),
@@ -585,7 +577,6 @@ fp_io (
 	.opp_init_out			(opp_init),
 	.opp_multiplier_out	(opp_multiplier),
 	.opp_right_shift_out	(opp_right_shift),
-	.opp_clear_out			(opp_clear),
 	.opp_update_en_out	(opp_update_en),
 	.dac_ref_set_out		(dac_ref_set),
 	.module_update_out	(module_update),

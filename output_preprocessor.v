@@ -35,7 +35,6 @@ module output_preprocessor #(
 	input wire signed		[W_OUT-1:0]	output_init_in,	// initial output value
 	input wire signed		[W_MLT-1:0]	multiplier_in,		// output multiplication factor
 	input wire 				[W_EP-1:0]	right_shift_in,	// output right shift
-	input wire								clear_in,			// clears opp memory
 	input wire								update_en_in,		// module becomes sensitive to update signal when asserted
 	input wire								update_in,			// pulse triggers update of module frontpanel parameters
 
@@ -128,7 +127,7 @@ end
 
 /* previous data register */
 always @( posedge clk_in ) begin
-	if (( reset_in == 1 ) | ( clear_in == 1 )) begin
+	if ( reset_in == 1  ) begin
 		data_out_prev <= output_init;
 	end else if ( cur_state == ST_WRITEBACK ) begin
 		data_out_prev <= data_out;
