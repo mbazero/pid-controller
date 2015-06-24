@@ -138,7 +138,7 @@ always @( posedge clk_in ) begin
 		e_prev_0	<= 0;
 		e_prev_1	<= 0;
 	end else if ( cur_state == ST_WRITEBACK ) begin
-		u_prev		<= data_out;
+		u_prev	<= data_out;
 		e_prev_0	<= e_cur;
 		e_prev_1	<= e_prev_0;
 	end
