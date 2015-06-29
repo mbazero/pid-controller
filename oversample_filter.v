@@ -10,9 +10,7 @@ module oversample_filter #(
 	// parameters
 	parameter W_DATA		= 18,										// width of input data
 	parameter W_EP			= 16,										// width of opal kelly endpoint
-	parameter W_OSM		= 4,										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
-	parameter OSM_INIT 	= 0,										// initial oversample mode
-	parameter CDLY_INIT	= 0										// initial cycle delay
+	parameter W_OSM		= 4										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
 	)(
 	// inputs <- top level entity
 	input wire									clk_in,				// system clock
@@ -26,8 +24,6 @@ module oversample_filter #(
 	input wire				[W_EP-1:0]		cycle_delay_in,	// delay period in adc cycles
 	input wire				[W_OSM-1:0]		osm_in,				// oversample mode (log base 2 of the oversample ratio)
 	input wire									activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
-	input wire									update_en_in,		// sensitizes module to update signal
-	input wire									update_in,			// pulse triggers update of frontpanel parameters
 
 	// outputs -> clk sync
 	output wire signed	[W_DATA-1:0]	data_out,			// output data
@@ -56,9 +52,7 @@ wire							idle;
 wire							osf_reset;								// local reset signal which is activated by system reset or channel deactive
 
 /* registers */
-reg			[W_EP-1:0]	cycle_delay = CDLY_INIT;
 reg			[MAX_OS:0]	sample_counter = 0;
-reg			[W_OSM-1:0]	osm_cur = OSM_INIT;
 reg signed 	[W_SUM-1:0]	sum = 0;
 
 /* state registers */
@@ -71,13 +65,13 @@ reg			[2:0]			next_state = ST_IDLE;
 //////////////////////////////////////////
 
 /* divide sum by oversample ratio (left shift amount equal to log2 oversample ration) */
-assign data_out 			= ( sum >> osm_cur );
+assign data_out 			= ( sum >> osm_in );
 
 /* assert data_valid_out during the SEND state */
 assign data_valid_out 	= ( cur_state == ST_SEND );
 
 /* osf reset */
-assign osf_reset 			= ( reset_in | ~activate_in ); //TODO check this
+assign osf_reset 			= ( reset_in | ~activate_in );
 
 //////////////////////////////////////////
 // sequential logic
@@ -102,14 +96,6 @@ always @( posedge clk_in ) begin
 		sample_counter	<= 0;
 	end else if ( data_valid_in == 1 ) begin
 		sample_counter	<= sample_counter + 1'b1;
-	end
-end
-
-/* latch frontpanel parameters on update signal */
-always @( posedge update_in ) begin
-	if ( update_en_in == 1 ) begin
-		osm_cur 		<= osm_in;
-		cycle_delay	<= cycle_delay_in;
 	end
 end
 
@@ -139,16 +125,16 @@ end
 
 /* next state transition logic */
 always @( * ) begin
-	next_state <= cur_state; // default assignment if not case statement and condition is satisfied
+	next_state <= cur_state; // default assignment if no case statement and condition is satisfied
 	case ( cur_state )
 		ST_IDLE: begin
 			if ( activate_in == 1 )							next_state <= ST_SAMPLE;	// don't have to delay on first iteration
 		end
 		ST_DELAY: begin
-			if ( sample_counter >= cycle_delay ) 		next_state <= ST_SAMPLE;
+			if ( sample_counter >= cycle_delay_in ) 	next_state <= ST_SAMPLE;
 		end
 		ST_SAMPLE: begin
-			if ( sample_counter[osm_cur] == 1 )			next_state <= ST_SEND;
+			if ( sample_counter[osm_in] == 1 )			next_state <= ST_SEND;
 		end
 		ST_SEND: 												next_state <= ST_DELAY;
 	endcase

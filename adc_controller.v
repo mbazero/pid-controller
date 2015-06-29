@@ -9,7 +9,8 @@
 module adc_controller #(
 	// parameters
 	parameter W_OUT			= 18,									// width of adc data channels
-	parameter N_CHAN			= 8									// number of channels to output
+	parameter N_CHAN			= 8,									// number of channels to output
+	parameter W_OS				= 2									// width of oversample signal
 	)(
 	// inputs <- top level entity
 	input wire						clk_in,							// adc serial clock; max frequency 17mhz
@@ -21,11 +22,11 @@ module adc_controller #(
 	input wire						data_b_in,						// serial data channel b
 
 	// inputs <- frontpanel controller
-	input wire	[2:0]				os_in,							// sets adc oversampling mode
+	input wire	[W_OS-1:0]		os_in,							// sets adc oversampling mode
 	input wire						cstart_in,						// pulse starts continuous adc conversion cycle
 
 	// outputs -> AD7608
-	output wire	[2:0]				os_out,							// oversampling signal to adc
+	output wire	[W_OS-1:0]		os_out,							// oversampling signal to adc
 	output wire						convst_out,						// convert start signal to adc
 	output wire						reset_out,						// reset signal to adc
 	output wire						sclk_out, 						// serial clock signal to adc

@@ -13,13 +13,7 @@ module pid_core #(
 	parameter W_IN				= 18,								// input data width
 	parameter W_OUT			= 64,								// output data width (set to be large to avoid overflow issues)
 	parameter W_EP				= 16,								// width of opal kelly endpoints
-	parameter COMP_LATENCY	= 1,								// pid computation latency in clock cycles
-
-	// initial values
-	parameter SETPOINT_INIT	= 0,								// initial setpoint
-	parameter P_COEF_INIT	= 10,								// initial p coefficient
-	parameter I_COEF_INIT	= 3,								// initial i coefficient
-	parameter D_COEF_INIT	= 0								// initial d coefficient
+	parameter COMP_LATENCY	= 1								// pid computation latency in clock cycles
 	)(
 	// inputs <- top level entity
 	input wire									clk_in,			// system clock
@@ -34,9 +28,7 @@ module pid_core #(
 	input wire signed 	[W_EP-1:0]		p_coef_in,		// proportional coefficient
 	input wire signed 	[W_EP-1:0]		i_coef_in,		// integral coefficient
 	input wire signed 	[W_EP-1:0]		d_coef_in,		// derivative coefficient
-	input wire									lock_en_in,		// DEBUG not used anymore
-	input wire									update_en_in,	// sensitizes module to update signal
-	input wire									update_in, 		// pulse triggers update of frontpanel parameters
+	input wire									lock_en_in,		// lock enable
 
 	// outputs -> source mux
 	output wire signed	[W_OUT-1:0]		data_out,		// pid filter output
@@ -67,12 +59,6 @@ reg signed	[W_IN-1:0]		data = 0;						// active input data
 wire 								overflow;
 wire signed [W_OUT-1:0]		u_cur_rail;
 
-/* pid parameters */
-reg signed	[W_EP-1:0]		setpoint = SETPOINT_INIT;	// active lock setpoint
-reg signed 	[W_EP-1:0]		p_coef = P_COEF_INIT;		// active proportional coefficient
-reg signed	[W_EP-1:0]		i_coef = I_COEF_INIT;		// active integral coefficient
-reg signed	[W_EP-1:0]		d_coef = D_COEF_INIT;		// active derivative coefficient
-
 /* error signals */
 wire signed	[W_IN:0]			e_cur;							// current error signal
 reg signed	[W_IN:0]			e_prev_0 = 0;					// most recent previous error signal
@@ -96,12 +82,12 @@ reg			[2:0] 			next_state = ST_IDLE; 		// next state
 //////////////////////////////////////////
 
 /* compute error */
-assign e_cur				= setpoint - data;
+assign e_cur				= setpoint_in - data;
 
 /* compute z-transform coefficients */
-assign k1					= p_coef + i_coef + d_coef;
-assign k2					= -p_coef - (d_coef << 1);
-assign k3					= d_coef;
+assign k1					= p_coef_in + i_coef_in + d_coef_in;
+assign k2					= -p_coef_in - (d_coef_in << 1);
+assign k3					= d_coef_in;
 
 /* compute delta u */
 assign delta_u				= k1*e_cur + k2*e_prev_0 + k3*e_prev_1;
@@ -141,16 +127,6 @@ always @( posedge clk_in ) begin
 		u_prev	<= data_out;
 		e_prev_0	<= e_cur;
 		e_prev_1	<= e_prev_0;
-	end
-end
-
-/* frontpanel parameter registers */
-always @( posedge update_in ) begin
-	if ( update_en_in == 1 ) begin
-		setpoint	<= setpoint_in;
-		p_coef	<= p_coef_in;
-		i_coef	<= i_coef_in;
-		d_coef	<= d_coef_in;
 	end
 end
 

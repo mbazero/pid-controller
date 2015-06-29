@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="64" />
+   <WVObjectSize size="60" />
    <wvobject fp_name="/pid_controller_tf/adc_os_out" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">adc_os_out[2:0]</obj_property>
       <obj_property name="ObjectShortName">adc_os_out[2:0]</obj_property>
@@ -248,14 +248,14 @@
       <obj_property name="ObjectShortName">proc_stage_4[74:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/opp_dac_data_valid[0]" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">[0]</obj_property>
-      <obj_property name="ObjectShortName">opp_dac_data_valid[0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/opp_dac_data[0]" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">[0,15:0]</obj_property>
       <obj_property name="ObjectShortName">opp_dac_data[0,15:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/opp_dac_dv[0]" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">[0]</obj_property>
+      <obj_property name="ObjectShortName">opp_dac_dv[0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider71" type="divider">
       <obj_property name="label">DAC OUTPUT</obj_property>
@@ -286,32 +286,16 @@
       <obj_property name="ObjectShortName">r_data[15:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="divider65" type="divider">
+      <obj_property name="label">DDS[0] OUTPUT</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
    <wvobject fp_name="divider52" type="divider">
       <obj_property name="label">PIPE</obj_property>
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/ti_clk_in" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">ti_clk_in</obj_property>
-      <obj_property name="ObjectShortName">ti_clk_in</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/data_valid_in" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">data_valid_in</obj_property>
-      <obj_property name="ObjectShortName">data_valid_in</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/data_in" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">data_in[15:0]</obj_property>
-      <obj_property name="ObjectShortName">data_in[15:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/pipe_read_in" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">pipe_read_in</obj_property>
-      <obj_property name="ObjectShortName">pipe_read_in</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/fp_io/osf_pipe_fifo/data_out" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">data_out[15:0]</obj_property>
-      <obj_property name="ObjectShortName">data_out[15:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
 </wave_config>

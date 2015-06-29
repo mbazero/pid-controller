@@ -4,14 +4,22 @@
 // - set number of DDS channels to reflect hardware
 //   configuration
 // --------------------------------------------------
-parameter N_ADC			= 2;	// number of adc channels to generate
-parameter N_DAC			= 2;	// number of dac channels to generate
-parameter N_DDS			= 2;	// number of dds channels to generate
+parameter N_ADC			= 8;	// number of adc channels to generate
+parameter N_DAC			= 8;	// number of dac channels to generate
+parameter N_DDS			= 0;	// number of dds channels to generate
 parameter W_ADC_DATA		= 18; // width of adc data word
 parameter W_DAC_DATA		= 16;	// width of dac data word
 parameter W_DDS_FREQ		= 48; // width of dds frequency word
 parameter W_DDS_PHASE	= 14;	// width of dds phase word
 parameter W_DDS_AMP 		= 10; // width of dds amplitude instruction
+
+// ------------- comp latency params ----------------
+// - increase these if clock speed is increased and
+//   more time is needed to complete pid or opp
+//   computation.
+// --------------------------------------------------
+parameter PID_COMP_LATENCY	= 1; // pid core computation latency
+parameter OPP_COMP_LATENCY	= 1; // output preprocessor compuation latency
 
 // ---------------- misc. params --------------------
 // - don't change any of these unless hardware on
@@ -19,44 +27,10 @@ parameter W_DDS_AMP 		= 10; // width of dds amplitude instruction
 // --------------------------------------------------
 parameter W_COMP			= 64; // width of computation registers
 parameter W_EP				= 16; // width of opal kelly endpoint
+parameter W_ADC_OS		= 3;	// width of adc oversample signal
+parameter W_OSF_OSM		= 6;	// width of oversample mode signal
+parameter W_OSF_CD		= 16;	// width of osf cycle delay signal
+parameter W_RTR_SEL 		= 5;	// width of router select signal (must be log2(N_DAC) + 1...MSB stores channel activation state)
 parameter W_OPP_MLT		= 10;	// width of opp multiplication factor; specifies max allowed multiplier
 parameter W_DAC_CHS		= 3;	// width of dac channel input...only change this if you get a DAC with >8 channels
-
-// -------------- simulation params -----------------
-// - initial value params used to run timing
-//   simulations, which do not support opal kelly
-//   parameter setting
-// - to run a timing sim, assert TSIM_EN and set
-//   initial values as desired
-// --------------------------------------------------
-parameter OSF_ACTIVATE	= 0;
-parameter OSF_OSM_INIT	= 0;
-parameter OSF_CDLY_INIT	= 0;
-parameter PID_LOCK_EN	= 0;
-parameter PID_SETP_INIT = 0;
-parameter PID_PCF_INIT	= 0;
-parameter PID_ICF_INIT	= 0;
-parameter PID_DCF_INIT	= 0;
-parameter RTR_ACTV_INIT	= 0;
-parameter DAC_MAX_INIT	= 0;
-parameter DAC_MIN_INIT	= 0;
-parameter DAC_OUT_INIT	= 0;
-parameter DAC_MLT_INIT	= 1;
-parameter DAC_RS_INIT	= 0;
-parameter DDSF_MAX_INIT	= 0;
-parameter DDSF_MIN_INIT = 0;
-parameter DDSF_OUT_INIT = 0;
-parameter DDSF_MLT_INIT = 1;
-parameter DDSF_RS_INIT	= 0;
-parameter DDSP_MAX_INIT	= 0;
-parameter DDSP_MIN_INIT = 0;
-parameter DDSP_OUT_INIT = 0;
-parameter DDSP_MLT_INIT = 1;
-parameter DDSP_RS_INIT	= 0;
-parameter DDSA_MAX_INIT = 0;
-parameter DDSA_MIN_INIT = 0;
-parameter DDSA_OUT_INIT	= 0;
-parameter DDSA_MLT_INIT = 1;
-parameter DDSA_RS_INIT	= 0;
-// --------------------------------------------------
-
+parameter NULL_CHAN		= -1;	// null source for deactive routes

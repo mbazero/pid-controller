@@ -13,6 +13,7 @@ class EndpointMap:
 			# remove extraneous substrings and characters from line
 			line = line.replace('parameter', '')
 			line = line.replace('8\'h', '')
+			line = line.replace('16\'h', '')
 			line = line.translate(None, ''.join(chars_to_remove))
 
 			# parse endpoint name and value

@@ -2,15 +2,18 @@
 task adc_transmit;
 	input [31:0] reps;
 
-	begin
-		// adc data transmission simulation
+	begin : adc_tx
+		integer adc_count = 0, j = 0;
+
 		repeat(reps) begin
 			// wait for convst_out to pulse and then assert busy
 			@(posedge adc_convst_out) begin
 				@(posedge clk17_in) adc_busy_in = 1;
 			end
 
-			chan_reg = $random;
+			for ( j = 0; j < N_ADC; j = j+1 ) begin
+				chan[j] = $random;
+			end
 
 			#1 compute_exp_pid();
 
@@ -25,6 +28,10 @@ task adc_transmit;
 			// wait one cycle before transmitting
 			@(posedge clk17_in);
 
+			$display("======================================");
+			$display("Iteration #%d", adc_count);
+			$display("======================================");
+
 			// simulate serial data transmission
 			repeat (71) begin
 				@(negedge clk17_in)
@@ -35,6 +42,8 @@ task adc_transmit;
 			// simulate conversion end
 			#2000;
 			@(posedge clk17_in) adc_busy_in = 0;
+
+			adc_count = adc_count + 1;
 
 		end
 	end
@@ -47,8 +56,8 @@ task compute_exp_pid;
 		error = setpoint - chan[src];
 		#1 integral = integral + error;
 		derivative = error - error_prev;
-		#1 pid_expected = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
-		#1 pid_expected = (lock_en) ? pid_expected : 0;
+		#1 pid_exp = (p_coef * error) + (i_coef * integral) + (d_coef * derivative);
+		#1 pid_exp = (lock_en) ? pid_exp : 0;
 		error_prev = error;
 	end
 endtask
@@ -56,7 +65,7 @@ endtask
 /* Compute expected output */
 task compute_exp_output;
 	begin
-		proc_stage[0] = pid_expected * multiplier;
+		proc_stage[0] = pid_exp * multiplier;
 		#1 proc_stage[1] = proc_stage[0] >>> right_shift;
 		#1 proc_stage[2] = proc_stage[1] + dac_data_reg;
 		#1 proc_stage[3] = (lock_en == 1) ? proc_stage[2] : output_init;
