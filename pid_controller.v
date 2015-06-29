@@ -539,7 +539,6 @@ generate
 	end
 endgenerate
 
-
 /* frontpanel interface */
 // -----------------------------------------------------------
 // NOTE: Verilog does not allow 2D input ports, so this module
@@ -564,16 +563,20 @@ endgenerate
 // internal structures
 //////////////////////////////////////////
 
+/* data, channel, and address wires */
+wire	[W_EP-1:0]				data2, data1, data0;
 wire	[W_EP*3-1:0]			data;
 wire	[W_EP-1:0]				chan;
 wire	[W_EP-1:0]				addr;
+wire								reg_update;
+
+/* system general purpose trigger */
+wire 	[W_EP-1:0]				sys_gp_trig;
+
+/* osf wire-out and pipe structures */
 reg	[W_ADC_DATA-1:0]		osf_data_reg[0:N_ADC-1];
 wire	[15:0]					osf_pipe_dout;
-wire osf_pipe_read;
-
-wire	[W_EP-1:0]				data2, data1, data0;
-wire reg_update;
-wire 	[W_EP-1:0]				sys_gp_trig;
+wire								osf_pipe_read;
 
 /* host interface */
 wire 								ticlk;

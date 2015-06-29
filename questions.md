@@ -1,6 +1,7 @@
 TODO
 ==========
-1. 
+1. Debug wire-out check in simulation
+2. Test DDS channels in simulation
 
 Issues
 ==========
