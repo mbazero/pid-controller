@@ -647,31 +647,3 @@ class WorkerThread(QThread):
 	def shutDown(self):
 		self.exiting = True
 		self.wait()
-
-# create instance of application window and run it
-def main():
-	# output channel specifiers
-	num_dac_chans = 6
-	num_dds_chans = 2
-
-	# debug flag
-	debug = 1
-
-	# generate endpoint map
-	EP_MAP_PATH		= '../ep_map.vh'
-	epm = EndpointMap(EP_MAP_PATH)
-
-	# instantiate opal kelly controller
-	okc = OpalKellyController.OpalKellyController(epm, debug)
-	if (False == okc.InitializeDevice()):
-		exit
-
-	# instantiate PID lock array
-	pla = PIDLockArray.PIDLockArray(epm, okc, num_dac_chans, num_dds_chans)
-
-	# instantiate GUI and run it
-	gui = MainWindow(pla, num_dac_chans, num_dds_chans)
-	gui.run()
-
-if __name__ == '__main__':
-	main()

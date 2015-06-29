@@ -68,10 +68,10 @@ parameter opp_amp_inj_itep			= 8'h45;
 //////////////////////////////////////////
 // multipurpose trigger offsets
 //////////////////////////////////////////
-parameter sys_reset_offset			= 8'h00;
-parameter adc_cstart_offset		= 8'h01;
-parameter reg_update_offset		= 8'h02;
-parameter dac_ref_set_offset		= 8'h03;
+parameter sys_reset_offset			= 0;
+parameter adc_cstart_offset		= 1;
+parameter reg_update_offset		= 2;
+parameter dac_ref_set_offset		= 3;
 
 //////////////////////////////////////////
 // wire/pipe-out endpoints
