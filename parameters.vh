@@ -9,9 +9,9 @@ parameter N_DAC			= 8;	// number of dac channels to generate
 parameter N_DDS			= 0;	// number of dds channels to generate
 parameter W_ADC_DATA		= 18; // width of adc data word
 parameter W_DAC_DATA		= 16;	// width of dac data word
-parameter W_DDS_FREQ		= 48; // width of dds frequency word
-parameter W_DDS_PHASE	= 14;	// width of dds phase word
-parameter W_DDS_AMP 		= 10; // width of dds amplitude instruction
+parameter W_FREQ_DATA	= 48; // width of dds frequency word
+parameter W_PHASE_DATA	= 14;	// width of dds phase word
+parameter W_AMP_DATA 	= 10; // width of dds amplitude instruction
 
 // ------------- comp latency params ----------------
 // - increase these if clock speed is increased and
