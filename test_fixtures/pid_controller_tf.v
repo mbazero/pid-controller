@@ -300,7 +300,7 @@ module pid_controller_tf;
 		ActivateTriggerIn(sys_gp_itep, dac_ref_set_offset);
 
 		// Set adc oversample mode and trigger cstart
-		write_chan_data(adc_os_addr, NULL_CHAN, adc_os);
+		write_data(adc_os_addr, NULL_CHAN, adc_os);
 		ActivateTriggerIn(sys_gp_itep, adc_cstart_offset);
 
 		#200;

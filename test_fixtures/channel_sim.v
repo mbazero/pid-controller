@@ -2,51 +2,39 @@ task configure_chans;
 	begin : cchan
 		integer c;
 		for (c = 0; c < NAC; c = c+1) begin
+			// Route source to destination
+			write_data(ochan_src_sel_addr, dest[c], src[c]);
+
 			// Set OSF ratio and activate source channel
-			write_chan_data(osf_activate_addr, src[c], 1);
-			write_chan_data(osf_cycle_delay_addr, src[c], 0);
-			write_chan_data(osf_osm_addr, src[c], 0);
+			write_data(osf_activate_addr, dest[c], 1);
+			write_data(osf_cycle_delay_addr, dest[c], 0);
+			write_data(osf_osm_addr, dest[c], 0);
 
 			// Set PID params
-			write_chan_data(pid_setpoint_addr, src[c], setpoint[c]);
-			write_chan_data(pid_p_coef_addr, src[c], p_coef[c]);
-			write_chan_data(pid_i_coef_addr, src[c], i_coef[c]);
-			write_chan_data(pid_d_coef_addr, src[c], d_coef[c]);
-
-			// Route source to destination
-			if (dest_type[c] == "DAC") begin
-				$display("Routing DAC");
-				write_chan_data(rtr_src_sel_addr, dest[c], src[c]);
-			end else if (dest_type[c] == "FREQ") begin
-				$display("Routing FREQ");
-				write_chan_data(rtr_src_sel_addr, dest[c], src[c]);
-			end else if (dest_type[c] == "PHASE") begin
-				write_chan_data(rtr_phase_src_addr, dest[c], src[c]);
-				$display("Routing PHASE");
-			end else if (dest_type[c] == "AMP") begin
-				$display("Routing AMP");
-				write_chan_data(rtr_amp_src_addr, dest[c], src[c]);
-			end
+			write_data(pid_setpoint_addr, dest[c], setpoint[c]);
+			write_data(pid_p_coef_addr, dest[c], p_coef[c]);
+			write_data(pid_i_coef_addr, dest[c], i_coef[c]);
+			write_data(pid_d_coef_addr, dest[c], d_coef[c]);
 
 			// Set OPP params
-			write_chan_data(opp_dac_min_addr, dest[c], output_min[c]);
-			write_chan_data(opp_dac_max_addr, dest[c], output_max[c]);
-			write_chan_data(opp_dac_init_addr, dest[c], output_init[c]);
-			write_chan_data(opp_dac_mult_addr, dest[c], multiplier[c]);
-			write_chan_data(opp_dac_rs_addr, dest[c], right_shift[c]);
+			write_data(opp_min_addr, dest[c], output_min[c]);
+			write_data(opp_max_addr, dest[c], output_max[c]);
+			write_data(opp_init_addr, dest[c], output_init[c]);
+			write_data(opp_mult_addr, dest[c], multiplier[c]);
+			write_data(opp_rs_addr, dest[c], right_shift[c]);
 
 			// Set focused
 			if (focused[c] == 1) begin
-				write_chan_data(osf_pipe_chan_addr, NULL_CHAN, src[c]);
+				write_data(focused_chan_addr, dest[c], 1);
 			end
 
 			// Activate PID lock
-			write_chan_data(pid_lock_en_addr, src[c], lock_en[c]);
+			write_data(pid_lock_en_addr, dest[c], lock_en[c]);
 		end
 	end
 endtask
 
-task write_chan_data;
+task write_data;
 	input [15:0] addr;
 	input [15:0] chan;
 	input [47:0] data;
@@ -55,9 +43,9 @@ task write_chan_data;
 		SetWireInValue(data1_iwep, data[31:16], MASK);
 		SetWireInValue(data0_iwep, data[15:0], MASK);
 		SetWireInValue(addr_iwep, addr, MASK);
-		SetWireInValue(chan_iwep, chan, MASK);
+		SetWireInValue(ochan_iwep, chan, MASK);
 		UpdateWireIns;
-		ActivateTriggerIn(sys_gp_itep, reg_update_offset);
+		ActivateTriggerIn(sys_gp_itep, write_data_offset);
 	end
 endtask
 
