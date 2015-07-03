@@ -88,39 +88,39 @@ wire	[W_ADC_DATA-1:0]		cs_data_b;
 wire	[N_ADC-1:0]				cs_data_valid;
 
 /* general channel */
-reg	[N_CHAN-1:0]			chan_activate;
+reg	[N_OUT-1:0]				chan_activate;
 reg	[W_INPUT_SEL-1:0]		chan_focus;
-reg	[W_INPUT_SEL-1:0]		chan_input_sel[0:N_CHAN-1];
+reg	[W_INPUT_SEL-1:0]		chan_input_sel[0:N_OUT-1];
 
 /* router */
-wire	[N_CHAN-1:0]			rtr_chan_enable;
-wire	[W_ADC_DATA-1:0]		rtr_data[0:N_CHAN-1];
-wire	[N_CHAN-1:0]			rtr_data_valid;
+wire	[N_OUT-1:0]				rtr_chan_enable;
+wire	[W_ADC_DATA-1:0]		rtr_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				rtr_data_valid;
 
 /* oversample filter */
-reg	[W_OSF_CD-1:0]			osf_cycle_delay[0:N_CHAN-1];
-reg	[W_OSF_OS-1:0]			osf_os[0:N_CHAN-1];
-wire	[W_ADC_DATA-1:0]		osf_data[0:N_CHAN-1];
-wire	[N_CHAN-1:0]			osf_data_valid;
+reg	[W_OSF_CD-1:0]			osf_cycle_delay[0:N_OUT-1];
+reg	[W_OSF_OS-1:0]			osf_os[0:N_OUT-1];
+wire	[W_ADC_DATA-1:0]		osf_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				osf_data_valid;
 
 /* pid core */
-reg	[N_CHAN-1:0]			pid_lock_en;
-reg	[W_EP-1:0]				pid_setpoint[0:N_CHAN-1];
-reg	[W_EP-1:0]				pid_p_coef[0:N_CHAN-1];
-reg	[W_EP-1:0]				pid_i_coef[0:N_CHAN-1];
-reg	[W_EP-1:0]				pid_d_coef[0:N_CHAN-1];
-wire	[W_COMP-1:0]			pid_data[0:N_CHAN-1];
-wire	[N_CHAN-1:0]			pid_data_valid;
+reg	[N_OUT-1:0]				pid_lock_en;
+reg	[W_EP-1:0]				pid_setpoint[0:N_OUT-1];
+reg	[W_EP-1:0]				pid_p_coef[0:N_OUT-1];
+reg	[W_EP-1:0]				pid_i_coef[0:N_OUT-1];
+reg	[W_EP-1:0]				pid_d_coef[0:N_OUT-1];
+wire	[W_COMP-1:0]			pid_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				pid_data_valid;
 
 /* output preprocessor */
-reg	[W_OPP_MAX-1:0]		opp_max[0:N_CHAN-1];
-reg	[W_OPP_MAX-1:0]		opp_min[0:N_CHAN-1];
-reg	[W_OPP_MAX-1:0]		opp_init[0:N_CHAN-1];
-reg	[W_OPP_MLT-1:0]		opp_mult[0:N_CHAN-1];
-reg	[W_EP-1:0]				opp_rs[0:N_CHAN-1];
-wire	[W_OPP_MAX-1:0]		opp_data[0:N_CHAN-1];
-wire	[N_CHAN-1:0]			opp_data_valid;
-wire	[N_CHAN-1:0]			opp_inject;
+reg	[W_OPP_MAX-1:0]		opp_max[0:N_OUT-1];
+reg	[W_OPP_MAX-1:0]		opp_min[0:N_OUT-1];
+reg	[W_OPP_MAX-1:0]		opp_init[0:N_OUT-1];
+reg	[W_OPP_MLT-1:0]		opp_mult[0:N_OUT-1];
+reg	[W_EP-1:0]				opp_rs[0:N_OUT-1];
+wire	[W_OPP_MAX-1:0]		opp_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				opp_data_valid;
+wire	[N_OUT-1:0]				opp_inject;
 
 /* seperate dac opp data */
 wire	[W_DAC_DATA*N_DAC-1:0]	opp_dac_data_packed;
@@ -148,7 +148,7 @@ assign obuf_en_out = 1'b0;
 /* generate channel enable signals */
 genvar i;
 generate
-	for (i = 0; i < N_CHAN; i = i + 1) begin : rtr_chan_enable_array
+	for (i = 0; i < N_OUT; i = i + 1) begin : rtr_chan_enable_array
 		/* enable channel if it is in the active state and has a valid source */
 		assign rtr_chan_enable[i] = chan_activate[i] & (chan_input_sel[i] >= 0) & (chan_input_sel[i] < N_ADC);
 	end
@@ -156,7 +156,7 @@ endgenerate
 
 /* multiplex rtr data */
 generate
-	for ( i = 0; i < N_CHAN; i = i + 1 ) begin : rtr_data_array
+	for ( i = 0; i < N_OUT; i = i + 1 ) begin : rtr_data_array
 		/* cs channel a carries data for channels 0-3 and
 			cs channel b carries data for channels 4-8 */
 		assign rtr_data[i] = (chan_input_sel[i] < 4) ? cs_data_a : cs_data_b;
@@ -179,7 +179,7 @@ assign opp_dac_data_valid = opp_data_valid[map_dac(N_DAC-1):map_dac(0)];
 
 /* initial routing (disable all routes) */
 generate
-	for ( i = 0; i < N_CHAN; i = i+1 ) begin : src_select_init
+	for ( i = 0; i < N_OUT; i = i+1 ) begin : src_select_init
 		initial chan_input_sel[i] = NULL_SRC;
 	end
 endgenerate
@@ -233,7 +233,7 @@ endfunction
 /* adc controller */
 adc_controller #(
 	.W_OUT				(W_ADC_DATA),
-	.N_CHAN				(N_ADC),
+	.N_OUT				(N_ADC),
 	.W_OS					(W_ADC_OS))
 adc_cont (
 	.clk_in				(clk17_in),
@@ -271,7 +271,7 @@ cs (
 
 /* routing */
 generate
-	for ( i = 0; i < N_CHAN; i = i+1 ) begin : mux_array
+	for ( i = 0; i < N_OUT; i = i+1 ) begin : mux_array
 		mux_n_chan #(
 			.W_CHAN				(1),
 			.W_SEL				(W_INPUT_SEL),
@@ -291,7 +291,7 @@ endgenerate
 
 /* oversample filter array */
 generate
-	for ( i = 0; i < N_CHAN; i = i + 1 ) begin : osf_array
+	for ( i = 0; i < N_OUT; i = i + 1 ) begin : osf_array
 		oversample_filter #(
 			.W_DATA				(W_ADC_DATA),
 			.W_EP					(W_EP),
@@ -463,7 +463,7 @@ endgenerate
 dac_instr_queue #(
 	.W_DATA				(W_DAC_DATA),
 	.W_CHS				(W_DAC_CHS),
-	.N_CHAN				(N_DAC))
+	.N_OUT				(N_DAC))
 dac_iq (
 	.clk_in				(clk50_in),
 	.reset_in			(sys_reset),
@@ -479,7 +479,7 @@ dac_iq (
 dac_controller #(
 	.W_DATA				(W_DAC_DATA),
 	.W_CHS				(W_DAC_CHS),
-	.N_CHAN				(N_DAC))
+	.N_OUT				(N_DAC))
 dac_cntrl (
 	.clk_in				(clk50_in),
 	.reset_in			(sys_reset),

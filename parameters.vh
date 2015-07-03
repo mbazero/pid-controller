@@ -24,8 +24,8 @@ parameter OPP_COMP_LATENCY	= 1; // output preprocessor compuation latency
 // ---------------- derived params ------------------
 // - don't change these
 // --------------------------------------------------
-parameter N_SRC				= N_ADC;					// total number of source channels
-parameter N_CHAN 				= N_DAC + 3*N_DDS;	// total number of output channels; each dds has three channels (phase, freq, and amp)
+parameter N_IN					= N_ADC;					// total number of input channels
+parameter N_OUT 				= N_DAC + 3*N_DDS;	// total number of output channels; each dds has three channels (phase, freq, and amp)
 parameter W_RTR_DATA 		= W_COMP + 2;			// width of router data lines
 parameter W_OPP_MAX			= W_FREQ_DATA + 1;	// maximum opp output data width
 
