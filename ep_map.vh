@@ -12,27 +12,26 @@ parameter data0_iwep					= 8'h05;
 // wire-in data addresses
 //////////////////////////////////////////
 parameter adc_os_addr				= 16'h01;
+
 parameter chan_activate_addr		= 16'h02;
-parameter chan_focused_addr		= 16'h03;
+parameter chan_focus_addr			= 16'h03;
+parameter chan_input_sel_addr		= 16'h04;
 
-parameter osf_activate_addr		= 16'h04;
-parameter osf_cycle_delay_addr	= 16'h05;
-parameter osf_osm_addr				= 16'h06;
+parameter osf_activate_addr		= 16'h05;
+parameter osf_cycle_delay_addr	= 16'h06;
+parameter osf_os_addr				= 16'h07;
 
-parameter pid_lock_en_addr			= 16'h07;
 parameter pid_setpoint_addr		= 16'h08;
 parameter pid_p_coef_addr			= 16'h09;
 parameter pid_i_coef_addr			= 16'h0a;
 parameter pid_d_coef_addr			= 16'h0b;
-parameter pid_update_en_addr		= 16'h0c;
+parameter pid_lock_en_addr			= 16'h0c;
 
-parameter chan_src_sel_addr		= 16'h0d;
-
-parameter opp_min_addr				= 16'h0e;
-parameter opp_max_addr				= 16'h0f;
-parameter opp_init_addr				= 16'h10;
-parameter opp_mult_addr				= 16'h11;
-parameter opp_rs_addr				= 16'h12;
+parameter opp_min_addr				= 16'h0d;
+parameter opp_max_addr				= 16'h0e;
+parameter opp_init_addr				= 16'h0f;
+parameter opp_mult_addr				= 16'h10;
+parameter opp_rs_addr				= 16'h11;
 
 //////////////////////////////////////////
 // trigger-in endpoints

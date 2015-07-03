@@ -6,7 +6,7 @@ task configure_chans;
 			write_data(chan_activate_addr, dest[c], 1);
 
 			// Route source to destination
-			write_data(chan_src_sel_addr, dest[c], src[c]);
+			write_data(chan_input_sel_addr, dest[c], src[c]);
 
 			// Set OSF ratio and activate source channel
 			write_data(osf_cycle_delay_addr, dest[c], 0);

@@ -89,8 +89,8 @@ wire	[N_ADC-1:0]				cs_data_valid;
 
 /* general channel */
 reg	[N_CHAN-1:0]			chan_activate;
-reg	[W_SRC_SEL-1:0]		chan_focus;
-reg	[W_SRC_SEL-1:0]		chan_src_sel[0:N_CHAN-1];
+reg	[W_INPUT_SEL-1:0]		chan_focus;
+reg	[W_INPUT_SEL-1:0]		chan_input_sel[0:N_CHAN-1];
 
 /* router */
 wire	[N_CHAN-1:0]			rtr_chan_enable;
@@ -150,7 +150,7 @@ genvar i;
 generate
 	for (i = 0; i < N_CHAN; i = i + 1) begin : rtr_chan_enable_array
 		/* enable channel if it is in the active state and has a valid source */
-		assign rtr_chan_enable[i] = chan_activate[i] & (chan_src_sel[i] >= 0) & (chan_src_sel[i] < N_ADC);
+		assign rtr_chan_enable[i] = chan_activate[i] & (chan_input_sel[i] >= 0) & (chan_input_sel[i] < N_ADC);
 	end
 endgenerate
 
@@ -159,7 +159,7 @@ generate
 	for ( i = 0; i < N_CHAN; i = i + 1 ) begin : rtr_data_array
 		/* cs channel a carries data for channels 0-3 and
 			cs channel b carries data for channels 4-8 */
-		assign rtr_data[i] = (chan_src_sel[i] < 4) ? cs_data_a : cs_data_b;
+		assign rtr_data[i] = (chan_input_sel[i] < 4) ? cs_data_a : cs_data_b;
 	end
 endgenerate
 
@@ -180,7 +180,7 @@ assign opp_dac_data_valid = opp_data_valid[map_dac(N_DAC-1):map_dac(0)];
 /* initial routing (disable all routes) */
 generate
 	for ( i = 0; i < N_CHAN; i = i+1 ) begin : src_select_init
-		initial chan_src_sel[i] = NULL_SRC;
+		initial chan_input_sel[i] = NULL_SRC;
 	end
 endgenerate
 
@@ -198,28 +198,28 @@ endgenerate
  *	[ N_DAC + 2*N_DDS		: N_DAC + 3*N_DDS - 1	] - DDS Amplitude Channels
  * ----------------------------------------------------------------------------
 */
-function [W_SRC_SEL-1:0] map_dac;
+function [W_INPUT_SEL-1:0] map_dac;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_dac = rel_index;
 	end
 endfunction
 
-function [W_SRC_SEL-1:0] map_freq;
+function [W_INPUT_SEL-1:0] map_freq;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_freq = N_DAC + rel_index;
 	end
 endfunction
 
-function [W_SRC_SEL-1:0] map_phase;
+function [W_INPUT_SEL-1:0] map_phase;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_phase = N_DAC + N_DDS + rel_index;
 	end
 endfunction
 
-function [W_SRC_SEL-1:0] map_amp;
+function [W_INPUT_SEL-1:0] map_amp;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_amp = N_DAC + 2*N_DDS + rel_index;
@@ -274,11 +274,11 @@ generate
 	for ( i = 0; i < N_CHAN; i = i+1 ) begin : mux_array
 		mux_n_chan #(
 			.W_CHAN				(1),
-			.W_SEL				(W_SRC_SEL),
+			.W_SEL				(W_INPUT_SEL),
 			.N_IN					(N_ADC))
 		mux_inst (
 			.data_packed_in	(cs_data_valid),
-			.chan_select_in	(chan_src_sel[i]),
+			.chan_select_in	(chan_input_sel[i]),
 			.enable_in			(rtr_chan_enable[i]),
 			.data_out			(rtr_data_valid[i])
 			);
@@ -605,7 +605,7 @@ always @( posedge write_data ) begin
 		/* channel mappings */
 		chan_activate_addr	:	chan_activate[chan_usb]		<= data_usb[0];
 		chan_focus_addr		:	chan_focus						<= chan_usb;
-		chan_src_sel_addr		:	chan_src_sel[chan_usb]		<= data_usb[W_SRC_SEL-1:0];
+		chan_input_sel_addr	:	chan_input_sel[chan_usb]	<= data_usb[W_INPUT_SEL-1:0];
 		/* osf mappings */
 		osf_cycle_delay_addr	:	osf_cycle_delay[chan_usb]	<= data_usb[W_OSF_CD-1:0];
 		osf_os_addr				:	osf_os[chan_usb]				<= data_usb[W_OSF_OS-1:0];
