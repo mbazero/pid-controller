@@ -300,7 +300,7 @@ module pid_controller_tf;
 		ActivateTriggerIn(sys_gp_itep, dac_ref_set_offset);
 
 		// Set adc oversample mode and trigger cstart
-		write_data(adc_os_addr, NULL_CHAN, adc_os);
+		write_data(adc_os_addr, 0, adc_os);
 		ActivateTriggerIn(sys_gp_itep, adc_cstart_offset);
 
 		#200;
@@ -332,7 +332,7 @@ module pid_controller_tf;
 
 				@(posedge |pid_controller_tf.uut.pid_data_valid) begin
 
-					for (dv_count = 0; dv_count < N_OUT; dv_count = dv_count + 1) begin
+					for (dv_count = 0; dv_count < N_CHAN; dv_count = dv_count + 1) begin
 						if (pid_controller_tf.uut.pid_data_valid[dv_count] == 1) begin
 
 							for (ac_count = 0; ac_count < NAC; ac_count = ac_count+1) begin
@@ -374,7 +374,7 @@ module pid_controller_tf;
 
 				@(posedge |pid_controller_tf.uut.opp_data_valid) begin
 
-					for (out_count = 0; out_count < N_OUT; out_count = out_count + 1) begin
+					for (out_count = 0; out_count < N_CHAN; out_count = out_count + 1) begin
 						if (pid_controller_tf.uut.opp_data_valid[out_count] == 1) begin
 							oc_chan = out_to_chan(out_count);
 							oc_count = oc_count + 1;
