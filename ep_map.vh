@@ -52,5 +52,5 @@ parameter dac_ref_set_offset		= 3;
 //////////////////////////////////////////
 // wire/pipe-out endpoints
 //////////////////////////////////////////
-parameter osf_data_owep				= 8'h20;
+parameter osf_data0_owep			= 8'h20;
 parameter osf_data_opep				= 8'ha3;

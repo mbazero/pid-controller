@@ -1,38 +1,51 @@
-class Parse:
+'''
+Class to parse HDL parameters into python parameters
+'''
+class HDLParser:
+    def __init__(self):
+        self.params = ParamContainer()
 
-    def __init__(self, map_path):
-        self._parse(map_path)
-
-    def _parse(self, map_path):
+    def parse(self, map_path):
         chars_to_remove = [' ', '\t', '\n']
         infile = open(map_path)
+
         for line in infile:
-            # skip line if it does not define a parameter
-            if(line.find('parameter') != 0): continue
+            # skip line is 'parameter' is not the first word
+            if(line.find('parameter') != 0):
+                continue
 
             # remove extraneous substrings and characters from line
             line = line.replace('parameter', '')
-            line = line.replace('8\'', '')
-            line = line.replace('16\'', '')
-            line = line.replace('32\'', '')
-            line = line[0:line.find(';')]
-            line = line.translate(None, ''.join(chars_to_remove))
+            line = line.replace('8\'', '\'')
+            line = line.replace('16\'', '\'')
+            line = line.replace('32\'', '\'')
+            line = line[0:line.find(';')] # strip everything beyond the semicolon
+            line = line.translate(None, ''.join(chars_to_remove)) # remove spaces and tabs
 
-            # split line at equals
-            name_val = line.split('=')
+            # split line into name and value strings
+            line = line.lower()
+            [name, value_str] = line.split('=')
 
-            # parse name
-            name = name_val[0].lower()
+            # convert value radix identifiers from verilog to python format
+            value_str = value_str.lower()
+            value_str = value_str.replace('\'h', '0x')
+            value_str = value_str.replace('\'d', '')
+            value_str = value_str.replace('\'b', '0b')
 
-            # parse value
-            if name_val[1].find('h') >= 0 :
-                val = int(name_val[1].replace('h', ''), 16)
-            elif name_val[1].find('d') >= 0:
-                val = int(name_val[1].replace('d', ''), 10)
-            elif name_val[1].find('b') >= 0:
-                val = int(name_val[1].replace('b', ''), 2)
-            else :
-                val = int(name_val[1], 10)
+            # generate python parameter
+            value = eval(value_str, self.params.__dict__)
+            self.params.set_attribute(name, value)
 
-            # generate new global variable
-            setattr(self, name, val)
+    def get_params(self):
+        return self.params
+
+
+'''
+Container class to hold parsed parameters
+'''
+class ParamContainer:
+    def set_attribute(self, name, value):
+        setattr(self, name, value)
+
+    def get_attribute(self, name):
+        return getattr(name)

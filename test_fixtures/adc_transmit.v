@@ -8,7 +8,7 @@ task adc_transmit;
 		repeat(reps) begin
 			// wait for convst_out to pulse and then assert busy
 			@(posedge adc_convst_out) begin
-				@(posedge clk17_in) adc_busy_in = 1;
+				@(posedge adc_clk_in) adc_busy_in = 1;
 			end
 
 			for ( j = 0; j < N_ADC; j = j+1 ) begin
@@ -22,7 +22,7 @@ task adc_transmit;
 			end
 
 			// wait one cycle before transmitting
-			@(posedge clk17_in);
+			@(posedge adc_clk_in);
 
 			$display("======================================");
 			$display("Iteration #%d", adc_count);
@@ -30,14 +30,14 @@ task adc_transmit;
 
 			// simulate serial data transmission
 			repeat (71) begin
-				@(negedge clk17_in)
+				@(negedge adc_clk_in)
 				data_a_tx = data_a_tx << 1;
 				data_b_tx = data_b_tx << 1;
 			end
 
 			// simulate conversion end
 			#2000;
-			@(posedge clk17_in) adc_busy_in = 0;
+			@(posedge adc_clk_in) adc_busy_in = 0;
 
 			adc_count = adc_count + 1;
 

@@ -18,8 +18,8 @@
 
 module pid_controller (
 	// inputs <- OPAL KELLY PLL
-	input wire							clk50_in,				// 50MHz system clock
-	input wire							clk17_in,				// 17MHz adc serial clock
+	input wire							sys_clk_in,				// system clock; max frequency determined by timing analysis
+	input wire							adc_clk_in,				// adc serial clock; 17MHz max frequency
 
 	// inputs <- ADC - AD7608
 	input wire							adc_busy_in,
@@ -180,7 +180,7 @@ assign opp_dac_data_valid = opp_data_valid[map_dac(N_DAC-1):map_dac(0)];
 /* initial routing (disable all routes) */
 generate
 	for ( i = 0; i < N_OUT; i = i+1 ) begin : src_select_init
-		initial chan_input_sel[i] = NULL_SRC;
+		initial chan_input_sel[i] = NULL_INPUT;
 	end
 endgenerate
 
@@ -236,7 +236,7 @@ adc_controller #(
 	.N_OUT				(N_ADC),
 	.W_OS					(W_ADC_OS))
 adc_cont (
-	.clk_in				(clk17_in),
+	.clk_in				(adc_clk_in),
 	.reset_in			(sys_reset),
 	.busy_in				(adc_busy_in),
 	.data_a_in			(adc_data_a_in),
@@ -258,7 +258,7 @@ clk_sync #(
 	.W_DATA				(W_ADC_DATA),
 	.N_ADC				(N_ADC))
 cs (
-	.sys_clk_in			(clk50_in),
+	.sys_clk_in			(sys_clk_in),
 	.reset_in			(sys_reset),
 	.data_valid_in		(adc_data_valid),
 	.data_a_in			(adc_data_a),
@@ -297,7 +297,7 @@ generate
 			.W_EP					(W_EP),
 			.W_OSM				(W_OSF_OS))
 		ovr_inst_a (
-			.clk_in				(clk50_in),
+			.clk_in				(sys_clk_in),
 			.reset_in			(sys_reset),
 			.data_in				(rtr_data[i]),
 			.data_valid_in		(rtr_data_valid[i]),
@@ -319,7 +319,7 @@ generate
 			.W_EP					(W_EP),
 			.COMP_LATENCY		(PID_COMP_LATENCY))
 		pid_inst (
-			.clk_in				(clk50_in),
+			.clk_in				(sys_clk_in),
 			.reset_in			(sys_reset),
 			.data_in				(osf_data[i]),
 			.data_valid_in		(osf_data_valid[i]),
@@ -354,7 +354,7 @@ generate
 			.W_EP					(W_EP),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		dac_opp (
-			.clk_in				(clk50_in),
+			.clk_in				(sys_clk_in),
 			.reset_in			(sys_reset),
 			.pid_sum_in			(pid_data[D]),
 			.data_valid_in		(pid_data_valid[D] | opp_inject[D]),
@@ -394,7 +394,7 @@ generate
 			.W_EP					(W_EP),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		freq_opp (
-			.clk_in				(clk50_in),
+			.clk_in				(sys_clk_in),
 			.reset_in			(sys_reset),
 			.pid_sum_in			(pid_data[F]),
 			.data_valid_in		(pid_data_valid[F] | opp_inject[F]),
@@ -416,7 +416,7 @@ generate
 			.W_EP					(W_EP),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		phase_opp (
-			.clk_in				(clk50_in),
+			.clk_in				(sys_clk_in),
 			.reset_in			(sys_reset),
 			.pid_sum_in			(pid_data[P]),
 			.data_valid_in		(pid_data_valid[P] | opp_inject[P]),
@@ -438,7 +438,7 @@ generate
 			.W_EP					(W_EP),
 			.COMP_LATENCY		(OPP_COMP_LATENCY))
 		amp_opp (
-			.clk_in				(clk50_in),
+			.clk_in				(sys_clk_in),
 			.reset_in			(sys_reset),
 			.pid_sum_in			(pid_data[A]),
 			.data_valid_in		(pid_data_valid[A] | opp_inject[A]),
@@ -465,7 +465,7 @@ dac_instr_queue #(
 	.W_CHS				(W_DAC_CHS),
 	.N_OUT				(N_DAC))
 dac_iq (
-	.clk_in				(clk50_in),
+	.clk_in				(sys_clk_in),
 	.reset_in			(sys_reset),
 	.data_packed_in	(opp_dac_data_packed),
 	.data_valid_in		(opp_dac_data_valid),
@@ -481,7 +481,7 @@ dac_controller #(
 	.W_CHS				(W_DAC_CHS),
 	.N_OUT				(N_DAC))
 dac_cntrl (
-	.clk_in				(clk50_in),
+	.clk_in				(sys_clk_in),
 	.reset_in			(sys_reset),
 	.ref_set_in			(dac_ref_set),
 	.data_in				(diq_data),
@@ -506,7 +506,7 @@ generate
 		localparam A = map_amp(i);		// amplitude absolute index
 
 		dds_controller dds_cntrl (
-			.clk_in				(clk50_in),
+			.clk_in				(sys_clk_in),
 			.reset_in			(sys_reset),
 			.freq_in				(opp_data[F]),
 			.phase_in			(opp_data[P]),
@@ -627,7 +627,7 @@ end
 /* osf wire-out data registers */
 generate
 	for ( i = 0; i < N_ADC; i = i + 1 ) begin : osf_reg_arr
-		always @( posedge clk50_in ) begin
+		always @( posedge sys_clk_in ) begin
 			if ( sys_reset == 1 ) begin
 				osf_data_reg[i] <= 0;
 			end else if ( osf_data_valid[i] == 1 ) begin
@@ -693,7 +693,7 @@ okWireIn chan_owi (
 okTriggerIn sys_gp_oti (
 	.ok1				(ok1),
 	.ep_addr			(sys_gp_itep),
-	.ep_clk			(clk17_in),
+	.ep_clk			(adc_clk_in),
 	.ep_trigger		(sys_gp_trig)
 	);
 
@@ -701,14 +701,14 @@ okTriggerIn sys_gp_oti (
 okTriggerIn freq_inj_oti (
 	.ok1				(ok1),
 	.ep_addr			(opp_inject1_itep),
-	.ep_clk			(clk50_in),
+	.ep_clk			(sys_clk_in),
 	.ep_trigger		(opp_inject1_trig)
 	);
 
 okTriggerIn phase_inj_oti (
 	.ok1				(ok1),
 	.ep_addr			(opp_inject0_itep),
-	.ep_clk			(clk50_in),
+	.ep_clk			(sys_clk_in),
 	.ep_trigger		(opp_inject0_trig)
 	);
 
@@ -734,7 +734,7 @@ okPipeOut osf_pipe (
 /* osf pipe fifo */
 pipe_tx_fifo osf_pipe_fifo (
 	.ti_clk_in		(ticlk),
-	.sys_clk_in		(clk50_in),
+	.sys_clk_in		(sys_clk_in),
 	.reset_in		(sys_reset),
 	.data_valid_in	(osf_data_valid[chan_focus]),
 	.data_in			(osf_data[chan_focus][W_ADC_DATA-1 -: W_EP]),
@@ -748,7 +748,7 @@ generate
 		okWireOut osf_owo (
 			.ok1				(ok1),
 			.ok2				(ok2x[i*17 +: 17]),
-			.ep_addr			(osf_data_owep + i[7:0]),
+			.ep_addr			(osf_data0_owep + i[7:0]),
 			.ep_datain		(osf_data_reg[i][W_ADC_DATA-1 -: W_EP])
 			);
 	end

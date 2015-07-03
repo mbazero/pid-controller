@@ -21,8 +21,8 @@ module pid_controller_tf;
 	reg [15:0] wire_out = 0;
 
 	// Inputs
-	reg clk50_in;
-	reg clk17_in;
+	reg sys_clk_in;
+	reg adc_clk_in;
 	reg adc_busy_in;
 	wire adc_data_a_in;
 	wire adc_data_b_in;
@@ -53,8 +53,8 @@ module pid_controller_tf;
 
 	// Instantiate the Unit Under Test (UUT)
 	pid_controller uut (
-		.clk50_in(clk50_in),
-		.clk17_in(clk17_in),
+		.sys_clk_in(sys_clk_in),
+		.adc_clk_in(adc_clk_in),
 		.adc_busy_in(adc_busy_in),
 		.adc_data_a_in(adc_data_a_in),
 		.adc_data_b_in(adc_data_b_in),
@@ -122,10 +122,10 @@ module pid_controller_tf;
 	//------------------------------------------------------------------------
 
 	// generate ~17MHz clock
-	always #30 clk17_in = ~clk17_in;
+	always #30 adc_clk_in = ~adc_clk_in;
 
 	// generate 50MHz clock
-	always #10 clk50_in = ~clk50_in;
+	always #10 sys_clk_in = ~sys_clk_in;
 
 	// serial data channels
 	assign adc_data_a_in = data_a_tx[TX_LEN-1];
@@ -280,8 +280,8 @@ module pid_controller_tf;
 
 	initial begin : main
 		// Initialize Inputs
-		clk50_in = 0;
-		clk17_in = 0;
+		sys_clk_in = 0;
+		adc_clk_in = 0;
 		adc_busy_in = 0;
 		data_a_tx = 0;
 		data_b_tx = 0;
@@ -464,7 +464,7 @@ module pid_controller_tf;
 			end
 			@(posedge pid_controller_tf.uut.pid_data_valid[src[wc]]) begin
 				UpdateWireOuts;
-				wire_out_rcv = GetWireOutValue(osf_data_owep);
+				wire_out_rcv = GetWireOutValue(osf_data0_owep);
 				//assert_equals(wire_out_exp, wire_out_rcv, "Wire-out");
 			end
 		end
