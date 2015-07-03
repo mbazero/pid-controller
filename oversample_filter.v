@@ -22,7 +22,7 @@ module oversample_filter #(
 
 	// inputs <- frontpanel controller
 	input wire				[W_EP-1:0]		cycle_delay_in,	// delay period in adc cycles
-	input wire				[W_OSM-1:0]		osm_in,				// oversample mode (log base 2 of the oversample ratio)
+	input wire				[W_OSM-1:0]		os_in,				// oversample mode (log base 2 of the oversample ratio)
 	input wire									activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
 
 	// outputs -> clk sync
@@ -65,7 +65,7 @@ reg			[2:0]			next_state = ST_IDLE;
 //////////////////////////////////////////
 
 /* divide sum by oversample ratio (left shift amount equal to log2 oversample ration) */
-assign data_out 			= ( sum >> osm_in );
+assign data_out 			= ( sum >> os_in );
 
 /* assert data_valid_out during the SEND state */
 assign data_valid_out 	= ( cur_state == ST_SEND );
@@ -134,7 +134,7 @@ always @( * ) begin
 			if ( sample_counter >= cycle_delay_in ) 	next_state <= ST_SAMPLE;
 		end
 		ST_SAMPLE: begin
-			if ( sample_counter[osm_in] == 1 )			next_state <= ST_SEND;
+			if ( sample_counter[os_in] == 1 )			next_state <= ST_SEND;
 		end
 		ST_SEND: 												next_state <= ST_DELAY;
 	endcase

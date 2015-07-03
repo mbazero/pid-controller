@@ -99,7 +99,7 @@ wire	[N_CHAN-1:0]			rtr_data_valid;
 
 /* oversample filter */
 reg	[W_OSF_CD-1:0]			osf_cycle_delay[0:N_CHAN-1];
-reg	[W_OSF_OSM-1:0]		osf_osm[0:N_CHAN-1];
+reg	[W_OSF_OS-1:0]			osf_os[0:N_CHAN-1];
 wire	[W_ADC_DATA-1:0]		osf_data[0:N_CHAN-1];
 wire	[N_CHAN-1:0]			osf_data_valid;
 
@@ -295,14 +295,14 @@ generate
 		oversample_filter #(
 			.W_DATA				(W_ADC_DATA),
 			.W_EP					(W_EP),
-			.W_OSM				(W_OSF_OSM))
+			.W_OSM				(W_OSF_OS))
 		ovr_inst_a (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
 			.data_in				(rtr_data[i]),
 			.data_valid_in		(rtr_data_valid[i]),
 			.cycle_delay_in	(osf_cycle_delay[i]),
-			.osm_in				(osf_osm[i]),
+			.os_in				(osf_os[i]),
 			.activate_in		(1'b1),
 			.data_out			(osf_data[i]),
 			.data_valid_out	(osf_data_valid[i])
@@ -608,7 +608,7 @@ always @( posedge write_data ) begin
 		chan_src_sel_addr		:	chan_src_sel[chan_usb]		<= data_usb[W_SRC_SEL-1:0];
 		/* osf mappings */
 		osf_cycle_delay_addr	:	osf_cycle_delay[chan_usb]	<= data_usb[W_OSF_CD-1:0];
-		osf_osm_addr			:	osf_osm[chan_usb]				<= data_usb[W_OSF_OSM-1:0];
+		osf_os_addr				:	osf_os[chan_usb]				<= data_usb[W_OSF_OS-1:0];
 		/* pid mappings */
 		pid_setpoint_addr		:	pid_setpoint[chan_usb]		<= data_usb[W_EP-1:0];
 		pid_p_coef_addr		:	pid_p_coef[chan_usb]			<= data_usb[W_EP-1:0];

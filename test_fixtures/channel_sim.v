@@ -10,7 +10,7 @@ task configure_chans;
 
 			// Set OSF ratio and activate source channel
 			write_data(osf_cycle_delay_addr, dest[c], 0);
-			write_data(osf_osm_addr, dest[c], 0);
+			write_data(osf_os_addr, dest[c], 0);
 
 			// Set PID params
 			write_data(pid_setpoint_addr, dest[c], setpoint[c]);
