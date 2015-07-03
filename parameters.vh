@@ -21,6 +21,13 @@ parameter W_AMP_DATA 	= 10; // width of dds amplitude instruction
 parameter PID_COMP_LATENCY	= 1; // pid core computation latency
 parameter OPP_COMP_LATENCY	= 1; // output preprocessor compuation latency
 
+// ---------------- derived params ------------------
+// - don't change these
+// --------------------------------------------------
+parameter N_OUT 				= N_DAC + 3*N_DDS;	// total number of output channels; each dds has three output channels (phase, freq, and amp)
+parameter W_RTR_DATA 		= W_COMP + 2;			// width of router data lines
+parameter W_OPP_MAX			= W_FREQ_DATA + 1;	// maximum opp output data width
+
 // ---------------- misc. params --------------------
 // - don't change any of these unless hardware on
 //   breakout board changes
@@ -30,7 +37,7 @@ parameter W_EP				= 16; // width of opal kelly endpoint
 parameter W_ADC_OS		= 3;	// width of adc oversample signal
 parameter W_OSF_OSM		= 6;	// width of oversample mode signal
 parameter W_OSF_CD		= 16;	// width of osf cycle delay signal
-parameter W_RTR_SEL 		= 5;	// width of router select signal (must be log2(N_DAC) + 1...MSB stores channel activation state)
+parameter W_SRC_SEL 		= 5;	// width of router select signal (must be log2(N_DAC) + 1...MSB stores channel activation state)
 parameter W_OPP_MLT		= 10;	// width of opp multiplication factor; specifies max allowed multiplier
 parameter W_DAC_CHS		= 3;	// width of dac channel input...only change this if you get a DAC with >8 channels
 parameter NULL_CHAN		= -1;	// null source for deactive routes

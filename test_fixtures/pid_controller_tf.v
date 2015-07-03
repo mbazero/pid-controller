@@ -143,8 +143,22 @@ module pid_controller_tf;
 
 	// channel params
 	localparam NAC = 2;
-	reg [15:0] focused_chan = 1;
+	reg [15:0] chan_focused = 1;
 	reg [15:0] chan_no = 0;
+
+	// routing params
+	reg[15:0] src[0:NAC-1];
+	reg[15:0] dest[0:NAC-1];
+
+	initial begin : set_routing
+		chan_no = 0;
+		src[chan_no] = 0;
+		dest[chan_no] = 0;
+
+		chan_no = 1;
+		src[chan_no] = 1;
+		dest[chan_no] = 1;
+	end
 
 	// pid parameters
 	reg signed [15:0] setpoint[0:NAC-1];
@@ -169,20 +183,6 @@ module pid_controller_tf;
 		lock_en[chan_no] = 1;
 	end
 
-	// routing params
-	reg[15:0] src[0:NAC-1];
-	reg[15:0] dest[0:NAC-1];
-
-	initial begin : set_routing
-		chan_no = 0;
-		src[chan_no] = 0;
-		dest[chan_no] = 0;
-
-		chan_no = 1;
-		src[chan_no] = 1;
-		dest[chan_no] = 1;
-	end
-
 	// opp parameters
 	reg signed [47:0] output_init[0:NAC-1];
 	reg signed [47:0] output_min[0:NAC-1];
@@ -200,7 +200,7 @@ module pid_controller_tf;
 		multiplier[chan_no] = 1;
 		right_shift[chan_no] = 2;
 		dest_type[chan_no] = "DAC";
-		focused[chan_no] = (focused_chan == chan_no) ? 1 : 0;
+		focused[chan_no] = (chan_focused == chan_no) ? 1 : 0;
 
 		chan_no = 1;
 		output_init[chan_no] = 20000;
@@ -209,7 +209,7 @@ module pid_controller_tf;
 		multiplier[chan_no] = 1;
 		right_shift[chan_no] = 10;
 		dest_type[chan_no] = "DAC";
-		focused[chan_no] = (focused_chan == chan_no) ? 1 : 0;
+		focused[chan_no] = (chan_focused == chan_no) ? 1 : 0;
 	end
 
 	//////////////////////////////////////////
@@ -226,9 +226,9 @@ module pid_controller_tf;
 	reg signed [63:0]	e_count[0:NAC-1];
 	reg [15:0] target[0:NAC-1];
 	integer pc_count;
-	integer adc_count = 0;
+	integer dv_count = 0;
 	integer pc_chan = 0;
-	integer src_count = 0;
+	integer ac_count = 0;
 
 	initial begin
 		for (pc_chan = 0; pc_chan < NAC; pc_chan = pc_chan+1) begin
@@ -247,7 +247,7 @@ module pid_controller_tf;
 	reg signed [127:0] opp_exp[0:NAC-1];
 	reg [15:0] opp_rcv[0:NAC-1];
 	integer oc_count = 0;
-	integer dac_count = 0;
+	integer out_count = 0;
 	integer oc_chan = 0;
 
 	initial begin
@@ -332,12 +332,12 @@ module pid_controller_tf;
 
 				@(posedge |pid_controller_tf.uut.pid_data_valid) begin
 
-					for (adc_count = 0; adc_count < N_ADC; adc_count = adc_count + 1) begin
-						if (pid_controller_tf.uut.pid_data_valid[adc_count] == 1) begin
+					for (dv_count = 0; dv_count < N_OUT; dv_count = dv_count + 1) begin
+						if (pid_controller_tf.uut.pid_data_valid[dv_count] == 1) begin
 
-							for (src_count = 0; src_count < NAC; src_count = src_count+1) begin
-								if (src[src_count] == adc_count) begin
-									pc_chan = src_count;
+							for (ac_count = 0; ac_count < NAC; ac_count = ac_count+1) begin
+								if (dest[ac_count] == dv_count) begin
+									pc_chan = ac_count;
 									pc_count = pc_count + 1;
 
 									// compute expected PID value
@@ -372,11 +372,11 @@ module pid_controller_tf;
 			oc_count = 0;
 			while (oc_count < NAC) begin
 
-				@(posedge |pid_controller_tf.uut.opp_dac_data_valid) begin
+				@(posedge |pid_controller_tf.uut.opp_data_valid) begin
 
-					for (dac_count = 0; dac_count < N_DAC; dac_count = dac_count + 1) begin
-						if (pid_controller_tf.uut.opp_dac_data_valid[dac_count] == 1) begin
-							oc_chan = dac_to_chan(dac_count);
+					for (out_count = 0; out_count < N_OUT; out_count = out_count + 1) begin
+						if (pid_controller_tf.uut.opp_data_valid[out_count] == 1) begin
+							oc_chan = out_to_chan(out_count);
 							oc_count = oc_count + 1;
 
 							// compute expected output value
@@ -393,7 +393,7 @@ module pid_controller_tf;
 							#1 $display(opp_exp[oc_chan]);
 							#1 opp_exp[oc_chan] = (opp_exp[oc_chan] < output_min[oc_chan]) ? output_min[oc_chan] : opp_exp[oc_chan];
 							// compare with received value
-							opp_rcv[oc_chan] = pid_controller_tf.uut.opp_dac_data[dest[oc_chan]];
+							opp_rcv[oc_chan] = pid_controller_tf.uut.opp_data[dest[oc_chan]];
 							#1 assert_equals(opp_exp[oc_chan], opp_rcv[oc_chan], "OPP", oc_chan);
 						end
 					end
@@ -412,7 +412,7 @@ module pid_controller_tf;
 		integer n_active_dacs;
 
 		begin
-			n_active_dacs = nac_type("DAC");
+			n_active_dacs = nac_of_type("DAC");
 
 			repeat(reps * n_active_dacs) begin
 				// simulate dac receiving data
@@ -425,7 +425,7 @@ module pid_controller_tf;
 				end
 
 				// check recevied data
-				#1 sim_chan = dac_to_chan(r_address);
+				#1 sim_chan = out_to_chan(r_address);
 				#1 assert_equals(opp_rcv[sim_chan], r_data, "RCV", sim_chan);
 			end
 		end
@@ -436,8 +436,8 @@ module pid_controller_tf;
 
 		begin
 			repeat(reps) begin
-				@(posedge pid_controller_tf.uut.osf_data_valid[src[focused_chan]]) begin
-					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[src[focused_chan]][17 -: 16];
+				@(posedge pid_controller_tf.uut.osf_data_valid[src[chan_focused]]) begin
+					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[src[chan_focused]][17 -: 16];
 					rep_count = rep_count + 1;
 				end
 			end
@@ -448,7 +448,7 @@ module pid_controller_tf;
 				pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
 				#1;
 				$write("#%d: ", ppc);
-				assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", focused_chan);
+				assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", chan_focused);
 			end
 		end
 	endtask
@@ -487,8 +487,8 @@ module pid_controller_tf;
 			@(posedge pid_controller_tf.uut.pid_data_valid[src[chan]]) begin
 				$display(">>> PID Value:\t%d <<<", $signed(pid_controller_tf.uut.pid_data[src[chan]]));
 			end
-			@(posedge pid_controller_tf.uut.opp_dac_data_valid[dest[chan]]) begin
-				$display(">>> OPP Value:\t%d <<<", pid_controller_tf.uut.opp_dac_data[dest[chan]]);
+			@(posedge pid_controller_tf.uut.opp_data_valid[dest[chan]]) begin
+				$display(">>> OPP Value:\t%d <<<", pid_controller_tf.uut.opp_data[dest[chan]]);
 				//$display("Target Value:\t%d", target);
 			end
 		end
@@ -531,23 +531,23 @@ module pid_controller_tf;
 		end
 	endfunction
 
-	function [15:0] dac_to_chan;
-		input [15:0] dac;
+	function [15:0] out_to_chan;
+		input [15:0] out;
 		integer x = 0;
 		reg hit = 0;
 		reg [15:0] chan;
 		begin
 			for (x = 0; x < NAC; x = x+1) begin
-				if (dest_type[x] == "DAC" & dest[x] == dac) begin
+				if (dest[x] == out) begin
 					chan = x;
 					hit = 1;
 				end
 			end
-			dac_to_chan = (hit) ? chan : 9;
+			out_to_chan = (hit) ? chan : 9;
 		end
 	endfunction
 
-	function [15:0] nac_type;
+	function [15:0] nac_of_type;
 		input [5*8-1:0] type;
 		reg [15:0] num = 0;
 		integer x = 0;
@@ -557,7 +557,7 @@ module pid_controller_tf;
 					num = num + 1;
 				end
 			end
-			nac_type = num;
+			nac_of_type = num;
 		end
 	endfunction
 

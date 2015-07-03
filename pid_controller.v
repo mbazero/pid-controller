@@ -69,14 +69,6 @@ module pid_controller (
 `include "ep_map.vh"
 
 //////////////////////////////////////////
-// derived parameters
-//////////////////////////////////////////
-
-localparam N_OUT 					= N_DAC + 3*N_DDS;	// total number of output channels; each dds has three output channels (phase, freq, and amp)
-localparam W_RTR_DATA 			= W_COMP + 2;			// width of router data lines
-localparam W_OPP_MAX				= W_FREQ_DATA + 1;	// maximum opp data width
-
-//////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
@@ -86,72 +78,55 @@ wire								sys_reset;
 /* adc controller */
 wire								adc_cstart;
 reg	[W_ADC_OS-1:0]			adc_os;
-wire	[N_ADC-1:0]				adc_data_valid;
 wire	[W_ADC_DATA-1:0]		adc_data_a;
 wire	[W_ADC_DATA-1:0]		adc_data_b;
+wire	[N_ADC-1:0]				adc_data_valid;
 
 /* clock synchronizer */
-wire	[N_ADC-1:0]				cs_data_valid;
 wire	[W_ADC_DATA-1:0]		cs_data_a;
 wire	[W_ADC_DATA-1:0]		cs_data_b;
+wire	[N_ADC-1:0]				cs_data_valid;
 
-/* oversample filter */
-reg	[N_ADC-1:0]				osf_activate;
-reg	[W_OSF_CD-1:0]			osf_cycle_delay[0:N_ADC-1];
-reg	[W_OSF_OSM-1:0]		osf_osm[0:N_ADC-1];
-wire	[W_ADC_DATA-1:0]		osf_data[0:N_ADC-1];
-wire	[N_ADC-1:0]				osf_data_valid;
-
-/* pid core */
-reg	[N_ADC-1:0]				pid_lock_en;
-reg	[W_EP-1:0]				pid_setpoint[0:N_ADC-1];
-reg	[W_EP-1:0]				pid_p_coef[0:N_ADC-1];
-reg	[W_EP-1:0]				pid_i_coef[0:N_ADC-1];
-reg	[W_EP-1:0]				pid_d_coef[0:N_ADC-1];
-wire	[W_COMP-1:0]			pid_data[0:N_ADC-1];
-wire	[N_ADC-1:0]				pid_data_valid;
-wire	[W_RTR_DATA*N_ADC-1:0]	pid_data_packed;
+/* general channel */
+reg	[N_OUT-1:0]				chan_activate;
+reg	[W_SRC_SEL-1:0]		chan_focused;
+reg	[W_SRC_SEL-1:0]		chan_src_sel[0:N_OUT-1];
 
 /* router */
-reg	[W_RTR_SEL-1:0]		ochan_src_sel[0:N_OUT-1];
-wire	[W_COMP-1:0]			rtr_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				rtr_chan_enable;
+wire	[W_ADC_DATA-1:0]		rtr_data[0:N_OUT-1];
 wire	[N_OUT-1:0]				rtr_data_valid;
-wire	[N_OUT-1:0]				rtr_lock_en;
 
-/* all opp */
+/* oversample filter */
+reg	[W_OSF_CD-1:0]			osf_cycle_delay[0:N_OUT-1];
+reg	[W_OSF_OSM-1:0]		osf_osm[0:N_OUT-1];
+wire	[W_ADC_DATA-1:0]		osf_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				osf_data_valid;
+
+/* pid core */
+reg	[N_OUT-1:0]				pid_lock_en;
+reg	[W_EP-1:0]				pid_setpoint[0:N_OUT-1];
+reg	[W_EP-1:0]				pid_p_coef[0:N_OUT-1];
+reg	[W_EP-1:0]				pid_i_coef[0:N_OUT-1];
+reg	[W_EP-1:0]				pid_d_coef[0:N_OUT-1];
+wire	[W_COMP-1:0]			pid_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				pid_data_valid;
+
+/* output preprocessor */
 reg	[W_OPP_MAX-1:0]		opp_max[0:N_OUT-1];
 reg	[W_OPP_MAX-1:0]		opp_min[0:N_OUT-1];
 reg	[W_OPP_MAX-1:0]		opp_init[0:N_OUT-1];
 reg	[W_OPP_MLT-1:0]		opp_mult[0:N_OUT-1];
 reg	[W_EP-1:0]				opp_rs[0:N_OUT-1];
+wire	[W_OPP_MAX-1:0]		opp_data[0:N_OUT-1];
+wire	[N_OUT-1:0]				opp_data_valid;
+wire	[N_OUT-1:0]				opp_inject;
 
-/* dac opp */
-wire	[W_DAC_DATA-1:0]		opp_dac_data[0:N_DAC-1];
-wire	[N_DAC-1:0]				opp_dac_data_sign;
-wire	[N_DAC-1:0]				opp_dac_data_valid;
-wire	[W_EP-1:0]				opp_dac_inject;
-
-/* dds freq opp */
-wire	[W_FREQ_DATA-1:0]		opp_freq_data[0:N_DDS-1];
-wire	[N_DDS-1:0]				opp_freq_data_sign;
-wire	[N_DDS-1:0]				opp_freq_data_valid;
-wire	[W_EP-1:0]				opp_freq_inject;
-
-/* dds phase opp */
-wire	[W_PHASE_DATA-1:0]	opp_phase_data[0:N_DDS-1];
-wire	[N_DDS-1:0]				opp_phase_data_sign;
-wire	[N_DDS-1:0]				opp_phase_data_valid;
-wire	[W_EP-1:0]				opp_phase_inject;
-
-/* dds amp opp */
-wire	[W_AMP_DATA-1:0]		opp_amp_data[0:N_DDS-1];
-wire	[N_DDS-1:0]				opp_amp_data_sign;
-wire	[N_DDS-1:0]				opp_amp_data_valid;
-wire	[W_EP-1:0]				opp_amp_inject;
-
+/* seperate dac opp data */
+wire	[W_DAC_DATA*N_DAC-1:0]	opp_dac_data_packed;
+wire	[N_DAC-1:0]					opp_dac_data_valid;
 
 /* dac instruction queue */
-wire	[W_DAC_DATA*N_DAC-1:0]	diq_input_packed;
 wire	[W_DAC_DATA-1:0]			diq_data;
 wire	[W_DAC_CHS-1:0]			diq_chan;
 wire									diq_data_valid;
@@ -163,30 +138,40 @@ wire								dac_done;
 /* dds controller */
 wire	[N_DDS-1:0]				dds_done;
 
-/* frontpanel interface */
-reg	[W_RTR_SEL-1:0]		focused_input;
-
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
 
-/* output buffer enable */
+/* active low output buffer */
 assign obuf_en_out = 1'b0;
 
-/* pack pid data, data valid, and lock enable signals for router */
+/* generate channel enable signals */
 genvar i;
 generate
-	for ( i = 0; i < N_ADC; i = i + 1 ) begin : pid_data_pack
-		assign pid_data_packed[ i*W_RTR_DATA +: W_RTR_DATA ] = {pid_lock_en[i], pid_data_valid[i], pid_data[i]};
+	for (i = 0; i < N_OUT; i = i + 1) begin : rtr_chan_enable_array
+		/* enable channel if it is in the active state and has a valid source */
+		assign rtr_chan_enable[i] = chan_activate[i] & (chan_src_sel[i] >= 0) & (chan_src_sel[i] < N_ADC);
 	end
 endgenerate
 
-/* pack dac output channels for dac instruction queue */
+/* multiplex rtr data */
 generate
-	for ( i = 0; i < N_DAC; i = i + 1 ) begin : diq_in_arr
-		assign diq_input_packed[ i*W_DAC_DATA +: W_DAC_DATA ] = opp_dac_data[i];
+	for ( i = 0; i < N_OUT; i = i + 1 ) begin : rtr_data_array
+		/* cs channel a carries data for channels 0-3 and
+			cs channel b carries data for channels 4-8 */
+		assign rtr_data[i] = (chan_src_sel[i] < 4) ? cs_data_a : cs_data_b;
 	end
 endgenerate
+
+/* pack dac opp data for dac instruction queue */
+generate
+	for ( i = 0; i < N_DAC; i = i + 1 ) begin : opp_dac_data_array
+		assign opp_dac_data_packed[ i*W_DAC_DATA +: W_DAC_DATA ] = opp_data[map_dac(i)][W_DAC_DATA-1:0];
+	end
+endgenerate
+
+/* seperate dac opp data valid signals */
+assign opp_dac_data_valid = opp_data_valid[map_dac(N_DAC-1):map_dac(0)];
 
 //////////////////////////////////////////
 // sequential logic
@@ -195,7 +180,7 @@ endgenerate
 /* initial routing (disable all routes) */
 generate
 	for ( i = 0; i < N_OUT; i = i+1 ) begin : src_select_init
-		initial ochan_src_sel[i] = NULL_CHAN;
+		initial chan_src_sel[i] = NULL_CHAN;
 	end
 endgenerate
 
@@ -213,28 +198,28 @@ endgenerate
  *	[ N_DAC + 2*N_DDS		: N_DAC + 3*N_DDS - 1	] - DDS Amplitude Channels
  * ----------------------------------------------------------------------------
 */
-function [W_RTR_SEL-1:0] map_dac;
+function [W_SRC_SEL-1:0] map_dac;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_dac = rel_index;
 	end
 endfunction
 
-function [W_RTR_SEL-1:0] map_freq;
+function [W_SRC_SEL-1:0] map_freq;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_freq = N_DAC + rel_index;
 	end
 endfunction
 
-function [W_RTR_SEL-1:0] map_phase;
+function [W_SRC_SEL-1:0] map_phase;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_phase = N_DAC + N_DDS + rel_index;
 	end
 endfunction
 
-function [W_RTR_SEL-1:0] map_amp;
+function [W_SRC_SEL-1:0] map_amp;
 	input [W_EP-1:0] rel_index;
 	begin
 		map_amp = N_DAC + 2*N_DDS + rel_index;
@@ -283,14 +268,30 @@ cs (
 	.data_b_out			(cs_data_b)
 	);
 
+
+/* routing */
+generate
+	for ( i = 0; i < N_OUT; i = i+1 ) begin : mux_array
+		mux_n_chan #(
+			.W_CHAN				(1),
+			.W_SEL				(W_SRC_SEL),
+			.N_IN					(N_ADC))
+		mux_inst (
+			.data_packed_in	(cs_data_valid),
+			.chan_select_in	(chan_src_sel[i]),
+			.enable_in			(rtr_chan_enable[i]),
+			.data_out			(rtr_data_valid[i])
+			);
+	end
+endgenerate
+
+// -----------------------------------------------------------
+// start pid pipeline
+// -----------------------------------------------------------
+
 /* oversample filter array */
 generate
-	for ( i = 0; i < N_ADC/2; i = i + 1 ) begin : osf_array
-		/* index parameters */
-		localparam A = i;
-		localparam B = i + N_ADC/2;
-
-		/* osf bank a: draws from adc channel a */
+	for ( i = 0; i < N_OUT; i = i + 1 ) begin : osf_array
 		oversample_filter #(
 			.W_DATA				(W_ADC_DATA),
 			.W_EP					(W_EP),
@@ -298,30 +299,13 @@ generate
 		ovr_inst_a (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
-			.data_in				(cs_data_a),
-			.data_valid_in		(cs_data_valid[A]),
-			.cycle_delay_in	(osf_cycle_delay[A]),
-			.osm_in				(osf_osm[A]),
-			.activate_in		(osf_activate[A]),
-			.data_out			(osf_data[A]),
-			.data_valid_out	(osf_data_valid[A])
-			);
-
-		/* osf bank b: draws from adc channel b */
-		oversample_filter #(
-			.W_DATA				(W_ADC_DATA),
-			.W_EP					(W_EP),
-			.W_OSM				(W_OSF_OSM))
-		ovr_inst_b (
-			.clk_in				(clk50_in),
-			.reset_in			(sys_reset),
-			.data_in				(cs_data_b),
-			.data_valid_in		(cs_data_valid[B]),
-			.cycle_delay_in	(osf_cycle_delay[B]),
-			.osm_in				(osf_osm[B]),
-			.activate_in		(osf_activate[B]),
-			.data_out			(osf_data[B]),
-			.data_valid_out	(osf_data_valid[B])
+			.data_in				(rtr_data[i]),
+			.data_valid_in		(rtr_data_valid[i]),
+			.cycle_delay_in	(osf_cycle_delay[i]),
+			.osm_in				(osf_osm[i]),
+			.activate_in		(1'b1),
+			.data_out			(osf_data[i]),
+			.data_valid_out	(osf_data_valid[i])
 			);
 	end
 endgenerate
@@ -350,26 +334,10 @@ generate
 	end
 endgenerate
 
-/* routing */
-generate
-	for ( i = 0; i < N_OUT; i = i+1 ) begin : mux_array
-		mux_n_chan #(
-			.W_CHAN				(W_RTR_DATA),
-			.W_SEL				(W_RTR_SEL),
-			.N_IN					(N_ADC))
-		mux_inst (
-			.data_packed_in	(pid_data_packed),
-			.chan_select_in	(ochan_src_sel[i]),
-			.enable_in			(~ochan_src_sel[i][W_RTR_SEL-1]), // negative routes disable output
-			.data_out			({rtr_lock_en[i], rtr_data_valid[i], rtr_data[i]})
-			);
-	end
-endgenerate
-
 /* dac preprocessor array */
 generate
 	for ( i = 0; i < N_DAC; i = i + 1 ) begin : dac_opp_array
-		localparam D = map_dac(i); // dac relative index
+		localparam D = map_dac(i); // dac absolute index
 
 		/* The output preprocessor treats its output and
 		 * output bounds as signed values. The DAC accepts
@@ -378,6 +346,7 @@ generate
 		 * are required as below. The sign bit of data_out
 		 * is also discarded.
 		 */
+
 		output_preprocessor #(
 			.W_IN 				(W_COMP),
 			.W_OUT 				(W_DAC_DATA + 1),
@@ -387,19 +356,108 @@ generate
 		dac_opp (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
-			.pid_sum_in			(rtr_data[D]),
-			.data_valid_in		(rtr_data_valid[D] | opp_dac_inject[i]),
-			.lock_en_in			(rtr_lock_en[D]),
+			.pid_sum_in			(pid_data[D]),
+			.data_valid_in		(pid_data_valid[D] | opp_inject[D]),
+			.lock_en_in			(pid_lock_en[D]),
 			.output_max_in		({1'b0, opp_max[D][W_DAC_DATA-1:0]}),
 			.output_min_in		({1'b0, opp_min[D][W_DAC_DATA-1:0]}),
 			.output_init_in	({1'b0, opp_init[D][W_DAC_DATA-1:0]}),
 			.multiplier_in		(opp_mult[D]),
 			.right_shift_in	(opp_rs[D]),
-			.data_out			({opp_dac_data_sign[i], opp_dac_data[i]}),
-			.data_valid_out	(opp_dac_data_valid[i])
+			.data_out			(opp_data[D][W_DAC_DATA:0]),
+			.data_valid_out	(opp_data_valid[D])
 			);
 	end
 endgenerate
+
+/* dds preprocessor array */
+generate
+	for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_opp_array
+		localparam F = map_freq(i);	// frequency absolute index
+		localparam P = map_phase(i);	// phase absolute index
+		localparam A = map_amp(i);		// amplitude absolute index
+
+		/* The output preprocessor treats its output and
+		 * output bounds as signed values. The DDS accepts
+		 * unsigned values for frequency, phase, and amp.
+		 * Thus modifications to W_OUT, output_min_in,
+		 * output_max_in, and output_init_in are required
+		 * as below. The sign bits of the data_out ports
+		 * are also discarded.
+		 */
+
+		/* frequency output preprocessor */
+		output_preprocessor #(
+			.W_IN 				(W_COMP),
+			.W_OUT 				(W_FREQ_DATA + 1),
+			.W_MLT				(W_OPP_MLT),
+			.W_EP					(W_EP),
+			.COMP_LATENCY		(OPP_COMP_LATENCY))
+		freq_opp (
+			.clk_in				(clk50_in),
+			.reset_in			(sys_reset),
+			.pid_sum_in			(pid_data[F]),
+			.data_valid_in		(pid_data_valid[F] | opp_inject[F]),
+			.lock_en_in			(pid_lock_en[F]),
+			.output_max_in		({1'b0, opp_max[F][W_FREQ_DATA-1:0]}),
+			.output_min_in		({1'b0, opp_min[F][W_FREQ_DATA-1:0]}),
+			.output_init_in	({1'b0, opp_init[F][W_FREQ_DATA-1:0]}),
+			.multiplier_in		(opp_mult[F]),
+			.right_shift_in	(opp_rs[F]),
+			.data_out			(opp_data[F][W_FREQ_DATA:0]),
+			.data_valid_out	(opp_data_valid[F])
+			);
+
+		/* phase output preprocessor */
+		output_preprocessor #(
+			.W_IN 				(W_COMP),
+			.W_OUT 				(W_PHASE_DATA + 1),
+			.W_MLT				(W_OPP_MLT),
+			.W_EP					(W_EP),
+			.COMP_LATENCY		(OPP_COMP_LATENCY))
+		phase_opp (
+			.clk_in				(clk50_in),
+			.reset_in			(sys_reset),
+			.pid_sum_in			(pid_data[P]),
+			.data_valid_in		(pid_data_valid[P] | opp_inject[P]),
+			.lock_en_in			(pid_lock_en[P]),
+			.output_max_in		({1'b0, opp_max[P][W_PHASE_DATA-1:0]}),
+			.output_min_in		({1'b0, opp_min[P][W_PHASE_DATA-1:0]}),
+			.output_init_in	({1'b0, opp_init[P][W_PHASE_DATA-1:0]}),
+			.multiplier_in		(opp_mult[P]),
+			.right_shift_in	(opp_rs[P]),
+			.data_out			(opp_data[P][W_PHASE_DATA:0]),
+			.data_valid_out	(opp_data_valid[P])
+			);
+
+		/* amplitude output preprocessor */
+		output_preprocessor #(
+			.W_IN 				(W_COMP),
+			.W_OUT 				(W_AMP_DATA + 1),
+			.W_MLT				(W_OPP_MLT),
+			.W_EP					(W_EP),
+			.COMP_LATENCY		(OPP_COMP_LATENCY))
+		amp_opp (
+			.clk_in				(clk50_in),
+			.reset_in			(sys_reset),
+			.pid_sum_in			(pid_data[A]),
+			.data_valid_in		(pid_data_valid[A] | opp_inject[A]),
+			.lock_en_in			(pid_lock_en[A]),
+			.output_max_in		({1'b0, opp_max[A][W_AMP_DATA-1:0]}),
+			.output_min_in		({1'b0, opp_min[A][W_AMP_DATA-1:0]}),
+			.output_init_in	({1'b0, opp_init[A][W_AMP_DATA-1:0]}),
+			.multiplier_in		(opp_mult[A]),
+			.right_shift_in	(opp_rs[A]),
+			.data_out			(opp_data[A][W_AMP_DATA:0]),
+			.data_valid_out	(opp_data_valid[A])
+			);
+	end
+endgenerate
+
+// -----------------------------------------------------------
+// end pid pipeline
+// -----------------------------------------------------------
+
 
 /* dac instruction queue */
 dac_instr_queue #(
@@ -409,7 +467,7 @@ dac_instr_queue #(
 dac_iq (
 	.clk_in				(clk50_in),
 	.reset_in			(sys_reset),
-	.data_packed_in	(diq_input_packed),
+	.data_packed_in	(opp_dac_data_packed),
 	.data_valid_in		(opp_dac_data_valid),
 	.rd_ack_in			(dac_done),
 	.data_out			(diq_data),
@@ -439,103 +497,23 @@ dac_cntrl (
 	.channel_out		()
 	);
 
-/* dds preprocessor array */
-generate
-	for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_opp_array
-		/* index parameters */
-		localparam F = map_freq(i);	// frequency relative index
-		localparam P = map_phase(i);	// phase relative index
-		localparam A = map_amp(i);		// amplitude relative index
-
-		/* The output preprocessor treats its output and
-		 * output bounds as signed values. The DDS accepts
-		 * unsigned values for frequency, phase, and amp.
-		 * Thus modifications to W_OUT, output_min_in,
-		 * output_max_in, and output_init_in are required
-		 * as below. The sign bits of the data_out ports
-		 * are also discarded.
-		 */
-
-		/* frequency output preprocessor */
-		output_preprocessor #(
-			.W_IN 				(W_COMP),
-			.W_OUT 				(W_FREQ_DATA + 1),
-			.W_MLT				(W_OPP_MLT),
-			.W_EP					(W_EP),
-			.COMP_LATENCY		(OPP_COMP_LATENCY))
-		freq_opp (
-			.clk_in				(clk50_in),
-			.reset_in			(sys_reset),
-			.pid_sum_in			(rtr_data[F]),
-			.data_valid_in		(rtr_data_valid[F] | opp_freq_inject[i]),
-			.lock_en_in			(rtr_lock_en[F]),
-			.output_max_in		({1'b0, opp_max[F][W_FREQ_DATA-1:0]}),
-			.output_min_in		({1'b0, opp_min[F][W_FREQ_DATA-1:0]}),
-			.output_init_in	({1'b0, opp_init[F][W_FREQ_DATA-1:0]}),
-			.multiplier_in		(opp_mult[F]),
-			.right_shift_in	(opp_rs[F]),
-			.data_out			({opp_freq_data_sign[i], opp_freq_data[i]}),
-			.data_valid_out	(opp_freq_data_valid[i])
-			);
-
-		/* phase output preprocessor */
-		output_preprocessor #(
-			.W_IN 				(W_COMP),
-			.W_OUT 				(W_PHASE_DATA + 1),
-			.W_MLT				(W_OPP_MLT),
-			.W_EP					(W_EP),
-			.COMP_LATENCY		(OPP_COMP_LATENCY))
-		phase_opp (
-			.clk_in				(clk50_in),
-			.reset_in			(sys_reset),
-			.pid_sum_in			(rtr_data[P]),
-			.data_valid_in		(rtr_data_valid[P] | opp_phase_inject[i]),
-			.lock_en_in			(rtr_lock_en[P]),
-			.output_max_in		({1'b0, opp_max[P][W_PHASE_DATA-1:0]}),
-			.output_min_in		({1'b0, opp_min[P][W_PHASE_DATA-1:0]}),
-			.output_init_in	({1'b0, opp_init[P][W_PHASE_DATA-1:0]}),
-			.multiplier_in		(opp_mult[P]),
-			.right_shift_in	(opp_rs[P]),
-			.data_out			({opp_phase_data_sign[i], opp_phase_data[i]}),
-			.data_valid_out	(opp_phase_data_valid[i])
-			);
-
-		/* amplitude output preprocessor */
-		output_preprocessor #(
-			.W_IN 				(W_COMP),
-			.W_OUT 				(W_AMP_DATA + 1),
-			.W_MLT				(W_OPP_MLT),
-			.W_EP					(W_EP),
-			.COMP_LATENCY		(OPP_COMP_LATENCY))
-		amp_opp (
-			.clk_in				(clk50_in),
-			.reset_in			(sys_reset),
-			.pid_sum_in			(rtr_data[A]),
-			.data_valid_in		(rtr_data_valid[A] | opp_amp_inject[i]),
-			.lock_en_in			(rtr_lock_en[A]),
-			.output_max_in		({1'b0, opp_max[A][W_AMP_DATA-1:0]}),
-			.output_min_in		({1'b0, opp_min[A][W_AMP_DATA-1:0]}),
-			.output_init_in	({1'b0, opp_init[A][W_AMP_DATA-1:0]}),
-			.multiplier_in		(opp_mult[A]),
-			.right_shift_in	(opp_rs[A]),
-			.data_out			({opp_phase_data_sign[i], opp_amp_data[i]}),
-			.data_valid_out	(opp_amp_data_valid[i])
-			);
-	end
-endgenerate
 
 /* dds controller array */
 generate
 	for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
+		localparam F = map_freq(i);	// frequency absolute index
+		localparam P = map_phase(i);	// phase absolute index
+		localparam A = map_amp(i);		// amplitude absolute index
+
 		dds_controller dds_cntrl (
 			.clk_in				(clk50_in),
 			.reset_in			(sys_reset),
-			.freq_in				(opp_freq_data[i]),
-			.phase_in			(opp_phase_data[i]),
-			.amp_in				(opp_amp_data[i]),
-			.freq_dv_in			(opp_freq_data_valid[i]),
-			.phase_dv_in		(opp_phase_data_valid[i]),
-			.amp_dv_in			(opp_amp_data_valid[i]),
+			.freq_in				(opp_data[F]),
+			.phase_in			(opp_data[P]),
+			.amp_in				(opp_data[A]),
+			.freq_dv_in			(opp_data_valid[F]),
+			.phase_dv_in		(opp_data_valid[P]),
+			.amp_dv_in			(opp_data_valid[A]),
 			.sclk_out			(dds_sclk_out[i]),
 			.reset_out			(dds_reset_out[i]),
 			.csb_out				(dds_csb_out[i]),
@@ -546,7 +524,9 @@ generate
 	end
 endgenerate
 
-/* frontpanel interface */
+
+// -----------------------------------------------------------
+// frontpanel interface
 // -----------------------------------------------------------
 // NOTE: Verilog does not allow 2D input ports, so this module
 // is included inline rather than in its own file to eliminate
@@ -570,16 +550,16 @@ endgenerate
 // internal structures
 //////////////////////////////////////////
 
-/* data, channel, and address wires */
-wire	[W_EP-1:0]				data2, data1, data0;
-wire	[W_EP*3-1:0]			data;
-wire	[W_EP-1:0]				ochan;
-wire	[W_EP-1:0]				ichan;
-wire	[W_EP-1:0]				addr;
+/* data, channel, and address usb wires */
+wire	[W_EP-1:0]				data2_usb, data1_usb, data0_usb;
+wire	[W_EP*3-1:0]			data_usb;
+wire	[W_EP-1:0]				chan_usb;
+wire	[W_EP-1:0]				addr_usb;
 wire								write_data;
 
-/* system general purpose trigger */
+/* system and opp injection triggers */
 wire 	[W_EP-1:0]				sys_gp_trig;
+wire	[W_EP-1:0]				opp_inject1_trig, opp_inject0_trig;
 
 /* osf wire-out and pipe structures */
 reg	[W_ADC_DATA-1:0]		osf_data_reg[0:N_ADC-1];
@@ -597,10 +577,7 @@ wire	[17*(N_ADC+1)-1:0]	ok2x;
 //////////////////////////////////////////
 
 /* data bus */
-assign data				= {data2, data1, data0};
-
-/* input channel */
-assign ichan			= ochan_src_sel[ochan];
+assign data_usb		= {data2_usb, data1_usb, data0_usb};
 
 /* frontpanel control */
 assign i2c_sda			= 1'bz;
@@ -613,35 +590,38 @@ assign adc_cstart		= sys_gp_trig[adc_cstart_offset];
 assign write_data		= sys_gp_trig[write_data_offset];
 assign dac_ref_set	= sys_gp_trig[dac_ref_set_offset];
 
+/* opp injection trigger mapping */
+assign opp_inject		= {opp_inject1_trig, opp_inject0_trig};
+
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
 
 /* input data multiplexing */
 always @( posedge write_data ) begin
-	case ( addr )
+	case ( addr_usb )
 		/* adc mappings */
-		adc_os_addr				:	adc_os								<= data[W_ADC_OS-1:0];
-		/* osf mappings */
-		osf_activate_addr		:	osf_activate[ichan]				<= data[0];
-		osf_cycle_delay_addr	:	osf_cycle_delay[ichan]			<= data[W_OSF_CD-1:0];
-		osf_osm_addr			:	osf_osm[ichan]						<= data[W_OSF_OSM-1:0];
-		/* pid mappings */
-		pid_lock_en_addr		:	pid_lock_en[ichan]				<= data[0];
-		pid_setpoint_addr		:	pid_setpoint[ichan]				<= data[W_EP-1:0];
-		pid_p_coef_addr		:	pid_p_coef[ichan]					<= data[W_EP-1:0];
-		pid_i_coef_addr		:	pid_i_coef[ichan]					<= data[W_EP-1:0];
-		pid_d_coef_addr		:	pid_d_coef[ichan]					<= data[W_EP-1:0];
+		adc_os_addr				:	adc_os							<= data_usb[W_ADC_OS-1:0];
+		/* channel mappings */
+		chan_activate_addr	:	chan_activate[chan_usb]		<= data_usb[0];
+		chan_focused_addr		:	chan_focused					<= chan_usb;
 		/* router mappings */
-		ochan_src_sel_addr	:	ochan_src_sel[ochan]				<= data[W_RTR_SEL-1:0];
+		chan_src_sel_addr		:	chan_src_sel[chan_usb]		<= data_usb[W_SRC_SEL-1:0];
+		/* osf mappings */
+		osf_cycle_delay_addr	:	osf_cycle_delay[chan_usb]	<= data_usb[W_OSF_CD-1:0];
+		osf_osm_addr			:	osf_osm[chan_usb]				<= data_usb[W_OSF_OSM-1:0];
+		/* pid mappings */
+		pid_setpoint_addr		:	pid_setpoint[chan_usb]		<= data_usb[W_EP-1:0];
+		pid_p_coef_addr		:	pid_p_coef[chan_usb]			<= data_usb[W_EP-1:0];
+		pid_i_coef_addr		:	pid_i_coef[chan_usb]			<= data_usb[W_EP-1:0];
+		pid_d_coef_addr		:	pid_d_coef[chan_usb]			<= data_usb[W_EP-1:0];
+		pid_lock_en_addr		:	pid_lock_en[chan_usb]		<= data_usb[0];
 		/* opp mappings */
-		opp_min_addr			:	opp_min[ochan]						<= data[W_OPP_MAX-2:0];
-		opp_max_addr			:	opp_max[ochan]						<= data[W_OPP_MAX-2:0];
-		opp_init_addr			:	opp_init[ochan]					<= data[W_OPP_MAX-2:0];
-		opp_mult_addr			:	opp_mult[ochan]					<= data[W_OPP_MLT-2:0];
-		opp_rs_addr				:	opp_rs[ochan]						<= data[W_EP-1:0];
-		/* frontpanel interface mappings */
-		focused_chan_addr		:	focused_input						<= ichan;
+		opp_min_addr			:	opp_min[chan_usb]				<= data_usb[W_OPP_MAX-2:0];
+		opp_max_addr			:	opp_max[chan_usb]				<= data_usb[W_OPP_MAX-2:0];
+		opp_init_addr			:	opp_init[chan_usb]			<= data_usb[W_OPP_MAX-2:0];
+		opp_mult_addr			:	opp_mult[chan_usb]			<= data_usb[W_OPP_MLT-2:0];
+		opp_rs_addr				:	opp_rs[chan_usb]				<= data_usb[W_EP-1:0];
 	endcase
 end
 
@@ -679,33 +659,33 @@ okHost hostIf (
 okWireIn data0_owi (
 	.ok1				(ok1),
 	.ep_addr			(data0_iwep),
-	.ep_dataout		(data0)
+	.ep_dataout		(data0_usb)
 	);
 
 okWireIn data1_owi (
 	.ok1				(ok1),
 	.ep_addr			(data1_iwep),
-	.ep_dataout		(data1)
+	.ep_dataout		(data1_usb)
 	);
 
 okWireIn data2_owi (
 	.ok1				(ok1),
 	.ep_addr			(data2_iwep),
-	.ep_dataout		(data2)
+	.ep_dataout		(data2_usb)
 	);
 
 /* address wire */
 okWireIn addr_owi (
 	.ok1				(ok1),
 	.ep_addr			(addr_iwep),
-	.ep_dataout		(addr)
+	.ep_dataout		(addr_usb)
 	);
 
-/* channel wire */
+/* input channel wire */
 okWireIn chan_owi (
 	.ok1				(ok1),
-	.ep_addr			(ochan_iwep),
-	.ep_dataout		(ochan)
+	.ep_addr			(chan_iwep),
+	.ep_dataout		(chan_usb)
 	);
 
 /********** Trigger-ins ************/
@@ -719,32 +699,18 @@ okTriggerIn sys_gp_oti (
 	);
 
 /* opp injection triggers */
-okTriggerIn dac_inj_oti (
-	.ok1				(ok1),
-	.ep_addr			(opp_dac_inj_itep),
-	.ep_clk			(clk50_in),
-	.ep_trigger		(opp_dac_inject)
-	);
-
 okTriggerIn freq_inj_oti (
 	.ok1				(ok1),
-	.ep_addr			(opp_freq_inj_itep),
+	.ep_addr			(opp_inject1_itep),
 	.ep_clk			(clk50_in),
-	.ep_trigger		(opp_freq_inject)
+	.ep_trigger		(opp_inject1_trig)
 	);
 
 okTriggerIn phase_inj_oti (
 	.ok1				(ok1),
-	.ep_addr			(opp_phase_inj_itep),
+	.ep_addr			(opp_inject0_itep),
 	.ep_clk			(clk50_in),
-	.ep_trigger		(opp_phase_inject)
-	);
-
-okTriggerIn amp_inj_oti (
-	.ok1				(ok1),
-	.ep_addr			(opp_amp_inj_itep),
-	.ep_clk			(clk50_in),
-	.ep_trigger		(opp_amp_inject)
+	.ep_trigger		(opp_inject0_trig)
 	);
 
 /********** Outputs ************/
@@ -757,7 +723,7 @@ wireOR (
 	.ok2s				(ok2x)
 	);
 
-/* osf pipe out */
+/* osf pipe out for block data transfer */
 okPipeOut osf_pipe (
 	.ok1				(ok1),
 	.ok2				(ok2x[N_ADC*17 +: 17]),
@@ -771,13 +737,13 @@ pipe_tx_fifo osf_pipe_fifo (
 	.ti_clk_in		(ticlk),
 	.sys_clk_in		(clk50_in),
 	.reset_in		(sys_reset),
-	.data_valid_in	(osf_data_valid[focused_input]),
-	.data_in			(osf_data[focused_input][W_ADC_DATA-1 -: W_EP]),
+	.data_valid_in	(osf_data_valid[chan_focused]),
+	.data_in			(osf_data[chan_focused][W_ADC_DATA-1 -: W_EP]),
 	.pipe_read_in	(osf_pipe_read),
 	.data_out		(osf_pipe_dout)
 	);
 
-/* osf wire-outs */
+/* osf wire-outs for single data transfer */
 generate
 	for ( i = 0; i < N_ADC; i = i + 1 ) begin : osf_owo_arr
 		okWireOut osf_owo (
