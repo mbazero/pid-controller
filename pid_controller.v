@@ -89,7 +89,7 @@ wire	[N_ADC-1:0]				cs_data_valid;
 
 /* general channel */
 reg	[N_CHAN-1:0]			chan_activate;
-reg	[W_SRC_SEL-1:0]		chan_focused;
+reg	[W_SRC_SEL-1:0]		chan_focus;
 reg	[W_SRC_SEL-1:0]		chan_src_sel[0:N_CHAN-1];
 
 /* router */
@@ -543,7 +543,7 @@ endgenerate
 // input channel). Block mode sends blocks of 1024 osf data
 // words at a time. Block mode is only active for one
 // channel at a time. The active channel is specified by
-// the focused_input register.
+// the chan_focus register.
 // -----------------------------------------------------------
 
 //////////////////////////////////////////
@@ -604,7 +604,7 @@ always @( posedge write_data ) begin
 		adc_os_addr				:	adc_os							<= data_usb[W_ADC_OS-1:0];
 		/* channel mappings */
 		chan_activate_addr	:	chan_activate[chan_usb]		<= data_usb[0];
-		chan_focused_addr		:	chan_focused					<= chan_usb;
+		chan_focus_addr		:	chan_focus						<= chan_usb;
 		chan_src_sel_addr		:	chan_src_sel[chan_usb]		<= data_usb[W_SRC_SEL-1:0];
 		/* osf mappings */
 		osf_cycle_delay_addr	:	osf_cycle_delay[chan_usb]	<= data_usb[W_OSF_CD-1:0];
@@ -736,8 +736,8 @@ pipe_tx_fifo osf_pipe_fifo (
 	.ti_clk_in		(ticlk),
 	.sys_clk_in		(clk50_in),
 	.reset_in		(sys_reset),
-	.data_valid_in	(osf_data_valid[chan_focused]),
-	.data_in			(osf_data[chan_focused][W_ADC_DATA-1 -: W_EP]),
+	.data_valid_in	(osf_data_valid[chan_focus]),
+	.data_in			(osf_data[chan_focus][W_ADC_DATA-1 -: W_EP]),
 	.pipe_read_in	(osf_pipe_read),
 	.data_out		(osf_pipe_dout)
 	);

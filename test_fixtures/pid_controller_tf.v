@@ -143,7 +143,7 @@ module pid_controller_tf;
 
 	// channel params
 	localparam NAC = 2;
-	reg [15:0] chan_focused = 1;
+	reg [15:0] chan_focus = 1;
 	reg [15:0] chan_no = 0;
 
 	// routing params
@@ -190,7 +190,7 @@ module pid_controller_tf;
 	reg signed [15:0] multiplier[0:NAC-1];
 	reg [15:0] right_shift[0:NAC-1];
 	reg [5*8-1:0] dest_type[0:NAC-1];
-	reg focused[0:NAC-1];
+	reg focus[0:NAC-1];
 
 	initial begin : set_opp_params
 		chan_no = 0;
@@ -200,7 +200,7 @@ module pid_controller_tf;
 		multiplier[chan_no] = 1;
 		right_shift[chan_no] = 2;
 		dest_type[chan_no] = "DAC";
-		focused[chan_no] = (chan_focused == chan_no) ? 1 : 0;
+		focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
 
 		chan_no = 1;
 		output_init[chan_no] = 20000;
@@ -209,7 +209,7 @@ module pid_controller_tf;
 		multiplier[chan_no] = 1;
 		right_shift[chan_no] = 10;
 		dest_type[chan_no] = "DAC";
-		focused[chan_no] = (chan_focused == chan_no) ? 1 : 0;
+		focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
 	end
 
 	//////////////////////////////////////////
@@ -436,8 +436,8 @@ module pid_controller_tf;
 
 		begin
 			repeat(reps) begin
-				@(posedge pid_controller_tf.uut.osf_data_valid[src[chan_focused]]) begin
-					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[src[chan_focused]][17 -: 16];
+				@(posedge pid_controller_tf.uut.osf_data_valid[src[chan_focus]]) begin
+					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[src[chan_focus]][17 -: 16];
 					rep_count = rep_count + 1;
 				end
 			end
@@ -448,7 +448,7 @@ module pid_controller_tf;
 				pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
 				#1;
 				$write("#%d: ", ppc);
-				assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", chan_focused);
+				assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", chan_focus);
 			end
 		end
 	endtask

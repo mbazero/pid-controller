@@ -26,9 +26,9 @@ task configure_chans;
 			write_data(opp_mult_addr, dest[c], multiplier[c]);
 			write_data(opp_rs_addr, dest[c], right_shift[c]);
 
-			// Set focused
-			if (focused[c] == 1) begin
-				write_data(chan_focused_addr, dest[c], 1);
+			// Set focus
+			if (focus[c] == 1) begin
+				write_data(chan_focus_addr, dest[c], 1);
 			end
 
 		end
