@@ -6,6 +6,11 @@
 // Dope pid controller module.
 // ====================================================================
 
+// TODO
+// * add overflow checking to osf
+// * figure out how to handle non-fp pid state reset
+// * figure out channel activation shit
+
 module pid_controller (
 	// inputs <- OPAL KELLY PLL
 	input wire							sys_clk_in,				// system clock; max frequency determined by timing analysis
@@ -193,7 +198,7 @@ cs (
 
 
 // ====================================================================
-// Instruction dispatch
+// Instruction Dispatch
 // ====================================================================
 // Dispatch instructions into the pid pipeline. ADC data is buffered in
 // a FIFO queue as it is received. Data words are pulled from the queue
@@ -254,67 +259,78 @@ always @( posedge sys_clk_in ) begin
 end
 
 // ====================================================================
-// Moving average computation
+// Oversample Filter
 // ====================================================================
+
+// Assign inputs
+assign osf_dv_ipt = idp_data_valid;
+assign osf_dest_ipt = idp_chan;
+assign osf_data_ipt = idp_data;
+
 always @( posedge sys_clk_in ) begin
 
 	// ----------------------- Pipe Stage 1 ----------------------------
-	// Latch data from instruction dispatch
-	adc_data[1] = idp_data;
-	data_valid[1] = idp_data_valid;
-	dest_addr[1] = idp_dest;
+	// Register inputs
+	osf_dv[1] = osf_dv_ipt;
+	osf_dest[1] = osf_dest_ipt;
+	osf_data[1] = osf_data_ipt;
 
-	// Fetch sum and count
-	osf_sum[1] = osf_sum[dest_addr[0]];
-	osf_count[1] = osf_count[dest_addr[0]];
+	// Fetch sum and sample count
+	osf_sum[1] = osf_sum[osf_dest_ipt];
+	osf_count[1] = osf_count[osf_dest_ipt];
 
 	// ----------------------- Pipe Stage 2 ----------------------------
-	// Pass destination address and data valid
-	data_valid[2] = data_valid[1];
-	dest_addr[2] = dest_addr[1];
+	// Pass data valid and destination
+	osf_dv[2] = osf_dv[1];
+	osf_dest[2] = osf_dest[1];
 
 	// Accumlate sum and increment sample count
-	osf_sum[2] = osf_sum[1] + adc_data[1];
+	osf_sum[2] = osf_sum[1] + osf_data[1];
 	osf_count[2] = osf_count[1] + 1'b1;
 
 	// Fetch oversample mode
-	osf_os[2] = osf_os[dest_addr[1]];
+	osf_os[2] = osf_os[osf_dest[1]];
 
 	// ----------------------- Pipe Stage 3 ----------------------------
 	// Check if sample count has been satisifed
-	osf_count_sat[3] = ( osf_count[2][osf_os[2]] == 1 ); // assignment must be blocking
+	osf_count_sat = ( osf_count[2][osf_os[2]] == 1 ); // assignment must be blocking
+
+	// Pass data valid signal if count satisfied
+	osf_dv[3] = ( osf_count_sat ) ? osf_dv[2] : 0;
 
 	// Divide sum by right shifting
 	osf_data[3] = osf_sum[2] >>> osf_os[2];
 
-	// Pass data valid signal if count satisfied
-	data_valid[3] = ( osf_count_sat[3] ) ? data_valid[2] : 0;
-
-	// Pass destination address
-	dest_addr[3] = dest_addr[2];
+	// Pass destination
+	osf_dest[3] = osf_dest[2];
 
 	// Writeback count and sum. Reset both if sample count has been satisfied
-	osf_sum[dest_addr[2]] = ( osf_count_sat[3] ) ? 0 : osf_sum[2];
-	osf_count[dest_addr[2]] = ( osf_count_sat[3] ) ? 0 : osf_count[2];
+	osf_sum[osf_dest[2]] = ( osf_count_sat ) ? 0 : osf_sum[2];
+	osf_count[osf_dest[2]] = ( osf_count_sat ) ? 0 : osf_count[2];
 
 end
 
+// Assign outputs
+assign osf_dv_opt = osf_dv[3];
+assign osf_dest_opt = osf_dest[3];
+assign osf_data_opt = osf_data[3];
+
+
+// ====================================================================
+// PID Filter
+// ====================================================================
+
+// Assign inputs
+assign pid_dv_ipt = osf_dv_opt;
+assign pid_dest_ipt = osf_dest_opt;
+assign pid_data_ipt = osf_data_opt;
 
 always @( posedge sys_clk_in ) begin
 
-	// register inputs
-	adc_data[0] = adc_data_in;
-	data_valid[0] <= data_valid_in;
-	dest_addr[0] <= dest_addr_in;
-
-	// -----------------------------------------------------------
-	// pid filter
-	// -----------------------------------------------------------
-
 	// pid fetch
-	osf_data[5] <= osf_data[4];
-	data_valid[5] <= data_valid[4];
-	dest_addr[5] <= dest_addr[4];
+	pid_dv[1] <= pid_dv_ipt;
+	pid_dest[1] <= pid_dest_ipt;
+	pid_data[1] <= pid_data_ipt;
 
 	pid_setpoint[5] <= pid_setpoint[dest_addr[4]];
 	pid_p_coef[5] <= pid_p_coef[dest_addr[4]];
@@ -391,6 +407,16 @@ always @( posedge sys_clk_in ) begin
 	dest_addr[12] <= dest_addr[11];
 
 	pid_data_prev[dest_addr[11]] <= pid_data[11];
+
+end
+
+// ====================================================================
+// Output Preprocessor
+// ====================================================================
+
+// Assign inputs
+
+always @( posedge sys_clk_in ) begin
 
 	// -----------------------------------------------------------
 	// output preprocessor
