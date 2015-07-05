@@ -2,79 +2,103 @@
 
 // clk_sync -- mba 2014
 // -----------------------------------------------------------
-// synchronizes ADC serial clock with system clock
+// Synchronizes adc data from the adc clock domain to the
+// system clock domain. Also serializes adc data so only one
+// word is presented at a time.
 // -----------------------------------------------------------
 
-
 module clk_sync #(
-	// parameters
-	parameter W_DATA	= 18,							// width of data bus
-	parameter N_ADC	= 8							// number of active adc channels
-	)(
-	// inputs <- top level entity
-	input wire						sys_clk_in,		// 50MHz system clock
-	input wire						reset_in,		// system reset
+    // parameters
+    parameter W_DATA    = 18,
+    parameter W_CHS     = 3,
+    parameter N_ADC     = 8
+    )(
+    // inputs <- top level entity
+    input wire                  sys_clk_in,
+    input wire                  reset_in,
 
-	// inputs <- adc controller
-	input wire	[N_ADC-1:0]		data_valid_in,	// data valid input signal synchronous with 17MHz adc clock
-	input wire	[W_DATA-1:0]	data_a_in,
-	input wire	[W_DATA-1:0]	data_b_in,
+    // inputs <- adc controller
+    input wire                  data_valid_in,
+    input wire  [W_CHS-1:0]     chan_a_in,
+    input wire  [W_CHS-1:0]     chan_b_in,
+    input wire  [W_DATA-1:0]    data_a_in,
+    input wire  [W_DATA-1:0]    data_b_in,
 
-	// outputs -> oversample filter
-	output wire	[N_ADC-1:0]		data_valid_out,
-	output reg	[W_DATA-1:0]	data_a_out,
-	output reg	[W_DATA-1:0]	data_b_out
-	);
+    // outputs -> oversample filter
+    output wire [N_ADC-1:0]     data_valid_out,
+    output wire [W_CHS-1:0]     chan_out,
+    output wire [W_DATA-1:0]    data_out
+    );
 
 //////////////////////////////////////////
 // local parameters
 //////////////////////////////////////////
 
 /* state parameters */
-localparam	ST_WAIT_PE	= 3'd0,					// wait for data_valid_rdc to go high
-				ST_HOLD		= 3'd1,					// latch and hold data to satisfy hold time
-				ST_SEND		= 3'd2,					// assert data_valid_out synchronous with 50MHz clock
-				ST_WAIT_NE	= 3'd3;					// wait for data_valid_in to go low
+localparam  ST_WAIT_DVH = 3'd0,     // wait for data valid to go high
+            ST_HOLD     = 3'd1,     // latch and hold data to satisfy hold time
+            ST_SEND     = 3'd2,     // assert data_valid_out synchronous with 50MHz clock
+            ST_WAIT_DVL = 3'd3;     // wait for data valid to go low
 
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
 
-/* reduction or 17MHz data valid signal */
-wire 					data_valid_rdc;
-
-/* 50MHz data valid register */
-reg	[N_ADC-1:0]	data_valid = 0;
+/* 50MHz data registers */
+reg [W_CHS-1:0] chan_a = 0;
+reg [W_CHS-1:0] chan_b = 0;
+reg [W_DATA-1:0] data_a = 0;
+reg [W_DATA-1:0] data_b = 0;
+reg data_valid = 0;
 
 /* state registers */
-reg	[2:0] 		cur_state = ST_WAIT_PE;		// state machine current state
-reg	[2:0] 		next_state = ST_WAIT_PE;	// state machine next state
+reg [2:0] cur_state = ST_WAIT_DVH;
+reg [2:0] next_state = ST_WAIT_DVH;
 
 //////////////////////////////////////////
 // combinational logic
 //////////////////////////////////////////
 
-/* reduce data_valid_in vector to a single signal with a bitwise or of its elements */
-assign data_valid_rdc = | data_valid_in;
-
-/* pass data_valid vector to output during the send state */
-assign data_valid_out = data_valid & {N_ADC{ cur_state == ST_SEND }};
+/* data output */
+always @( * ) begin
+    case ( cur_state ) begin
+        ST_SEND_A: begin
+            data_out = data_a;
+            chan_out = chan_a;
+            data_valid_out = 1;
+        end
+        ST_SEND_B: begin
+            data_out = data_b;
+            chan_out = chan_b;
+            data_valid_out = 1;
+        end
+        default: begin
+            data_out = 0;
+            chan_out = 0;
+            data_valid_out = 0;
+        end
+    end
+end
 
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
 
-/* latch all data and data valid vectors when any channel asserts data_valid */
+/* data registers */
 always @( posedge sys_clk_in ) begin
-	if ( reset_in == 1 ) begin
-		data_valid <= 0;
-		data_a_out <= 0;
-		data_b_out <= 0;
-	end else if (( cur_state == ST_WAIT_PE ) & ( data_valid_rdc == 1 )) begin
-		data_a_out <= data_a_in;
-		data_b_out <= data_b_in;
-		data_valid <= data_valid_in;
-	end
+    if ( reset_in == 1 ) begin
+        chan_a <= 0;
+        chan_b <= 0;
+        data_a <= 0;
+        data_b <= 0;
+        data_valid <= 0;
+    end else if ( cur_state == ST_WAIT_DVH & data_valid_in == 1 ) begin
+        chan_a <= chan_a_in;
+        chan_b <= chan_b_in;
+        data_a <= data_a_in;
+        data_b <= data_b_in;
+        data_valid <= data_valid_in;
+    end
 end
 
 //////////////////////////////////////////
@@ -83,22 +107,37 @@ end
 
 /* state register - synchronous with system clock */
 always @( posedge sys_clk_in ) begin
-	if ( reset_in == 1 ) begin
-		cur_state <= ST_WAIT_PE;
-	end else begin
-		cur_state <= next_state;
-	end
+    if ( reset_in == 1 ) begin
+        cur_state <= ST_WAIT_DVH;
+    end else begin
+        cur_state <= next_state;
+    end
 end
 
 /* next state transitin logic */
 always @( * ) begin
-	next_state <= cur_state; // default assignment if no case statement is satisfied
-	case ( cur_state )
-		ST_WAIT_PE: if ( data_valid_rdc == 1 )	next_state <= ST_HOLD;
-		ST_HOLD:											next_state <= ST_SEND;
-		ST_SEND: 										next_state <= ST_WAIT_NE;
-		ST_WAIT_NE:	if ( data_valid_rdc == 0 )	next_state <= ST_WAIT_PE;
-	endcase
+    next_state <= cur_state; // default assignment if no case statement is satisfied
+    case ( cur_state )
+        ST_WAIT_DVH: begin
+            if ( data_valid_in == 1 ) begin
+                next_state <= ST_HOLD;
+            end
+        end
+        ST_HOLD: begin
+            next_state <= ST_SEND_A;
+        end
+        ST_SEND_A: begin
+            next_state <= ST_SEND_B;
+        end
+        ST_SEND_B: begin
+            next_state <= ST_WAIT_DVL;
+        end
+        ST_WAIT_DVL: begin
+            if ( data_valid_in == 0 ) begin
+                next_state <= ST_WAIT_DVH;
+            end
+        end
+    endcase
 end
 
 endmodule

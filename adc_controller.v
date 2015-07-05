@@ -10,6 +10,7 @@ module adc_controller #(
 	// parameters
 	parameter W_OUT			= 18,									// width of adc data channels
 	parameter N_CHAN			= 8,									// number of channels to output
+	parameter W_CHS			= 3,									// width of channel select
 	parameter W_OS				= 2									// width of oversample signal
 	)(
 	// inputs <- top level entity
@@ -33,18 +34,19 @@ module adc_controller #(
 	output wire						n_cs_out,						// chip select signal to adc
 
 	// outputs -> pid core
-	output wire				[N_CHAN-1:0]	data_valid_out,	// one-hot encoded output data valid signal
-	output reg signed		[W_OUT-1:0]		data_a_out,			// channel a data out
-	output reg signed		[W_OUT-1:0]		data_b_out			// channel b data out
+	output wire									data_valid_out,	// line a data valid
+	output reg				[W_CHS-1:0]		chan_a_out,			// line a adc channel
+	output reg				[W_CHS-1:0]		chan_b_out,			// line b adc channel
+	output reg signed		[W_OUT-1:0]		data_a_out,			// line a data out
+	output reg signed		[W_OUT-1:0]		data_b_out			// line b data out
    );
 
 //////////////////////////////////////////
 // local parameters
 //////////////////////////////////////////
 
-localparam N_CHAN_RD		= 8;										// number of adc channels to be read (don't change this)
 localparam MIN_T_CYCLE	= 85;										// minimum cycle time in number of adc clock cycles (don't change this)
-localparam RD_LENGTH		= W_OUT*(N_CHAN_RD/2);				// bits of data to be read per serial port in a single cycle
+localparam RD_LENGTH		= W_OUT*(N_CHAN/2);					// bits of data to be read per serial port in a single cycle
 
 /* state parameters */
 localparam	CV_ST_IDLE		= 3'd0,								// wait for module enable signal to begin continuous conversion
@@ -59,8 +61,8 @@ localparam	RD_ST_IDLE		= 3'd0,								// wait for busy signal to begin read
 // internal structures
 //////////////////////////////////////////
 
-/* full width data valid signal */
-wire	[N_CHAN_RD-1:0]	data_valid;
+/* data valid vectors */
+wire	[N_CHAN/2-1:0]		dv_vect;
 
 /* state registers */
 reg	[7:0] 				cv_counter = 0; 						// convert state machine counter
@@ -75,19 +77,18 @@ reg	[2:0]					rd_next_state = RD_ST_IDLE;		// read state machine next state
 // combinational logic
 //////////////////////////////////////////
 
-/* data valid out */
-assign data_valid_out	= data_valid[N_CHAN-1:0];
-
 /* adc control */
 assign reset_out			= reset_in;
 assign os_out				= os_in;
 
-/* full width data valid */
+/* data valid out */
+assign data_valid_out	= |dv_vect;
+
+/* data valid vectors */
 genvar i;
 generate
-	for ( i = 0; i < N_CHAN_RD/2; i = i+1 ) begin : data_out_arr
-		assign data_valid[i] 				= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
-		assign data_valid[i+N_CHAN_RD/2]	= (( rd_cur_state == RD_ST_READ ) & ( rd_counter == W_OUT*(i+1) ));
+	for ( i = 0; i < N_CHAN/2; i = i+1 ) begin : data_out_arr
+		assign dv_vect[i] = (rd_cur_state == RD_ST_READ & rd_counter == W_OUT*(i+1));
 	end
 endgenerate
 
@@ -103,6 +104,17 @@ always @( posedge clk_in ) begin
 	end else if ( n_cs_out == 0 ) begin
 		data_a_out <= {data_a_out[W_OUT-2:0], data_a_in};
 		data_b_out <= {data_b_out[W_OUT-2:0], data_b_in};
+	end
+end
+
+/* channel outputs */
+always @( posedge clk_in ) begin
+	if ( rd_cur_state != RD_ST_READ ) begin
+		chan_a_out <= 0;
+		chan_b_out <= N_CHAN/2;
+	end else if ( |dv_vect == 1 ) begin
+		chan_a_out <= chan_a_out + 1'b1;
+		chan_b_out <= chan_b_out + 1'b1;
 	end
 end
 

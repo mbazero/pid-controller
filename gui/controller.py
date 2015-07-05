@@ -30,12 +30,12 @@ class Controller():
     def register_view_handlers(self):
         # Tab handlers
         self.view.tab_widget.currentChanged.connect(
-                lambda: self.update_chan_focus(view.tab_widget.currentIndex()))
+                lambda: self.update_chan_focus(self.view.tab_widget.currentIndex()))
 
         # Global params view handlers
         gp_view = self.view.gp_view
         gp_view.adc_os.currentIndexChanged.connect(
-                lambda: self.update_adc_os(self.adc_os.currentIndex() + 1))
+                lambda: self.update_adc_os(gp_view.adc_os.currentIndex() + 1))
         gp_view.sample_period.editingFinished.connect(
                 lambda: self.update_sampling_period(float(gp_view.sample_period.text())))
         gp_view.block_transfer.clicked.connect(
@@ -195,14 +195,14 @@ class Controller():
     ADC param update functions
     '''
     def update_adc_os(self, value):
-        update_model_data(self.params.adc_os_addr, 0, value)
+        self.update_model_and_fpga(self.params.adc_os_addr, 0, value)
         print "ADC oversample mode set to " + str(value)
 
     '''
     Channel param update functions
     '''
     def update_chan_activate(self, chan, checked):
-        self.update_model_data(self.params.chan_activate_addr, chan, checked)
+        self.update_model_and_fpga(self.params.chan_activate_addr, chan, checked)
 
         # Wake worker thread if channel is activated. Sleep worker thread
         # if channel is deactivated and no other active channels remain.
@@ -214,25 +214,25 @@ class Controller():
         print self.model.chan_to_string(chan) + " activated" if checked else " deactivated"
 
     def update_chan_focus(self, chan):
-        update_model_data(self.params.chan_focus_addr, chan, 1)
+        self.update_model_and_fpga(self.params.chan_focus_addr, chan, 1)
 
     def update_chan_input_sel(self, chan, inpt):
         if self.model.is_valid_input(inpt):
-            self.update_model_data(self.params.chan_input_sel_addr, chan, inpt)
+            self.update_model_and_fpga(self.params.chan_input_sel_addr, chan, inpt)
             print self.model.chan_to_string(chan) + " input set to " + self.model.inpt_to_string(inpt)
         else:
-            self.update_model_data(self.params.chan_input_sel_addr, chan, self.params.null_input)
+            self.update_model_and_fpga(self.params.chan_input_sel_addr, chan, self.params.null_input)
             print self.model.chan_to_string(chan) + " input deactivated"
 
     '''
     OSF param update functions
     '''
     def update_osf_ovr(self, chan, value):
-        self.update_model_data(self.params.osf_ovr_addr, chan, value)
+        self.update_model_and_fpga(self.params.osf_ovr_addr, chan, value)
         print self.model.chan_to_string(chan) + " oversample ratio set to " + str(2**value)
 
     def update_osf_cycle_delay(self, chan, value):
-        self.update_model_data(self.params.osf_cycle_delay_addr, chan, value)
+        self.update_model_and_fpga(self.params.osf_cycle_delay_addr, chan, value)
         print self.model.chan_to_string(chan) + " cycle delay set to " + str(value)
 
     '''
@@ -240,23 +240,23 @@ class Controller():
     '''
     def update_pid_setpoint(self, chan, value):
         norm_value = model.normalize_input(chan, value);
-        self.update_model_data(self.params.pid_setpoint_addr, chan, norm_value)
+        self.update_model_and_fpga(self.params.pid_setpoint_addr, chan, norm_value)
         print self.model.chan_to_string(chan) + " PID setpoint set to " + str(value)
 
     def update_p_coef(self, chan, value):
-        self.update_model_data(self.params.pid_p_coef_addr, chan, value)
+        self.update_model_and_fpga(self.params.pid_p_coef_addr, chan, value)
         print self.model.chan_to_string(chan) + " P coefficient set to " + str(value)
 
     def update_i_coef(self, chan, value):
-        self.update_model_data(self.params.pid_i_coef_addr, chan, value)
+        self.update_model_and_fpga(self.params.pid_i_coef_addr, chan, value)
         print self.model.chan_to_string(chan) + " I coefficient set to " + str(value)
 
     def update_d_coef(self, chan, value):
-        self.update_model_data(self.params.pid_d_coef_addr, chan, value)
+        self.update_model_and_fpga(self.params.pid_d_coef_addr, chan, value)
         print self.model.chan_to_string(chan) + " D coefficient set to " + str(value)
 
     def update_pid_lock_en(self, chan, checked):
-        self.update_model_data(self.params.pid_lock_en_addr, chan, checked)
+        self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, checked)
         print self.model.chan_to_string(chan) + " PID lock " + " enabled" if checked else "disabled"
 
     def handle_pid_clear(self, chan):
@@ -272,30 +272,30 @@ class Controller():
     '''
     def update_opp_init(self, value):
         norm_value = model.normalize_output(chan, value)
-        self.update_model_data(self.params.opp_init_addr, chan, norm_value)
+        self.update_model_and_fpga(self.params.opp_init_addr, chan, norm_value)
         print self.model.chan_to_string(chan) + " output init value set to " + str(value)
 
     def update_opp_init(self, value):
         norm_value = model.normalize_output(chan, value)
-        self.update_model_data(self.params.opp_init_addr, chan, norm_value)
+        self.update_model_and_fpga(self.params.opp_init_addr, chan, norm_value)
         print self.model.chan_to_string(chan) + " output init set to " + str(value)
 
     def update_opp_max(self, value):
         norm_value = model.normalize_output(chan, value)
-        self.update_model_data(self.params.opp_max_addr, chan, norm_value)
+        self.update_model_and_fpga(self.params.opp_max_addr, chan, norm_value)
         print self.model.chan_to_string(chan) + " output max set to " + str(value)
 
     def update_opp_min(self, value):
         norm_value = model.normalize_output(chan, value)
-        self.update_model_data(self.params.opp_min_addr, chan, norm_value)
+        self.update_model_and_fpga(self.params.opp_min_addr, chan, norm_value)
         print self.model.chan_to_string(chan) + " output min set to " + str(value)
 
     def update_opp_mult(self, value):
-        self.update_model_data(self.params.opp_mult_addr, chan, value)
+        self.update_model_and_fpga(self.params.opp_mult_addr, chan, value)
         print self.model.chan_to_string(chan) + " output multiplier set to " + str(value)
 
     def update_opp_rs(self, value):
-        self.update_model_data(self.params.opp_rs_addr, chan, value)
+        self.update_model_and_fpga(self.params.opp_rs_addr, chan, value)
         print self.model.chan_to_string(chan) + " output right shift set to " + str(value)
 
     '''
