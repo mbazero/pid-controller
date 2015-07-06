@@ -7,9 +7,8 @@
 // ====================================================================
 
 // TODO
-// * add overflow checking to osf
-// * figure out how to handle non-fp pid state reset
 // * figure out channel activation shit
+// * add overflow checking to osf
 
 module pid_controller (
 	// inputs <- OPAL KELLY PLL
@@ -80,7 +79,7 @@ wire	[N_ADC-1:0]				adc_data_valid;
 /* clock synchronizer */
 wire	[W_ADC_DATA-1:0]		cs_data_a;
 wire	[W_ADC_DATA-1:0]		cs_data_b;
-wire	[N_ADC-1:0]				cs_data_valid;
+wire	[N_ADC-1:0]				cs_dv;
 
 /* general channel */
 reg	[N_OUT-1:0]				chan_activate;
@@ -187,7 +186,7 @@ cs (
 	.chan_b_in			(adc_chan_b),
 	.data_a_in			(adc_data_a),
 	.data_b_in			(adc_data_b),
-	.data_valid_out	(cs_data_valid),
+	.data_valid_out	(cs_dv),
 	.chan_out			(cs_chan),
 	.data_out			(cs_data)
 	);
@@ -196,125 +195,50 @@ cs (
 // Start PID pipeline
 // ====================================================================
 
+instr_dispatch #(
+	.W_SRC			(W_SRC_CHAN),
+	.W_DATA			(W_ADC_DATA),
+	.W_WR_ADDR		(W_WR_ADDR),
+	.W_WR_CHAN		(W_WR_CHAN),
+	.W_WR_DATA		(W_WR_DATA),
+	.W_CHAN			(W_PID_CHAN),
+	.N_CHAN			(N_PID_CHAN))
+idp #(
+	.clk_in			(sys_clk_in),
+	.rst_in			(sys_reset),
+	.dv_in			(cs_dv),
+	.src_in			(cs_chan),
+	.data_in			(cs_data),
+	.wr_addr			(wr_addr),
+	.wr_chan			(wr_chan),
+	.wr_data			(wr_data),
+	.dv_out			(idp_dv),
+	.chan_out		(idp_chan),
+	.data_out		(idp_data)
+);
 
-// ====================================================================
-// Instruction Dispatch
-// ====================================================================
-// Dispatch instructions into the pid pipeline. ADC data is buffered in
-// a FIFO queue as it is received. Data words are pulled from the queue
-// one at a time. The adc channel number for the data is checked against
-// output channel mappings to determine which output channel are driven.
-// A single input channel may drive multiple outputs. Seperate
-// instructions are dispatched for each output channel, one after the
-// other. When all instructions have been dispatched for a give data
-// word, the next word is fetched from the fifo.
-// ====================================================================
-wire aiq_rd_en;
-wire aiq_data_valid;
-reg [W_ADC_CHS-1:0] opt_cnt;
-
-// Buffer adc data. FIFO depth is 64 words. This depth can support twin
-// adc channels driving 32 outputs each.
-fifo_21 adc_instr_queue (
-	.clk		(sys_clk_in),
-	.rst		(sys_reset),
-	.din		({cs_chan, cs_data}),
-	.wr_en	(cs_data_valid),
-	.rd_en	(aiq_rd_en),
-	.dout		({idp_chan, idp_data}),
-	.valid	(aiq_data_valid)
-	);
-
-// Decode instruction destination channel giving priority to lower
-// numbered channels. If valid destination found, inject instruction
-// into pipeline and continue search for more valid destinations. If
-// no valid destination found, pull new data from the FIFO. Observe
-// that blocking assignment are used. Decoder functionality depends
-// on this.
-always @( posedge sys_clk_in ) begin
-	if ( sys_reset_in | ~aiq_data_valid ) begin
-		idp_dest = NULL_OUTPUT;
-		output_visited = 0;
-		idp_data_valid = 0;
-		aiq_rd_en = 0;
-	end else begin
-		idp_dest = NULL_OUTPUT; // default assignment
-		for ( opt_cnt = N_OUT; opt_cnt >= 0; opt_cnt = opt_cnt - 1 ) begin
-			if ( chan_input_sel[opt_cnt] == idp_chan
-				& output_visited[opt_cnt] == 0 ) begin
-					idp_dest = opt_cnt;
-			end
-		end
-
-		if ( idp_dest != NULL_INPUT ) begin
-			output_visited[idp_dest] = 1;
-			idp_data_valid = 1;
-			aiq_rd_en = 0;
-		end else begin
-			output_visited = 0;
-			idp_data_valid = 0;
-			aiq_rd_en = 1;
-		end
-	end
-end
-
-// ====================================================================
-// Oversample Filter
-// ====================================================================
-
-// Assign inputs
-assign osf_dv_ipt = idp_data_valid;
-assign osf_dest_ipt = idp_chan;
-assign osf_data_ipt = idp_data;
-
-always @( posedge sys_clk_in ) begin
-
-	// ----------------------- Pipe Stage 1 ----------------------------
-	// Register inputs
-	osf_dv[1] = osf_dv_ipt;
-	osf_dest[1] = osf_dest_ipt;
-	osf_data[1] = osf_data_ipt;
-
-	// Fetch sum and sample count
-	osf_sum[1] = osf_sum[osf_dest_ipt];
-	osf_count[1] = osf_count[osf_dest_ipt];
-
-	// ----------------------- Pipe Stage 2 ----------------------------
-	// Pass data valid and destination
-	osf_dv[2] = osf_dv[1];
-	osf_dest[2] = osf_dest[1];
-
-	// Accumlate sum and increment sample count
-	osf_sum[2] = osf_sum[1] + osf_data[1];
-	osf_count[2] = osf_count[1] + 1'b1;
-
-	// Fetch oversample mode
-	osf_os[2] = osf_os[osf_dest[1]];
-
-	// ----------------------- Pipe Stage 3 ----------------------------
-	// Check if sample count has been satisifed
-	osf_count_sat = ( osf_count[2][osf_os[2]] == 1 ); // assignment must be blocking
-
-	// Pass data valid signal if count satisfied
-	osf_dv[3] = ( osf_count_sat ) ? osf_dv[2] : 0;
-
-	// Divide sum by right shifting
-	osf_data[3] = osf_sum[2] >>> osf_os[2];
-
-	// Pass destination
-	osf_dest[3] = osf_dest[2];
-
-	// Writeback count and sum. Reset both if sample count has been satisfied
-	osf_sum[osf_dest[2]] = ( osf_count_sat ) ? 0 : osf_sum[2];
-	osf_count[osf_dest[2]] = ( osf_count_sat ) ? 0 : osf_count[2];
-
-end
-
-// Assign outputs
-assign osf_dv_opt = osf_dv[3];
-assign osf_dest_opt = osf_dest[3];
-assign osf_data_opt = osf_data[3];
-
+oversample_filter #(
+	.W_CHAN			(W_PID_CHAN),
+	.W_DATA			(W_ADC_DATA),
+	.W_WR_ADDR		(W_WR_ADDR),
+	.W_WR_CHAN		(W_WR_CHAN),
+	.W_WR_DATA		(W_WR_DATA),
+	.W_SUM			(W_COMP),
+	.W_OS				(W_OSF_OS))
+osf (
+	.clk_in			(sys_clk_in),
+	.rst_in			(sys_reset),
+	.dv_in			(idp_dv),
+	.dest_in			(idp_dest),
+	.data_in			(idp_data),
+	.wr_en			(wr_en),
+	.wr_addr			(wr_addr),
+	.wr_chan			(wr_chan),
+	.wr_data			(wr_data),
+	.dv_out			(odf_dv),
+	.dest_out		(osf_dest),
+	.data_out		(osf_data)
+);
 
 // ====================================================================
 // PID Filter

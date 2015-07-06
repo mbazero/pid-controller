@@ -36,7 +36,7 @@ parameter W_COMP			= 64; 	// width of computation registers
 parameter W_EP				= 16; 	// width of opal kelly endpoint
 parameter W_ADC_CHS		= 3;		// width of adc channel select
 parameter W_ADC_OS		= 3;		// width of adc oversample signal
-parameter W_OSF_OS		= 6;		// width of oversample mode signal
+parameter W_OSF_OS		= 4;		// width of oversample mode signal
 parameter W_OSF_CD		= 16;		// width of osf cycle delay signal
 parameter W_INPUT_SEL	= 5;		// width of router select signal (must be log2(N_DAC) + 1...MSB stores channel activation state)
 parameter W_OPP_MLT		= 10;		// width of opp multiplication factor; specifies max allowed multiplier
@@ -47,10 +47,10 @@ parameter ADC_CYCLE_T	= 5;		// adc cycle time in microseconds when adc_os = 0
 // ---------------------------- derived params --------------------------------
 // - don't change these
 // ----------------------------------------------------------------------------
-parameter N_IN					= N_ADC;					// total number of input channels
-parameter N_OUT 				= N_DAC + 3 * N_DDS;	// total number of output channels; each dds has three channels (phase, freq, and amp)
-parameter NULL_INPUT			= N_IN;					// null input for deactive routes
-parameter NULL_OUTPUT		= N_OUT;					// null output for deactive routes
+parameter N_SRC				= N_ADC;					// total number of input source channels
+parameter N_CHAN 				= N_DAC + 3 * N_DDS;	// total number of PID channels equal to number of output channels
+parameter NULL_SRC			= N_SRC;					// null source descriptor for deactive routes
+parameter NULL_CHAN		   = N_CHAN;				// null PID channel descriptor for deactive routes
 parameter W_RTR_DATA 		= W_COMP + 2;			// width of router data lines
 parameter W_OPP_MAX			= W_FREQ_DATA + 1;	// maximum opp output data width
 

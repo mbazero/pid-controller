@@ -13,12 +13,11 @@ parameter data0_iwep					= 8'h05;
 //////////////////////////////////////////
 parameter adc_os_addr				= 16'h01;
 
-parameter chan_activate_addr		= 16'h02;
-parameter chan_focus_addr			= 16'h03;
-parameter chan_input_sel_addr		= 16'h04;
+parameter chan_active_addr  		= 16'h02;
+parameter chan_src_sel_addr		= 16'h03;
+parameter chan_focus_addr			= 16'h04;
 
 parameter osf_activate_addr		= 16'h05;
-parameter osf_cycle_delay_addr	= 16'h06;
 parameter osf_os_addr				= 16'h07;
 
 parameter pid_setpoint_addr		= 16'h08;

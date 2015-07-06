@@ -1,144 +1,150 @@
 `timescale 1ns / 1ps
+`include "parameters.vh"
 
-// oversample_filter -- mba 2014
-// -----------------------------------------------------------
+//--------------------------------------------------------------------
+// Oversample Filter -- mba 2015
+//--------------------------------------------------------------------
 // Computes a moving average of input data with a variable
 // number of samples.
-// -----------------------------------------------------------
+//--------------------------------------------------------------------
 
 module oversample_filter #(
-	// parameters
-	parameter W_DATA		= 18,										// width of input data
-	parameter W_EP			= 16,										// width of opal kelly endpoint
-	parameter W_OSM		= 4										// width of oversample mode signal (max oversample ratio = 2^(2^W_OSM - 1))
-	)(
-	// inputs <- top level entity
-	input wire									clk_in,				// system clock
-	input wire									reset_in,			// system reset
+    // Parameters
+    parameter W_CHAN = 5,
+    parameter W_DATA = 18,
+    parameter W_WR_ADDR = 16,
+    parameter W_WR_CHAN = 16,
+    parameter W_WR_DATA = 48,
+    parameter W_SUM = 64,
+    parameter W_OS = 4
+    )(
+    // Inputs
+    input wire clk_in,
+    input wire rst_in,
 
-	// inputs <- pid core
-	input wire signed		[W_DATA-1:0]	data_in,				// input data
-	input wire									data_valid_in,		// input data valid signal; asynchronous timing supported
+    input wire dv_in,
+    input wire [W_CHAN-1:0] chan_in,
+    input wire signed [W_DATA-1:0] data_in,
 
-	// inputs <- frontpanel controller
-	input wire				[W_EP-1:0]		cycle_delay_in,	// delay period in adc cycles
-	input wire				[W_OSM-1:0]		os_in,				// oversample mode (log base 2 of the oversample ratio)
-	input wire									activate_in,		// channel activation signal (1 = activated, 0 = deactivated)
+    input wire wr_en,
+    input wire [W_WR_ADDR-1:0] wr_addr,
+    input wire [W_WR_CHAN-1:0] wr_chan,
+    input wire [W_WR_DATA-1:0] wr_data,
 
-	// outputs -> clk sync
-	output wire signed	[W_DATA-1:0]	data_out,			// output data
-	output wire									data_valid_out		// output data valid signal
-	);
+    // Outputs
+    output wire dv_out,
+    output wire [W_CHAN-1:0] chan_out,
+    output wire signed [W_DATA-1:0] data_out
+    );
 
-//////////////////////////////////////////
-// local parameters
-//////////////////////////////////////////
+//--------------------------------------------------------------------
+// Parameters
+//--------------------------------------------------------------------
+localparam W_COUNT = 2**W_OS;
+localparam PIPE_DEPTH = 3;
 
-localparam	MAX_OS	= 2**W_OSM - 1;							// maximum log2 oversample ratio
-localparam	W_SUM		= MAX_OS + W_DATA;						// width of sum register
+//--------------------------------------------------------------------
+// Structures
+//--------------------------------------------------------------------
+// Internal state
+reg signed [W_SUM-1:0] sum_mem[0:N_OUT-1];
+reg [W_COUNT-1:0] count_mem[0:N_OUT-1];
 
-/* state parameters */
-localparam	ST_IDLE			= 3'd0,								// wait for channel activation signal
-				ST_DELAY			= 3'd1,								// wait specified number of adc cycles before accepting data (to account for DAC/DDS settling times)
-				ST_SAMPLE		= 3'd2,								// collect adc data and maintain accumulating sum
-				ST_SEND			= 3'd3;								// divide sum by oversample ratio (right shift) and assert data valid
+// External state
+reg [W_OS-1:0] os_mem[0:N_OUT-1];
 
-//////////////////////////////////////////
-// internal structures
-//////////////////////////////////////////
+// Pipeline registers
+reg dv_p1 = 0;
+reg [W_CHAN-1:0] chan_p1 = 0;
+reg signed [W_DATA-1:0] data_in_p1 = 0;
+reg signed [W_SUM-1:0] sum_p1 = 0;
+reg [W_COUNT-1:0] count_p1 = 0;
 
-/* wires */
-wire							idle;
-wire							osf_reset;								// local reset signal which is activated by system reset or channel deactive
+reg dv_p2 = 0;
+reg [W_CHAN-1:0] chan_p2 = 0;
+reg signed [W_SUM-1:0] sum_p2 = 0;
+reg [W_COUNT-1:0] count_p2 = 0;
+reg [W_OS-1:0] os_p2 = 0;
 
-/* registers */
-reg			[MAX_OS:0]	sample_counter = 0;
-reg signed 	[W_SUM-1:0]	sum = 0;
+reg count_sat_p3 = 0;
+reg dv_p3 = 0;
+reg [W_CHAN-1:0] chan_p3 = 0;
+reg signed [W_DATA-1:0] data_out_p3 = 0;
 
-/* state registers */
-reg			[15:0]		counter = 0;
-reg			[2:0]			cur_state = ST_IDLE;
-reg			[2:0]			next_state = ST_IDLE;
-
-//////////////////////////////////////////
-// combinational logic
-//////////////////////////////////////////
-
-/* divide sum by oversample ratio (left shift amount equal to log2 oversample ration) */
-assign data_out 			= ( sum >> os_in );
-
-/* assert data_valid_out during the SEND state */
-assign data_valid_out 	= ( cur_state == ST_SEND );
-
-/* osf reset */
-assign osf_reset 			= ( reset_in | ~activate_in );
-
-//////////////////////////////////////////
-// sequential logic
-//////////////////////////////////////////
-
-/* sum accumulator */
+//--------------------------------------------------------------------
+// Logic
+//--------------------------------------------------------------------
+// Compuation pipeline
 always @( posedge clk_in ) begin
-	if ( osf_reset == 1 ) begin
-		sum <= 0;
-	end else if (( cur_state == ST_IDLE ) | ( cur_state == ST_DELAY )) begin
-		sum <= 0;
-	end else if (( data_valid_in == 1 ) & ( cur_state == ST_SAMPLE )) begin
-		sum <= sum + data_in;
-	end
+    //------------------------Pipe Stage 1-----------------------------
+    // Register inputs
+    dv_p1 = dv_in;
+    chan_p1 = chan_in;
+    data_in_p1 = data_in;
+
+    // Fetch sum and sample count
+    sum_p1 = sum_mem[chan_in];
+    count_p1 = count_mem[chan_in];
+
+    //-----------------------Pipe Stage 2------------------------------
+    // Pass data valid and chanination
+    dv_p2 = dv_p1;
+    chan_p2 = chan_p1;
+
+    // Accumlate sum and increment sample count
+    sum_p2 = sum_p1 + data_in_p1;
+    count_p2 = count_p1 + 1'b1;
+
+    // Fetch oversample mode
+    os_p2 = os_mem[chan_pipe[1]];
+
+    //-----------------------Pipe Stage 3------------------------------
+    // Check whether the oversample count has been satisfied. This is an
+    // intra-state signal so blocking assignments must be used.
+    count_sat_p3 = ( count_p2[os_mem[2]] == 1 );
+
+    // Pass data valid signal if count satisfied
+    dv_p3 = ( count_sat_p3 ) ? dv_p2 : 0;
+
+    // Pass chanination
+    chan_p3 = chan_p2;
+
+    // Divide sum by right shifting
+    data_out_p3 = sum_p2 >>> os_p2;
+
+    // Writeback count and sum if data is valid. Reset both terms if sample
+    // count has been satisfied
+    if ( dv_p2 == 1'b1 ) begin
+       sum_mem[chan_p2] = ( count_sat_p3 ) ? 0 : sum_p2;
+       count_mem[chan_p2] = ( count_sat_p3 ) ? 0 : count_p2;
+    end
+
+    //------------------------Pipe Reset-------------------------------
+    if ( rst_in == 1'b1 ) begin
+        // Zero pipe data valids
+        dv_1 = 0;
+        dv_2 = 0;
+        dv_3 = 0;
+
+        // Zero internal state
+        for ( i = 0; i < N_OUT; i = i + 1 ) begin
+            sum_mem[i] = 0;
+            count_mem[i] = 0;
+        end
+    end
+    //-----------------------------------------------------------------
 end
 
-/* count number of adc data words received in the current state */
-always @( posedge clk_in ) begin
-	if ( osf_reset == 1 ) begin
-		sample_counter	<= 0;
-	end else if ( cur_state != next_state ) begin
-		sample_counter	<= 0;
-	end else if ( data_valid_in == 1 ) begin
-		sample_counter	<= sample_counter + 1'b1;
-	end
-end
+// Output assignments
+assign dv_out = dv_p3;
+assign data_out = data_out_p3;
+assign chan_out = chan_out_p3;
 
-//////////////////////////////////////////
-// state machine
-//////////////////////////////////////////
-
-/* state register */
-always @( posedge clk_in ) begin
-	if ( osf_reset == 1 ) begin
-		cur_state <= ST_IDLE;
-	end else begin
-		cur_state <= next_state;
-	end
-end
-
-/* state counter */
-always @( posedge clk_in ) begin
-	if ( osf_reset == 1 ) begin
-		counter <= 0;
-	end else if ( cur_state != next_state ) begin
-		counter <= 0;
-	end else begin
-		counter <= counter + 1'b1;
-	end
-end
-
-/* next state transition logic */
-always @( * ) begin
-	next_state <= cur_state; // default assignment if no case statement and condition is satisfied
-	case ( cur_state )
-		ST_IDLE: begin
-			if ( activate_in == 1 )							next_state <= ST_SAMPLE;	// don't have to delay on first iteration
-		end
-		ST_DELAY: begin
-			if ( sample_counter >= cycle_delay_in ) 	next_state <= ST_SAMPLE;
-		end
-		ST_SAMPLE: begin
-			if ( sample_counter[os_in] == 1 )			next_state <= ST_SEND;
-		end
-		ST_SEND: 												next_state <= ST_DELAY;
-	endcase
+// External state write handling
+always @( posedge wr_en ) begin
+    case ( wr_addr ) begin
+        osf_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0]
+    end
 end
 
 endmodule
-

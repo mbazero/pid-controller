@@ -133,7 +133,7 @@ always @( * ) begin
             next_state <= ST_WAIT_DVL;
         end
         ST_WAIT_DVL: begin
-            if ( data_valid_in == 0 ) begin
+            if ( data_valid_rdc == 0 ) begin
                 next_state <= ST_WAIT_DVH;
             end
         end
