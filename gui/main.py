@@ -10,7 +10,6 @@ Parse hdl parameters
 '''
 parser = parser.HDLParser()
 parser.parse(config.params_path)
-parser.parse(config.ep_map_path)
 params = parser.get_params()
 
 '''
