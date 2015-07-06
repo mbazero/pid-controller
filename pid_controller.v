@@ -13,7 +13,6 @@
 
 
 // TODO
-// 1. compartmentalize OSF
 // 2. figure out OSF init set
 // 2. compartmentalize PID pipeline
 // 3  change naming (name all internal data differently, dout and din for outputs only)
@@ -26,6 +25,7 @@
 // 6. add adc state write handling to adc controller
 // 7. channel deactive to act as reset
 // 8. opp write init function
+// 9. convert all operators to logical ( double symbol )
 
 module pid_controller (
     // Inputs <- Opal Kelly PLL

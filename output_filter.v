@@ -22,7 +22,8 @@ module output_filter #(
     )(
     // Inputs
     input wire clk_in,
-    input wire rst_in,
+    input wire sys_rst_in,
+    input wire [N_CHAN-1:0] chan_rst_in,
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
@@ -50,10 +51,10 @@ localparam MIN_OUT = -(2 ** (W_DATA_OUT - 1));
 //--------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------
-// Internal state memory
+// Internal channel memory
 reg signed [W_DATA_OUT-1:0] dout_prev_mem[0:N_CHAN-1];
 
-// External state memory
+// Writeable channel memory
 reg signed [W_MULT-1:0] mult_mem[0:N_CHAN-1];
 reg [W_RS-1:0] rs_mem[0:N_CHAN-1];
 reg signed [W_DATA_OUT-1:0] max_mem[0:N_CHAN-1];
@@ -140,21 +141,23 @@ always @( posedge sys_clk_in ) begin
     dout_prev_mem[chan_p3] = dout_p4;
 
     //------------------------Pipe Reset-------------------------------
-    if ( rst_in == 1'b1 ) begin
-        // Zero pipe data valids
+    if ( sys_rst_in == 1'b1 ) begin
         dv_1 = 0;
         dv_2 = 0;
         dv_3 = 0;
         dv_4 = 0;
+    end
 
-        // Zero internal state
-        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+    //--------------------Channel Memory Reset-------------------------
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( sys_rst_in || chan_rst_in[i] ) begin
             dout_prev_mem[i] = init_mem[i];
         end
+    end
     //-----------------------------------------------------------------
 end
 
-// External state write handling
+// Channel memory write handling
 always @( posedge wr_en ) begin
     case ( wr_addr ) begin
         opf_mult_addr : mult_mem[wr_chan] <= wr_data[W_MULT-1:0];

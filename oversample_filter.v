@@ -20,7 +20,8 @@ module oversample_filter #(
     )(
     // Inputs
     input wire clk_in,
-    input wire rst_in,
+    input wire sys_rst_in,
+    input wire [W_CHAN-1:0] chan_rst_in,
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
@@ -45,11 +46,11 @@ localparam W_COUNT = 2**W_OS;
 //--------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------
-// Internal state
+// Internal channel memory
 reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
 reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
 
-// External state
+// Writeable channel memory
 reg [W_OS-1:0] os_mem[0:N_CHAN-1];
 
 // Pipe registers
@@ -121,14 +122,15 @@ always @( posedge clk_in ) begin
     end
 
     //------------------------Pipe Reset-------------------------------
-    if ( rst_in == 1'b1 ) begin
-        // Zero pipe data valids
+    if ( sys_rst_in ) begin
         dv_1 = 0;
         dv_2 = 0;
         dv_3 = 0;
+    end
 
-        // Zero internal state
-        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+    //--------------------Channel Memory Reset-------------------------
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( sys_rst_in || chan_rst_in[i] ) begin
             sum_mem[i] = 0;
             count_mem[i] = 0;
         end
@@ -136,7 +138,7 @@ always @( posedge clk_in ) begin
     //-----------------------------------------------------------------
 end
 
-// External state write handling
+// Channel memory write handling
 always @( posedge wr_en ) begin
     case ( wr_addr ) begin
         osf_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0]

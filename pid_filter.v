@@ -18,7 +18,8 @@ module pid_filter #(
     )(
     // Inputs
     input wire clk_in,
-    input wire rst_in,
+    input wire sys_rst_in,
+    input wire [N_CHAN-1:0] chan_rst_in,
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
@@ -50,12 +51,12 @@ localparam MIN_OUT = -(2 ** (W_DATA_OUT - 1));
 //--------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------
-// Internal state memory
+// Internal channel memory
 reg signed [W_ERROR-1:0] error_prev0_mem[0:N_CHAN-1];
 reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
 reg signed [W_DATA_OUT-1:0] dout_prev_mem[0:N_CHAN-1];
 
-// External state memory
+// Writeable channel memory
 reg signed [W_DATA_IN-1:0] setpoint_mem[0:N_CHAN-1];
 reg signed [W_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
 reg signed [W_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
@@ -192,17 +193,18 @@ always @( posedge sys_clk_in ) begin
     end
 
     //------------------------Pipe Reset-------------------------------
-    if ( rst_in == 1'b1 ) begin
-        // Zero pipe data valids
+    if ( sys_rst_in == 1'b1 ) begin
         dv_1 = 0;
         dv_2 = 0;
         dv_3 = 0;
         dv_4 = 0;
         dv_5 = 0;
         dv_6 = 0;
+    end
 
-        // Zero internal state
-        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+    //--------------------Channel Memory Reset-------------------------
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( sys_rst_in || chan_rst_in[i] ) begin
             error_prev0_mem[i] = 0;
             error_prev1_mem[i] = 0;
             dout_prev_mem[i] = 0;
@@ -211,7 +213,7 @@ always @( posedge sys_clk_in ) begin
     //-----------------------------------------------------------------
 end
 
-// External state write handling
+// Channel memory write handling
 always @( posedge wr_en ) begin
     case ( wr_addr ) begin
         setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DATA_IN-1:0];

@@ -29,7 +29,7 @@ module instr_dispatch #(
     input wire rst_in,
 
     input wire dv_in,
-    input wire [W_SRC-1:0] src_in,
+    input wire [W_SRC-1:0] fifo_src_in,
     input wire [W_DATA-1:0] data_in,
 
     input wire wr_en,
@@ -40,36 +40,40 @@ module instr_dispatch #(
     // Outputs
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
-    output wire [W_DATA-1:0] data_out
+    output wire [W_DATA-1:0] data_out,
+    output wire [N_CHAN-1:0] chan_en_out
     );
 
 //--------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------
-// Internal state
-reg [N_CHAN-1:0] instr_sent;
-reg [W_CHAN-1:0] chan;
-
-// External state
-reg [N_CHAN-1:0] chan_active;
-reg [W_SRC-1:0] chan_src_sel[0:N_CHAN-1]; // PID channel to source mappings
+// Writeable channel memory
+reg [N_CHAN-1:0] chan_en_mem;
+reg [W_SRC-1:0] chan_src_sel_mem[0:N_CHAN-1]; // PID channel to source mappings
 
 // Fifo signals
-wire [W_SRC-1:0] src;
+wire [W_SRC-1:0] fifo_src;
+wire [W_DATA-1:0] fifo_data;
 wire fifo_rd_en;
 wire fifo_dv;
+
+// Decoder signals
+wire dec_dv;
+reg [W_CHAN-1:0] dec_chan;
+reg [N_CHAN-1:0] dec_instr_sent;
+reg [W_CHAN-1:0] i;
 
 //--------------------------------------------------------------------
 // Logic
 //--------------------------------------------------------------------
 // Input data buffer
-fifo_21 adc_instr_queue (
+fifo_21 input_buffer (
    .clk     (clk_in),
    .rst     (rst_in),
    .din     ({src_in, data_in}),
    .wr_en   (dv_in),
    .rd_en   (fifo_rd_en),
-   .dout    ({src, data_out}),
+   .dout    ({fifo_src, fifo_data}),
    .valid   (fifo_dv)
    );
 
@@ -81,13 +85,13 @@ fifo_21 adc_instr_queue (
 // used. Decoder functionality depends on this.
 always @( posedge clk_in ) begin
     // Default null channel assignment if source is not routed
-    chan_out = NULL_CHAN;
+    dec_chan = NULL_CHAN;
 
     // Decode PID channel
-    for ( chan = N_CHAN; chan >= 0; chan = chan - 1 ) begin
-        if ( chan_src_sel[chan] == src
-            & instr_sent[chan] == 0 ) begin
-            chan_out = chan;
+    for ( i = N_CHAN; i >= 0; i = i - 1 ) begin
+        if ( chan_src_sel_mem[i] == fifo_src
+            & dec_instr_sent[i] == 0 ) begin
+            dec_chan = i;
         end
     end
 
@@ -97,34 +101,40 @@ always @( posedge clk_in ) begin
     // Otherwise, channel is valid, so send instruction
     // if the channel is active and set sent flag.
     if ( rst_in | ~fifo_dv ) begin
-        dv_out = 0;
-        instr_sent = 0;
+        dec_dv = 0;
+        dec_instr_sent = 0;
         fifo_rd_en = 0;
-    end else if ( chan_out == NULL_CHAN ) begin
-        dv_out = 0;
-        instr_sent = 0;
+    end else if ( dec_chan == NULL_CHAN ) begin
+        dec_dv = 0;
+        dec_instr_sent = 0;
         fifo_rd_en = 1;
     end else begin
-        dv_out = chan_active[chan_out];
-        instr_sent[chan_out] = 1;
+        dec_dv = chan_en_mem[dec_chan];
+        dec_instr_sent[dec_chan] = 1;
         fifo_rd_en = 0;
     end
 end
 
-// External state write handling
-always @( posedge wr_en ) begin
-    case ( wr_addr ) begin
-        chan_src_sel_addr : chan_src_sel[wr_chan] <= wr_data[W_SRC-1:0];
-        chan_active_addr : chan_active[wr_chan] <= wr_data[0];
+// Channel memory initialization
+initial begin
+    for ( i = 0; i < N_CHAN; i = i+1 ) begin
+        chan_src_sel_mem[i] = NULL_SRC;
+        chan_en_mem[i] = 0;
     end
 end
 
-// Memory initialization
-genvar i;
-generate
-	for ( i = 0; i < N_CHAN; i = i+1 ) begin : src_select_init
-		initial chan_src_sel[i] = NULL_SRC;
-	end
-endgenerate;
+// Channel memory write handling
+always @( posedge wr_en ) begin
+    case ( wr_addr ) begin
+        chan_src_sel_addr : chan_src_sel_mem[wr_chan] <= wr_data[W_SRC-1:0];
+        chan_en_addr : chan_en_mem[wr_chan] <= wr_data[0];
+    end
+end
+
+// Output assignment
+assign dv_out = dec_dv;
+assign chan_out = dec_chan;
+assign data_out = fifo_data;
+assign chan_en_out = chan_en_mem;
 
 endmodule

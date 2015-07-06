@@ -47,6 +47,7 @@ module pid_pipeline #(
 wire idp_dv;
 wire [W_CHAN-1:0] idp_chan;
 wire [W_DATA_IN-1:0] idp_data;
+wire [N_CHAN-1:0] idp_chan_en;
 
 instr_dispatch #(
     .W_SRC          (W_SRC),
@@ -67,8 +68,12 @@ idp #(
     .wr_data        (wr_data),
     .dv_out         (idp_dv),
     .chan_out       (idp_chan),
-    .data_out       (idp_data)
+    .data_out       (idp_data),
+    .chan_en_out    (idp_chan_en)
 );
+
+// Channel reset
+wire [N_CHAN-1:0] chan_rst = ~idp_chan_en;
 
 //--------------------------------------------------------------------
 // Oversample Filter
@@ -87,7 +92,8 @@ oversample_filter #(
     .W_OS           (W_OSF_OS))
 osf (
     .clk_in         (clk_in),
-    .rst_in         (rst_in),
+    .sys_rst_in     (rst_in),
+    .chan_rst_in    (chan_rst),
     .dv_in          (idp_dv),
     .dest_in        (idp_dest),
     .data_in        (idp_data),
@@ -116,7 +122,8 @@ pid_filter #(
     .W_WR_DATA      (W_WR_DATA))
 pid (
     .clk_in         (clk_in),
-    .rst_in         (rst_in),
+    .sys_rst_in     (rst_in),
+    .chan_rst_in    (chan_rst),
     .dv_in          (osf_dv),
     .chan_in        (osf_chan),
     .data_in        (osf_data),
@@ -147,7 +154,8 @@ output_filter #(
     .W_RS           (W_OPF_RS))
 opf (
     .clk_in         (clk_in),
-    .rst_in         (rst_in),
+    .sys_rst_in     (rst_in),
+    .chan_rst_in    (chan_rst),
     .dv_in          (pid_dv),
     .chan_in        (pid_chan),
     .data_in        (pid_data),
