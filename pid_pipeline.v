@@ -102,7 +102,7 @@ osf (
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
     .dv_out         (osf_dv),
-    .dest_out       (osf_chan),
+    .chan_out       (osf_chan),
     .data_out       (osf_data)
 );
 

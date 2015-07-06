@@ -9,8 +9,10 @@ import controller
 Parse hdl parameters
 '''
 parser = parser.HDLParser()
-parser.parse(config.params_path)
 params = parser.get_params()
+
+for header in config.header_list:
+    parser.parse(header)
 
 '''
 Instantiate FPGA device manager

@@ -13,9 +13,6 @@
 
 
 // TODO
-// 2. figure out OSF init set
-// 2. compartmentalize PID pipeline
-// 3  change naming (name all internal data differently, dout and din for outputs only)
 // 3. check all params (change modules to include ep_map instead of params header)
 // 3. check addresses
 // 4. check overflow in all modules

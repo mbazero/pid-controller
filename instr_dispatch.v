@@ -22,14 +22,15 @@ module instr_dispatch #(
     parameter W_WR_CHAN = 16,
     parameter W_WR_DATA = 48,
     parameter W_CHAN = 5,
-    parameter N_CHAN = 8
+    parameter N_CHAN = 8,
+    parameter NULL_SRC = 9
     )(
     // Inputs
     input wire clk_in,
     input wire rst_in,
 
     input wire dv_in,
-    input wire [W_SRC-1:0] fifo_src_in,
+    input wire [W_SRC-1:0] src_in,
     input wire [W_DATA-1:0] data_in,
 
     input wire wr_en,

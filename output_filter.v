@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-`include "parameters.vh"
+`include "ep_map.vh"
 
 //--------------------------------------------------------------------
 // Output Filter
