@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`include "parameters.vh"
 
 // ====================================================================
 // PID Controller
@@ -54,13 +55,6 @@ module pid_controller (
 	output wire							i2c_scl,
 	output wire							hi_muxsel
 	);
-
-//////////////////////////////////////////
-// includes
-//////////////////////////////////////////
-
-`include "parameters.vh"
-`include "ep_map.vh"
 
 //////////////////////////////////////////
 // internal structures
@@ -235,104 +229,32 @@ osf (
 	.wr_addr			(wr_addr),
 	.wr_chan			(wr_chan),
 	.wr_data			(wr_data),
-	.dv_out			(odf_dv),
+	.dv_out			(osf_dv),
 	.dest_out		(osf_dest),
 	.data_out		(osf_data)
 );
 
-// ====================================================================
-// PID Filter
-// ====================================================================
-
-// Assign inputs
-assign pid_dv_ipt = osf_dv_opt;
-assign pid_dest_ipt = osf_dest_opt;
-assign pid_data_ipt = osf_data_opt;
-
-always @( posedge sys_clk_in ) begin
-
-	// pid fetch
-	pid_dv[1] <= pid_dv_ipt;
-	pid_dest[1] <= pid_dest_ipt;
-	pid_data[1] <= pid_data_ipt;
-
-	pid_setpoint[5] <= pid_setpoint[dest_addr[4]];
-	pid_p_coef[5] <= pid_p_coef[dest_addr[4]];
-	pid_i_coef[5] <= pid_i_coef[dest_addr[4]];
-	pid_d_coef[5] <= pid_d_coef[dest_addr[4]];
-	pid_lock_en[5] <= pid_locK_en[dest_addr[4]];
-	pid_data_prev[5] <= pid_data_prev[dest_addr[4]];
-	pid_error_prev0[5] <= pid_error_prev0[dest_addr[4]];
-	pid_error_prev1[5] <= pid_error_prev1[dest_addr[4]];
-
-	// pid compute error and z-transform coefficients
-	// only pass data if pid lock enabled
-	osf_data[6] <= (pid_lock_en[5]) ? osf_data[5] : 0;
-	data_valid[6] <= data_valid[6];
-	dest_addr[6] <= dest_addr[5];
-
-	pid_error[6] <= pid_setpoint[5] - osf_data[5];
-	pid_k1[6] <= pid_p_coef[5] + pid_i_coef[5] + pid_d_coef[5];
-	pid_k2[6] <= -pid_p_coef[5] - (pid_d_coef[5] << 1);
-	pid_k3[6] <= pid_d_coef[5]
-
-	pid_data_prev[6] <= pid_data_prev[5];
-	pid_error_prev0[6] <= pid_error_prev0[5];
-	pid_error_prev1[6] <= pid_error_prev1[5];
-
-	// pid compute coefficient error products
-	// writeback error data
-	data_valid[7] <= data_valid[6];
-	dest_addr[7] <= dest_addr[6];
-
-	pid_ce_prod0[7] <= pid_k1[6] * pid_error[6];
-	pid_ce_prod1[7] <= pid_k2[6] * pid_error_prev0[6];
-	pid_ce_prod2[7] <= pid_k3[6] * pid_error_prev1[6]
-
-	pid_error_prev[dest_addr[6]] <= pid_error[6];
-	pid_error_prev1[dest_addr[6]] <= pid_error_prev0[6];
-
-	pid_data_prev[7] <= pid_data_prev[6];
-
-	// pid compute delta
-	data_valid[8] <= data_valid[7];
-	dest_addr[8] <= dest_addr[7];
-
-	pid_delta[8] <= pid_ce_prod0[7] + pid_ce_prod1[7] + pid_ce_prod2[7];
-
-	pid_data_prev[8] <= pid_data_prev[7];
-
-	// pid compute output data
-	// merge this shit with below
-	pid_data[9] <= pid_delta[8] + pid_data_prev[8];
-	data_valid[9] <= data_valid[8];
-	dest_addr[9] <= dest_addr[8];
-
-	pid_data_prev[9] <= pid_data_prev[8];
-
-	// pid check overflow
-	pid_data[10] <= pid_data[9];
-	data_valid[10] <= data_valid[9];
-	dest_addr[10] <= dest_addr[9];
-
-	pid_overflow[10] = (pid_delta[9][W_OUT-1] == pid_data_prev[9][W_OUT-1])
-							&& (pid_data_prev[9][W_OUT-1] != pid_data[9][W_OUT-1]);
-	pid_data_rail[10] = (pid_data_prev[9][W_OUT-1] == 0) ? PID_MAX_OUTPUT : PID_MIN_OUTPUT;
-
-	// pid correct overflow
-	// merge with below
-	pid_data[11] <= (pid_overflow[10]) ? pid_data_rail[10] : pid_data[10];
-	data_valid[11] <= data_valid[10];
-	dest_addr[11] <= dest_addr[10];
-
-	// pid writeback data
-	pid_data[12] <= pid_data[11];
-	data_valid[12] <= data_valid[11];
-	dest_addr[12] <= dest_addr[11];
-
-	pid_data_prev[dest_addr[11]] <= pid_data[11];
-
-end
+pid_filter #(
+	.W_CHAN			(W_PID_CHAN),
+	.W_DATA_IN		(W_ADC_DATA),
+	.W_DATA_OUT		(W_COMP),
+	.W_WR_ADDR		(W_WR_ADDR),
+	.W_WR_CHAN		(W_WR_CHAN),
+	.W_WR_DATA		(W_WR_DATA))
+pid (
+	.clk_in			(sys_clk_in),
+	.rst_in			(sys_reset),
+	.dv_in			(osf_dv),
+	.chan_in			(osf_chan),
+	.data_in			(osf_data),
+	.wr_en			(wr_en),
+	.wr_addr			(wr_addr),
+	.wr_chan			(wr_chan),
+	.wr_data			(wr_data),
+	.dv_out			(pid_dv),
+	.chan_out		(pid_chan),
+	.data_out		(pid_data)
+);
 
 // ====================================================================
 // Output Preprocessor

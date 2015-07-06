@@ -49,13 +49,13 @@ module instr_dispatch #(
 // Internal state
 reg [N_CHAN-1:0] instr_sent;
 reg [W_CHAN-1:0] chan;
-wire [W_SRC-1:0] src;
 
 // External state
 reg [N_CHAN-1:0] chan_active;
 reg [W_SRC-1:0] chan_src_sel[0:N_CHAN-1]; // PID channel to source mappings
 
 // Fifo signals
+wire [W_SRC-1:0] src;
 wire fifo_rd_en;
 wire fifo_dv;
 
@@ -118,5 +118,13 @@ always @( posedge wr_en ) begin
         chan_active_addr : chan_active[wr_chan] <= wr_data[0];
     end
 end
+
+// Memory initialization
+genvar i;
+generate
+	for ( i = 0; i < N_CHAN; i = i+1 ) begin : src_select_init
+		initial chan_src_sel[i] = NULL_SRC;
+	end
+endgenerate;
 
 endmodule
