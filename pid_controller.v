@@ -16,10 +16,7 @@
 // 3. check all params
 // 3. check addresses
 // 4. check overflow in all modules
-// 5. decide what to do with PID lock en 
 // 5. Implement OSF write constant or constant mode
-// 6. add adc state write handling to adc controller
-// 7. channel deactive to act as reset
 // 8. opp write init function
 // 9. convert all operators to logical ( double symbol )
 

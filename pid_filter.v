@@ -70,7 +70,6 @@ reg signed [W_DATA_IN-1:0] setpoint_p1 = 0;
 reg signed [W_COEFS-1:0] p_coef_p1 = 0;
 reg signed [W_COEFS-1:0] i_coef_p1 = 0;
 reg signed [W_COEFS-1:0] d_coef_p1 = 0;
-reg [N_CHAN-1:0] lock_en_p1 = 0;
 
 reg dv_p2 = 0;
 reg [W_CHAN-1:0] chan_p2 = 0;
@@ -118,7 +117,6 @@ always @( posedge sys_clk_in ) begin
     p_coef_p1 = p_coef_mem[chan_in];
     i_coef_p1 = i_coef_mem[chan_in];
     d_coef_p1 = d_coef_mem[chan_in];
-    lock_en_p1 = lock_en_mem[chan_in];
 
     //------------------------Pipe Stage 2-----------------------------
     // Pass data valid and channel
