@@ -11,6 +11,19 @@
 // * figure out channel activation shit
 // * add overflow checking to osf
 
+
+// TODO
+// 1. compartmentalize OSF
+// 2. figure out OSF init set
+// 2. compartmentalize PID pipeline
+// 3  change naming (name all internal data differently, dout and din for outputs only)
+// 3. check all params (change modules to include ep_map instead of params header)
+// 3. check addresses
+// 4. check overflow in all modules
+// 4. Implement PID clear and OSF clear
+// 5. decide what to do with PID lock en 
+// 5. Implement OSF write constant or constant mode
+
 module pid_controller (
 	// inputs <- OPAL KELLY PLL
 	input wire							sys_clk_in,				// system clock; max frequency determined by timing analysis
@@ -189,133 +202,7 @@ cs (
 // Start PID pipeline
 // ====================================================================
 
-instr_dispatch #(
-	.W_SRC			(W_SRC_CHAN),
-	.W_DATA			(W_ADC_DATA),
-	.W_WR_ADDR		(W_WR_ADDR),
-	.W_WR_CHAN		(W_WR_CHAN),
-	.W_WR_DATA		(W_WR_DATA),
-	.W_CHAN			(W_PID_CHAN),
-	.N_CHAN			(N_PID_CHAN))
-idp #(
-	.clk_in			(sys_clk_in),
-	.rst_in			(sys_reset),
-	.dv_in			(cs_dv),
-	.src_in			(cs_chan),
-	.data_in			(cs_data),
-	.wr_addr			(wr_addr),
-	.wr_chan			(wr_chan),
-	.wr_data			(wr_data),
-	.dv_out			(idp_dv),
-	.chan_out		(idp_chan),
-	.data_out		(idp_data)
-);
 
-oversample_filter #(
-	.W_CHAN			(W_PID_CHAN),
-	.W_DATA			(W_ADC_DATA),
-	.W_WR_ADDR		(W_WR_ADDR),
-	.W_WR_CHAN		(W_WR_CHAN),
-	.W_WR_DATA		(W_WR_DATA),
-	.W_SUM			(W_COMP),
-	.W_OS				(W_OSF_OS))
-osf (
-	.clk_in			(sys_clk_in),
-	.rst_in			(sys_reset),
-	.dv_in			(idp_dv),
-	.dest_in			(idp_dest),
-	.data_in			(idp_data),
-	.wr_en			(wr_en),
-	.wr_addr			(wr_addr),
-	.wr_chan			(wr_chan),
-	.wr_data			(wr_data),
-	.dv_out			(osf_dv),
-	.dest_out		(osf_dest),
-	.data_out		(osf_data)
-);
-
-pid_filter #(
-	.W_CHAN			(W_PID_CHAN),
-	.W_DATA_IN		(W_ADC_DATA),
-	.W_DATA_OUT		(W_COMP),
-	.W_WR_ADDR		(W_WR_ADDR),
-	.W_WR_CHAN		(W_WR_CHAN),
-	.W_WR_DATA		(W_WR_DATA))
-pid (
-	.clk_in			(sys_clk_in),
-	.rst_in			(sys_reset),
-	.dv_in			(osf_dv),
-	.chan_in			(osf_chan),
-	.data_in			(osf_data),
-	.wr_en			(wr_en),
-	.wr_addr			(wr_addr),
-	.wr_chan			(wr_chan),
-	.wr_data			(wr_data),
-	.dv_out			(pid_dv),
-	.chan_out		(pid_chan),
-	.data_out		(pid_data)
-);
-
-// ====================================================================
-// Output Preprocessor
-// ====================================================================
-
-// Assign inputs
-
-always @( posedge sys_clk_in ) begin
-
-	// -----------------------------------------------------------
-	// output preprocessor
-	// -----------------------------------------------------------
-
-	// fetch multiplier
-	pid_data[13] <= pid_data[12];
-	data_valid[13] <= data_valid[12];
-	dest_addr[13] <= dest_addr[12];
-
-	opp_mult[13] <= opp_mult[dest_addr[12]];
-
-	// multiply and fetch right shift
-	opp_data[14] <= pid_data[13] * opp_mult[13];
-	data_valid[14] <= data_valid[13];
-	dest_addr[14] <= dest_addr[13];
-
-	opp_rs[14] <= opp_rs[dest_addr[13]];
-
-	// right shift and fetch previous data
-	opp_data[15] <= opp_data[14] >>> opp_rs[14];
-	data_valid[15] <= data_valid[14];
-	dest_addr[15] <= dest_addr[14];
-
-	opp_data_prev[15] <= opp_data_prev[dest_addr[14]];
-
-	// accumulate and fetch max
-	opp_data[16] <= opp_data[15] + opp_data_prev[15];
-	data_valid[16] <= data_valid[15];
-	dest_addr[16] <= dest_addr[15];
-
-	opp_max[16] <= opp_max[dest_addr[15]]
-
-	// check upper bound and fetch min
-	opp_data[17] <= (opp_data[16] > opp_max[16]) ? opp_max[16] : opp_data[16];
-	data_valid[17] <= data_valid[16];
-	dest_addr[17] <= dest_addr[16];
-
-	opp_min[17] <= opp_min[dest_addr[16]];
-
-	// check lower bound
-	opp_data[18] <= (opp_data[17] < opp_min[17]) ? opp_min[17] : opp_data[17];
-	data_valid[18] <= data_valid[17];
-	dest_addr[18] <= dest_addr[17];
-
-	// writeback
-	opp_data[19] <= opp_data[18];
-	data_valid[19] <= data_valid[18];
-	dest_addr[19] <= dest_addr[18];
-
-	opp_data_prev[dest_addr[18]] <= opp_data[18];
-
-end
 
 wire [W_COMP-1:0] pipeline_data = opp_data[19];
 wire [W_EP-1:0] pipeline_dest = dest_addr[19];

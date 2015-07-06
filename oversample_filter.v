@@ -46,11 +46,11 @@ localparam W_COUNT = 2**W_OS;
 // Structures
 //--------------------------------------------------------------------
 // Internal state
-reg signed [W_SUM-1:0] sum_mem[0:N_OUT-1];
-reg [W_COUNT-1:0] count_mem[0:N_OUT-1];
+reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
+reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
 
 // External state
-reg [W_OS-1:0] os_mem[0:N_OUT-1];
+reg [W_OS-1:0] os_mem[0:N_CHAN-1];
 
 // Pipe registers
 reg dv_p1 = 0;
@@ -69,6 +69,8 @@ reg count_sat_p3 = 0;
 reg dv_p3 = 0;
 reg [W_CHAN-1:0] chan_p3 = 0;
 reg signed [W_DATA-1:0] data_p3 = 0;
+
+reg [W_CHAN-1:0] i = 0;
 
 //--------------------------------------------------------------------
 // Logic
@@ -126,7 +128,7 @@ always @( posedge clk_in ) begin
         dv_3 = 0;
 
         // Zero internal state
-        for ( i = 0; i < N_OUT; i = i + 1 ) begin
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
             sum_mem[i] = 0;
             count_mem[i] = 0;
         end
@@ -134,16 +136,16 @@ always @( posedge clk_in ) begin
     //-----------------------------------------------------------------
 end
 
-// Output assignments
-assign dv_out = dv_p3;
-assign chan_out = chan_p3;
-assign data_out = data_p3;
-
 // External state write handling
 always @( posedge wr_en ) begin
     case ( wr_addr ) begin
         osf_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0]
     end
 end
+
+// Output assignment
+assign dv_out = dv_p3;
+assign chan_out = chan_p3;
+assign data_out = data_p3;
 
 endmodule
