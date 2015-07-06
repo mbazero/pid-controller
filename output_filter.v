@@ -22,8 +22,7 @@ module output_filter #(
     )(
     // Inputs
     input wire clk_in,
-    input wire sys_rst_in,
-    input wire [N_CHAN-1:0] chan_rst_in,
+    input wire rst_in,
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
@@ -55,8 +54,9 @@ localparam MIN_OUT = -(2 ** (W_DATA_OUT - 1));
 reg signed [W_DATA_OUT-1:0] dout_prev_mem[0:N_CHAN-1];
 
 // Writeable channel memory
-reg signed [W_MULT-1:0] mult_mem[0:N_CHAN-1];
+reg [N_CHAN-1:0] clr_mem;
 reg [W_RS-1:0] rs_mem[0:N_CHAN-1];
+reg signed [W_MULT-1:0] mult_mem[0:N_CHAN-1];
 reg signed [W_DATA_OUT-1:0] max_mem[0:N_CHAN-1];
 reg signed [W_DATA_OUT-1:0] min_mem[0:N_CHAN-1];
 reg signed [W_DATA_OUT-1:0] init_mem[0:N_CHAN-1];
@@ -140,17 +140,14 @@ always @( posedge sys_clk_in ) begin
     // Writeback output
     dout_prev_mem[chan_p3] = dout_p4;
 
-    //------------------------Pipe Reset-------------------------------
-    if ( sys_rst_in == 1'b1 ) begin
-        dv_1 = 0;
-        dv_2 = 0;
-        dv_3 = 0;
-        dv_4 = 0;
-    end
+    //-------------------------Pipe Clear------------------------------
+    if ( rst_in || clr_mem[chan_p1] ) dv_p1 = 0;
+    if ( rst_in || clr_mem[chan_p2] ) dv_p2 = 0;
+    if ( rst_in || clr_mem[chan_p3] ) dv_p3 = 0;
 
-    //--------------------Channel Memory Reset-------------------------
+    //---------------------Channel Memory Clear------------------------
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( sys_rst_in || chan_rst_in[i] ) begin
+        if ( rst_in || clr_mem[i] ) begin
             dout_prev_mem[i] = init_mem[i];
         end
     end
@@ -160,6 +157,7 @@ end
 // Channel memory write handling
 always @( posedge wr_en ) begin
     case ( wr_addr ) begin
+        opf_clr_addr : clr_mem[wr_chan] <= wr_data[0];
         opf_mult_addr : mult_mem[wr_chan] <= wr_data[W_MULT-1:0];
         opf_rs_addr : rs_mem[wr_chan] <= wr_data[W_RS-1:0];
         opf_max_addr : max_mem[wr_chan] <= wr_data[W_DATA_OUT-1:0];

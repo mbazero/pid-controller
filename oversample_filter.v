@@ -20,8 +20,7 @@ module oversample_filter #(
     )(
     // Inputs
     input wire clk_in,
-    input wire sys_rst_in,
-    input wire [W_CHAN-1:0] chan_rst_in,
+    input wire rst_in,
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
@@ -51,6 +50,7 @@ reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
 reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
 
 // Writeable channel memory
+reg [N_CHAN-1:0] clr_mem;
 reg [W_OS-1:0] os_mem[0:N_CHAN-1];
 
 // Pipe registers
@@ -121,16 +121,14 @@ always @( posedge clk_in ) begin
        count_mem[chan_p2] = ( count_sat_p3 ) ? 0 : count_p2;
     end
 
-    //------------------------Pipe Reset-------------------------------
-    if ( sys_rst_in ) begin
-        dv_1 = 0;
-        dv_2 = 0;
-        dv_3 = 0;
-    end
+    //-------------------------Pipe Clear------------------------------
+    if ( rst_in || clr_mem[chan_p1] ) dv_p1 = 0;
+    if ( rst_in || clr_mem[chan_p2] ) dv_p2 = 0;
+    if ( rst_in || clr_mem[chan_p3] ) dv_p3 = 0;
 
-    //--------------------Channel Memory Reset-------------------------
+    //---------------------Channel Memory Clear------------------------
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( sys_rst_in || chan_rst_in[i] ) begin
+        if ( rst_in || clr_mem[i] ) begin
             sum_mem[i] = 0;
             count_mem[i] = 0;
         end
@@ -141,7 +139,8 @@ end
 // Channel memory write handling
 always @( posedge wr_en ) begin
     case ( wr_addr ) begin
-        osf_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0]
+        osf_clr_addr : clr_mem[wr_chan] <= wr_data[0];
+        osf_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0];
     end
 end
 

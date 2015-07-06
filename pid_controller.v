@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-`include "parameters.vh"
+`include "ep_map.vh"
 
 // ====================================================================
 // PID Controller
@@ -13,10 +13,9 @@
 
 
 // TODO
-// 3. check all params (change modules to include ep_map instead of params header)
+// 3. check all params
 // 3. check addresses
 // 4. check overflow in all modules
-// 4. Implement PID clear and OSF clear
 // 5. decide what to do with PID lock en 
 // 5. Implement OSF write constant or constant mode
 // 6. add adc state write handling to adc controller
@@ -113,7 +112,7 @@ fp_intf (
 // ADC Input
 //--------------------------------------------------------------------
 wire adc_dv;
-wire [W_ADC_OS-1:0] adc_os;
+reg [W_ADC_OS-1:0] adc_os = 1;
 wire [W_SRC_SEL-1:0] adc_src_a;
 wire [W_SRC_SEL-1:0] adc_src_b;
 wire [W_ADC_DATA-1:0] adc_data_a;
@@ -122,6 +121,7 @@ wire [W_ADC_DATA-1:0] adc_data_b;
 wire adc_sync_dv;
 wire [W_SRC_SEL-1:0] adc_sync_src;
 wire [W_ADC_DATA-1:0] adc_sync_data;
+
 
 // ADC controller
 adc_controller #(
@@ -166,6 +166,13 @@ csync (
     .chan_out       (cs_src),
     .data_out       (cs_data)
     );
+
+// ADC oversample mode write handling
+always @( posedge wr_en ) begin
+    case ( wr_addr ) begin
+        adc_os_addr : adc_os <= wr_data[W_ADC_OS-1:0];
+    end
+end
 
 //--------------------------------------------------------------------
 // PID Pipeline

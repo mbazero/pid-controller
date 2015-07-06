@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-`include "parameters.vh"
+`include "ep_map.vh"
 
 //--------------------------------------------------------------------
 // Instruction Dispatch -- mba 2015
@@ -42,7 +42,6 @@ module instr_dispatch #(
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
     output wire [W_DATA-1:0] data_out,
-    output wire [N_CHAN-1:0] chan_en_out
     );
 
 //--------------------------------------------------------------------
@@ -136,6 +135,5 @@ end
 assign dv_out = dec_dv;
 assign chan_out = dec_chan;
 assign data_out = fifo_data;
-assign chan_en_out = chan_en_mem;
 
 endmodule

@@ -18,8 +18,7 @@ module pid_filter #(
     )(
     // Inputs
     input wire clk_in,
-    input wire sys_rst_in,
-    input wire [N_CHAN-1:0] chan_rst_in,
+    input wire rst_in,
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
@@ -57,11 +56,11 @@ reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
 reg signed [W_DATA_OUT-1:0] dout_prev_mem[0:N_CHAN-1];
 
 // Writeable channel memory
+reg [N_CHAN-1:0] clr_mem;
 reg signed [W_DATA_IN-1:0] setpoint_mem[0:N_CHAN-1];
 reg signed [W_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
 reg signed [W_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
 reg signed [W_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
-reg [N_CHAN-1:0] lock_en_mem;
 
 // Pipe registers
 reg dv_p1 = 0;
@@ -101,7 +100,7 @@ reg dv_p6 = 0;
 reg [W_CHAN-1:0] chan_p6 = 0;
 reg signed [W_DATA_OUT-1:0] dout_p6 = 0;
 
-reg [W_CHAN-1:0] i = 0;
+reg [W_CHAN-1:0] i;
 
 //--------------------------------------------------------------------
 // Logic
@@ -192,19 +191,17 @@ always @( posedge sys_clk_in ) begin
         dout_prev_mem[chan_p5] = dout_p6;
     end
 
-    //------------------------Pipe Reset-------------------------------
-    if ( sys_rst_in == 1'b1 ) begin
-        dv_1 = 0;
-        dv_2 = 0;
-        dv_3 = 0;
-        dv_4 = 0;
-        dv_5 = 0;
-        dv_6 = 0;
-    end
+    //-------------------------Pipe Clear------------------------------
+    if ( rst_in || clr_mem[chan_p1] ) dv_p1 = 0;
+    if ( rst_in || clr_mem[chan_p2] ) dv_p2 = 0;
+    if ( rst_in || clr_mem[chan_p3] ) dv_p3 = 0;
+    if ( rst_in || clr_mem[chan_p4] ) dv_p4 = 0;
+    if ( rst_in || clr_mem[chan_p5] ) dv_p5 = 0;
+    if ( rst_in || clr_mem[chan_p6] ) dv_p6 = 0;
 
-    //--------------------Channel Memory Reset-------------------------
+    //---------------------Channel Memory Clear------------------------
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( sys_rst_in || chan_rst_in[i] ) begin
+        if ( rst_in || clr_mem[i] ) begin
             error_prev0_mem[i] = 0;
             error_prev1_mem[i] = 0;
             dout_prev_mem[i] = 0;
@@ -216,11 +213,11 @@ end
 // Channel memory write handling
 always @( posedge wr_en ) begin
     case ( wr_addr ) begin
+        pid_clr_addr : clr_mem[wr_chan] <= wr_data[0];
         setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DATA_IN-1:0];
         p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_COEFS-1:0];
         i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_COEFS-1:0];
         d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_COEFS-1:0];
-        lock_en_addr : lock_en_mem[wr_chan] <= wr_data[0];
     end
 end
 
