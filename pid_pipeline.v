@@ -10,7 +10,7 @@
 module pid_pipeline #(
     // Parameters
     parameter W_SRC = 5,
-    parameter N_CHAN = 8,
+    parameter W_CHAN = 8,
     parameter N_CHAN = 5,
     parameter W_DATA_IN = 18,
     parameter W_DATA_OUT = 64,
@@ -41,9 +41,11 @@ module pid_pipeline #(
     output wire signed [W_DATA-1:0] data_out
     );
 
-// Instruction dispatch
+//--------------------------------------------------------------------
+// Instruction Dispatch
+//--------------------------------------------------------------------
 wire idp_dv;
-wire [N_CHAN-1:0] idp_chan;
+wire [W_CHAN-1:0] idp_chan;
 wire [W_DATA_IN-1:0] idp_data;
 
 instr_dispatch #(
@@ -52,7 +54,7 @@ instr_dispatch #(
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA),
-    .W_CHAN         (N_CHAN),
+    .W_CHAN         (W_CHAN),
     .N_CHAN         (N_CHAN))
 idp #(
     .clk_in         (clk_in),
@@ -68,13 +70,15 @@ idp #(
     .data_out       (idp_data)
 );
 
-// Oversample filtering
+//--------------------------------------------------------------------
+// Oversample Filter
+//--------------------------------------------------------------------
 wire osf_dv;
-wire [N_CHAN-1:0] osf_chan;
+wire [W_CHAN-1:0] osf_chan;
 wire [W_DATA_IN-1:0] osf_data;
 
 oversample_filter #(
-    .W_CHAN         (N_CHAN),
+    .W_CHAN         (W_CHAN),
     .W_DATA         (W_DATA_IN),
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),
@@ -92,17 +96,19 @@ osf (
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
     .dv_out         (osf_dv),
-    .dest_out       (osf_dest),
+    .dest_out       (osf_chan),
     .data_out       (osf_data)
 );
 
-// PID filtering
+//--------------------------------------------------------------------
+// PID Filter
+//--------------------------------------------------------------------
 wire pid_dv;
-wire [N_CHAN-1:0] pid_chan;
+wire [W_CHAN-1:0] pid_chan;
 wire [W_COMP-1:0] pid_data;
 
 pid_filter #(
-    .W_CHAN         (N_CHAN),
+    .W_CHAN         (W_CHAN),
     .W_DATA_IN      (W_DATA_IN),
     .W_DATA_OUT     (W_COMP),
     .W_WR_ADDR      (W_WR_ADDR),
@@ -123,13 +129,15 @@ pid (
     .data_out       (pid_data)
 );
 
-// Output filtering
+//--------------------------------------------------------------------
+// Output Filtering
+//--------------------------------------------------------------------
 wire opf_dv;
-wire [N_CHAN-1:0] opf_chan;
+wire [W_CHAN-1:0] opf_chan;
 wire [W_COMP-1:0] opf_data;
 
 output_filter #(
-    .W_CHAN         (N_CHAN),
+    .W_CHAN         (W_CHAN),
     .W_DATA_IN      (W_COMP),
     .W_DATA_OUT     (W_DATA_OUT),
     .W_WR_ADDR      (W_WR_ADDR),

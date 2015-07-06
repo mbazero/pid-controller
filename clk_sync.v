@@ -14,18 +14,18 @@ module clk_sync #(
     parameter N_ADC     = 8
     )(
     // inputs <- top level entity
-    input wire                  sys_clk_in,
+    input wire                  sync_clk_in,
     input wire                  reset_in,
 
     // inputs <- adc controller
-    input wire                  data_valid_in,
+    input wire                  dv_in,
     input wire  [W_CHS-1:0]     chan_a_in,
     input wire  [W_CHS-1:0]     chan_b_in,
     input wire  [W_DATA-1:0]    data_a_in,
     input wire  [W_DATA-1:0]    data_b_in,
 
     // outputs -> oversample filter
-    output wire [N_ADC-1:0]     data_valid_out,
+    output wire [N_ADC-1:0]     dv_out,
     output wire [W_CHS-1:0]     chan_out,
     output wire [W_DATA-1:0]    data_out
     );
@@ -37,7 +37,7 @@ module clk_sync #(
 /* state parameters */
 localparam  ST_WAIT_DVH = 3'd0,     // wait for data valid to go high
             ST_HOLD     = 3'd1,     // latch and hold data to satisfy hold time
-            ST_SEND     = 3'd2,     // assert data_valid_out synchronous with 50MHz clock
+            ST_SEND     = 3'd2,     // assert dv_out synchronous with 50MHz clock
             ST_WAIT_DVL = 3'd3;     // wait for data valid to go low
 
 //////////////////////////////////////////
@@ -45,11 +45,11 @@ localparam  ST_WAIT_DVH = 3'd0,     // wait for data valid to go high
 //////////////////////////////////////////
 
 /* 50MHz data registers */
+reg dv = 0;
 reg [W_CHS-1:0] chan_a = 0;
 reg [W_CHS-1:0] chan_b = 0;
 reg [W_DATA-1:0] data_a = 0;
 reg [W_DATA-1:0] data_b = 0;
-reg data_valid = 0;
 
 /* state registers */
 reg [2:0] cur_state = ST_WAIT_DVH;
@@ -65,17 +65,17 @@ always @( * ) begin
         ST_SEND_A: begin
             data_out = data_a;
             chan_out = chan_a;
-            data_valid_out = 1;
+            dv_out = 1;
         end
         ST_SEND_B: begin
             data_out = data_b;
             chan_out = chan_b;
-            data_valid_out = 1;
+            dv_out = 1;
         end
         default: begin
             data_out = 0;
             chan_out = 0;
-            data_valid_out = 0;
+            dv_out = 0;
         end
     end
 end
@@ -85,19 +85,19 @@ end
 //////////////////////////////////////////
 
 /* data registers */
-always @( posedge sys_clk_in ) begin
+always @( posedge sync_clk_in ) begin
     if ( reset_in == 1 ) begin
+        dv <= 0;
         chan_a <= 0;
         chan_b <= 0;
         data_a <= 0;
         data_b <= 0;
-        data_valid <= 0;
-    end else if ( cur_state == ST_WAIT_DVH & data_valid_in == 1 ) begin
+    end else if ( cur_state == ST_WAIT_DVH & dv_in == 1 ) begin
+        dv <= dv_in;
         chan_a <= chan_a_in;
         chan_b <= chan_b_in;
         data_a <= data_a_in;
         data_b <= data_b_in;
-        data_valid <= data_valid_in;
     end
 end
 
@@ -106,7 +106,7 @@ end
 //////////////////////////////////////////
 
 /* state register - synchronous with system clock */
-always @( posedge sys_clk_in ) begin
+always @( posedge sync_clk_in ) begin
     if ( reset_in == 1 ) begin
         cur_state <= ST_WAIT_DVH;
     end else begin
@@ -119,7 +119,7 @@ always @( * ) begin
     next_state <= cur_state; // default assignment if no case statement is satisfied
     case ( cur_state )
         ST_WAIT_DVH: begin
-            if ( data_valid_in == 1 ) begin
+            if ( dv_in == 1 ) begin
                 next_state <= ST_HOLD;
             end
         end
@@ -133,7 +133,7 @@ always @( * ) begin
             next_state <= ST_WAIT_DVL;
         end
         ST_WAIT_DVL: begin
-            if ( data_valid_rdc == 0 ) begin
+            if ( dv_rdc == 0 ) begin
                 next_state <= ST_WAIT_DVH;
             end
         end

@@ -71,7 +71,6 @@ parameter adc_os_addr				= 16'h01;
 
 parameter chan_active_addr  		= 16'h02;
 parameter chan_src_sel_addr		= 16'h03;
-parameter chan_focus_addr			= 16'h04;
 
 parameter osf_activate_addr		= 16'h05;
 parameter osf_os_addr				= 16'h07;
@@ -88,6 +87,8 @@ parameter opp_init_addr				= 16'h0f;
 parameter opp_mult_addr				= 16'h10;
 parameter opp_rs_addr				= 16'h11;
 
+parameter pipe_chan_addr         = 16'h04;
+
 //////////////////////////////////////////
 // trigger-in endpoints
 //////////////////////////////////////////
@@ -99,7 +100,7 @@ parameter opp_inject0_itep			= 8'h42;
 //////////////////////////////////////////
 // multipurpose trigger offsets
 //////////////////////////////////////////
-parameter sys_reset_offset			= 0;
+parameter sys_rst_offset			= 0;
 parameter adc_cstart_offset		= 1;
 parameter write_data_offset		= 2;
 parameter dac_ref_set_offset		= 3;

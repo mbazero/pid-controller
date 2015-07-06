@@ -34,7 +34,7 @@ module adc_controller #(
 	output wire						n_cs_out,						// chip select signal to adc
 
 	// outputs -> pid core
-	output wire									data_valid_out,	// line a data valid
+	output wire									dv_out,	// line a data valid
 	output reg				[W_CHS-1:0]		chan_a_out,			// line a adc channel
 	output reg				[W_CHS-1:0]		chan_b_out,			// line b adc channel
 	output reg signed		[W_OUT-1:0]		data_a_out,			// line a data out
@@ -82,7 +82,7 @@ assign reset_out			= reset_in;
 assign os_out				= os_in;
 
 /* data valid out */
-assign data_valid_out	= |dv_vect;
+assign dv_out	= |dv_vect;
 
 /* data valid vectors */
 genvar i;

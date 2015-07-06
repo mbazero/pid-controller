@@ -21,7 +21,7 @@ module dac_controller #(
 	// inputs <- cycle controller
 	input wire	[W_DATA-1:0]	data_in,
 	input wire	[W_CHS-1:0]		channel_in,
-	input wire						data_valid_in,
+	input wire						dv_in,
 
 	// outputs -> dac hardware
 	output wire 					nldac_out, 		// load DACs
@@ -31,7 +31,7 @@ module dac_controller #(
 	output wire 					nclr_out, 		// asynchronous clear
 
 	// outputs -> top level entity
-	output wire						dac_done_out,	// pulsed when dac finishes updating a channels
+	output wire						wr_done_out,	// pulsed when dac finishes the instruction send
 	output wire	[W_DATA-1:0]	data_out,		// output data
 	output wire	[W_CHS-1:0]		channel_out		// output data valid
 	);
@@ -92,7 +92,7 @@ assign din_out = tx_data[31];
 assign ref_set_instr = {4'b0000, 4'b1001, 4'b0000, 4'b1010, 16'b0};
 
 /* loop control flow */
-assign dac_done_out = ( cur_state == ST_DAC_DONE );
+assign wr_done_out = ( cur_state == ST_DAC_DONE );
 
 /* output data */
 assign data_out = data;
@@ -107,7 +107,7 @@ always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		data		<= 0;
 		address	<= 0;
-	end else if (( cur_state == ST_IDLE ) & ( data_valid_in == 1)) begin
+	end else if (( cur_state == ST_IDLE ) & ( dv_in == 1)) begin
 		data 		<= data_in;
 		address 	<= {1'b0, channel_in};			// MSB of channel signal is only used in broadcast mode
 	end
@@ -181,7 +181,7 @@ always @( * ) begin
 	next_state <= cur_state;						// default assignment if no case condition is satisified
 	case (cur_state)
 		ST_IDLE: begin
-			if ( data_valid_in == 1	) begin
+			if ( dv_in == 1	) begin
 				next_state <= ST_SYNC_DATA;
 			end else if ( ref_set_in == 1 ) begin
 				next_state <= ST_SYNC_REF;
