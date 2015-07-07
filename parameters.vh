@@ -8,8 +8,12 @@
 parameter N_ADC			= 8;		// number of adc channels to generate
 parameter N_DAC			= 8;		// number of dac channels to generate
 parameter N_DDS			= 1;		// number of dds channels to generate
+parameter W_EP          = 16;    // width of frontpanel endpoints
 parameter W_ADC_DATA		= 18; 	// width of adc data word
+parameter W_ADC_CHAN    = 3;     // width of adc channel select
+parameter W_ADC_OS      = 3;     // width of adc oversample mode signal
 parameter W_DAC_DATA		= 16;		// width of dac data word
+parameter W_DAC_CHAN    = 3;     // width of dac channel select
 parameter W_FREQ_DATA	= 48; 	// width of dds frequency word
 parameter W_PHASE_DATA	= 14;		// width of dds phase word
 parameter W_AMP_DATA 	= 10; 	// width of dds amplitude instruction
@@ -32,24 +36,22 @@ parameter AMP0_ADDR			= N_DAC + 2 * N_DDS;	// Amplitude channel 0 output address
 // - don't change any of these unless hardware on
 //   breakout board changes
 // ----------------------------------------------------------------------------
-parameter W_COMP			= 64; 	// width of computation registers
+parameter W_COMP			= 128; 	// width of computation registers
 parameter W_EP				= 16; 	// width of opal kelly endpoint
-parameter W_ADC_CHS		= 3;		// width of adc channel select
-parameter W_ADC_OS		= 3;		// width of adc oversample signal
-parameter W_OSF_OS		= 4;		// width of oversample mode signal
-parameter W_OSF_CD		= 16;		// width of osf cycle delay signal
-parameter W_INPUT_SEL	= 5;		// width of router select signal (must be log2(N_DAC) + 1...MSB stores channel activation state)
-parameter W_OPP_MLT		= 10;		// width of opp multiplication factor; specifies max allowed multiplier
-parameter W_DAC_CHS		= 3;		// width of dac channel select
+parameter W_WR_ADDR     = W_EP;
+parameter W_WR_CHAN     = W_EP;
+parameter W_WR_DATA     = W_EP*4;
 parameter PIPE_DEPTH		= 1024;	// depth of pipe out fifo specified in during core gen
-parameter ADC_CYCLE_T	= 5;		// adc cycle time in microseconds when adc_os = 0
 
 // ---------------------------- derived params --------------------------------
 // - don't change these
 // ----------------------------------------------------------------------------
-parameter N_SRC				= N_ADC;					// total number of input source channels
-parameter N_CHAN 				= N_DAC + 3 * N_DDS;	// total number of PID channels equal to number of output channels
-parameter NULL_SRC			= N_SRC;					// null source descriptor for deactive routes
-parameter NULL_CHAN		   = N_CHAN;				// null PID channel descriptor for deactive routes
-parameter W_RTR_DATA 		= W_COMP + 2;			// width of router data lines
-parameter W_OPP_MAX			= W_FREQ_DATA + 1;	// maximum opp output data width
+parameter W_PID_SRC        = W_ADC_CHAN;        // width of PID source channel select
+parameter N_PID_CHAN  		= N_DAC + 3*N_DDS;	// total number of PID channels equal to number of output channels
+parameter W_PID_CHAN       = log2(N_PID_CHAN)   // width of PID output channel select
+parameter W_PID_DIN        = W_ADC_DATA;        // width of PID input data
+parameter W_PID_DOUT       = W_FREQ_DATA + 1;   // width of PID data output; must greater or equal to the max output width plus a sign bit.
+parameter W_PID_COMP       = 128;               // width of PID computation registers. A larger value means increased PID precision, but an increased FPGA area.
+parameter W_PID_OPRNDS     = W_EP;              // width of PID operands
+
+`include "functions.vh"

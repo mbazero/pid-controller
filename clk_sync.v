@@ -10,7 +10,7 @@
 module clk_sync #(
     // parameters
     parameter W_DATA    = 18,
-    parameter W_CHS     = 3,
+    parameter W_CHAN     = 3,
     parameter N_ADC     = 8
     )(
     // inputs <- top level entity
@@ -19,14 +19,14 @@ module clk_sync #(
 
     // inputs <- adc controller
     input wire                  dv_in,
-    input wire  [W_CHS-1:0]     chan_a_in,
-    input wire  [W_CHS-1:0]     chan_b_in,
+    input wire  [W_CHAN-1:0]     chan_a_in,
+    input wire  [W_CHAN-1:0]     chan_b_in,
     input wire  [W_DATA-1:0]    data_a_in,
     input wire  [W_DATA-1:0]    data_b_in,
 
     // outputs -> oversample filter
     output wire [N_ADC-1:0]     dv_out,
-    output wire [W_CHS-1:0]     chan_out,
+    output wire [W_CHAN-1:0]     chan_out,
     output wire [W_DATA-1:0]    data_out
     );
 
@@ -46,8 +46,8 @@ localparam  ST_WAIT_DVH = 3'd0,     // wait for data valid to go high
 
 /* 50MHz data registers */
 reg dv = 0;
-reg [W_CHS-1:0] chan_a = 0;
-reg [W_CHS-1:0] chan_b = 0;
+reg [W_CHAN-1:0] chan_a = 0;
+reg [W_CHAN-1:0] chan_b = 0;
 reg [W_DATA-1:0] data_a = 0;
 reg [W_DATA-1:0] data_b = 0;
 

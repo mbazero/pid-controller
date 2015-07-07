@@ -10,8 +10,9 @@
 module pid_filter #(
     // Parameters
     parameter W_CHAN = 5,
-    parameter W_DATA_IN = 18,
-    parameter W_DATA_OUT = 64,
+    parameter W_DIN = 18,
+    parameter W_DOUT = 128,
+    parameter W_PID_COEFS = 16,
     parameter W_WR_ADDR = 16,
     parameter W_WR_CHAN = 16,
     parameter W_WR_DATA = 48
@@ -22,7 +23,7 @@ module pid_filter #(
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
-    input wire signed [W_DATA-1:0] data_in,
+    input wire signed [W_DIN-1:0] data_in,
 
     input wire wr_en,
     input wire [W_WR_ADDR-1:0] wr_addr,
@@ -32,20 +33,17 @@ module pid_filter #(
     // Outputs
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
-    output wire signed [W_DATA-1:0] data_out
+    output wire signed [W_DIN-1:0] data_out
     );
 
 //--------------------------------------------------------------------
 // Parameters
 //--------------------------------------------------------------------
-localparam W_ERROR = W_DATA_IN;
-localparam W_K_COEFS = W_COEFS + 1;
+localparam W_ERROR = W_DIN + 1;
+localparam W_K_COEFS = W_PID_COEFS + 2;
 localparam W_CE_PROD = W_K_COEFS + W_ERROR;
 localparam W_DELTA = W_CE_PROD + 2;
-localparam W_DATA_INT = ((W_DELTA > W_DATA_OUT) ? W_DELTA : W_DATA_OUT) + 1;
-
-localparam MAX_OUT = (2 ** (W_DATA_OUT - 1)) - 1;
-localparam MIN_OUT = -(2 ** (W_DATA_OUT - 1));
+localparam W_DINT = ((W_DELTA > W_DOUT) ? W_DELTA : W_DOUT) + 1;
 
 //--------------------------------------------------------------------
 // Structures
@@ -53,23 +51,29 @@ localparam MIN_OUT = -(2 ** (W_DATA_OUT - 1));
 // Internal channel memory
 reg signed [W_ERROR-1:0] error_prev0_mem[0:N_CHAN-1];
 reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
-reg signed [W_DATA_OUT-1:0] dout_prev_mem[0:N_CHAN-1];
+reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
 
 // Writeable channel memory
-reg [N_CHAN-1:0] clr_mem;
-reg signed [W_DATA_IN-1:0] setpoint_mem[0:N_CHAN-1];
-reg signed [W_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
-reg signed [W_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
-reg signed [W_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
+reg signed [W_DIN-1:0] setpoint_mem[0:N_CHAN-1];
+reg signed [W_PID_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
+reg signed [W_PID_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
+reg signed [W_PID_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
+
+// Channel request registers
+reg [N_CHAN-1:0] clr_req;
+
+// Constants
+reg signed [W_DOUT-1:0] max_dout = {W_DOUT{1'b1}} >> 1;
+reg signed [W_DOUT-1:0] min_dout = ~max_dout;
 
 // Pipe registers
 reg dv_p1 = 0;
 reg [W_CHAN-1:0] chan_p1 = 0;
-reg signed [W_DATA_IN-1:0] din_p1 = 0;
-reg signed [W_DATA_IN-1:0] setpoint_p1 = 0;
-reg signed [W_COEFS-1:0] p_coef_p1 = 0;
-reg signed [W_COEFS-1:0] i_coef_p1 = 0;
-reg signed [W_COEFS-1:0] d_coef_p1 = 0;
+reg signed [W_DIN-1:0] din_p1 = 0;
+reg signed [W_DIN-1:0] setpoint_p1 = 0;
+reg signed [W_PID_COEFS-1:0] p_coef_p1 = 0;
+reg signed [W_PID_COEFS-1:0] i_coef_p1 = 0;
+reg signed [W_PID_COEFS-1:0] d_coef_p1 = 0;
 
 reg dv_p2 = 0;
 reg [W_CHAN-1:0] chan_p2 = 0;
@@ -89,15 +93,15 @@ reg signed [W_CE_PROD-1:0] ce_prod2_p3 = 0;
 reg dv_p4 = 0;
 reg [W_CHAN-1:0] chan_p4 = 0;
 reg signed [W_DELTA-1:0] delta_p4 = 0;
-reg signed [W_DATA_OUT-1:0] dout_prev_p4 = 0;
+reg signed [W_DOUT-1:0] dout_prev_p4 = 0;
 
 reg dv_p5 = 0;
 reg [W_CHAN-1:0] chan_p5 = 0;
-reg signed [W_DATA_INT-1:0] dint_p5 = 0;
+reg signed [W_DINT-1:0] dint_p5 = 0;
 
 reg dv_p6 = 0;
 reg [W_CHAN-1:0] chan_p6 = 0;
-reg signed [W_DATA_OUT-1:0] dout_p6 = 0;
+reg signed [W_DOUT-1:0] dout_p6 = 0;
 
 reg [W_CHAN-1:0] i;
 
@@ -176,12 +180,12 @@ always @( posedge sys_clk_in ) begin
     chan_p6 = chan_p5;
 
     // Handle overflow
-    if ( dint_p5 > $signed(MAX_OUT) ) begin
-        dout_p6 = $signed(MAX_OUT);
-    end else if ( dint_p5 < $signed(MIN_OUT) ) begin
-        dout_p6 = $signed(MIN_OUT);
+    if ( dint_p5 > max_dout ) begin
+        dout_p6 = max_dout;
+    end else if ( dint_p5 < min_dout ) begin
+        dout_p6 = min_dout;
     end else begin
-        dout_p6 = dout_p6;
+        dout_p6 = dint_p5[W_DOUT-1:0];
     end
 
     // Writeback data previous if data is valid
@@ -189,35 +193,39 @@ always @( posedge sys_clk_in ) begin
         dout_prev_mem[chan_p5] = dout_p6;
     end
 
-    //-------------------------Pipe Clear------------------------------
-    if ( rst_in || clr_mem[chan_p1] ) dv_p1 = 0;
-    if ( rst_in || clr_mem[chan_p2] ) dv_p2 = 0;
-    if ( rst_in || clr_mem[chan_p3] ) dv_p3 = 0;
-    if ( rst_in || clr_mem[chan_p4] ) dv_p4 = 0;
-    if ( rst_in || clr_mem[chan_p5] ) dv_p5 = 0;
-    if ( rst_in || clr_mem[chan_p6] ) dv_p6 = 0;
+    //-----------------------Pipe Flushing-----------------------------
+    if ( rst_in || clr_req[chan_p1] ) dv_p1 = 0;
+    if ( rst_in || clr_req[chan_p2] ) dv_p2 = 0;
+    if ( rst_in || clr_req[chan_p3] ) dv_p3 = 0;
+    if ( rst_in || clr_req[chan_p4] ) dv_p4 = 0;
+    if ( rst_in || clr_req[chan_p5] ) dv_p5 = 0;
+    if ( rst_in || clr_req[chan_p6] ) dv_p6 = 0;
 
-    //---------------------Channel Memory Clear------------------------
+    //----------------------Channel Memory-----------------------------
+    // Clear internal memory and request registers on reset and clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_mem[i] ) begin
+        if ( rst_in || clr_req[i] ) begin
             error_prev0_mem[i] = 0;
             error_prev1_mem[i] = 0;
             dout_prev_mem[i] = 0;
+            clr_req[i] = 0;
+        end
+    end
+
+    // Handle memory writes
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            pid_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
+            pid_setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DIN-1:0];
+            pid_p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+            pid_i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+            pid_d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
         end
     end
     //-----------------------------------------------------------------
 end
 
 // Channel memory write handling
-always @( posedge wr_en ) begin
-    case ( wr_addr ) begin
-        pid_clr_addr : clr_mem[wr_chan] <= wr_data[0];
-        setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DATA_IN-1:0];
-        p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_COEFS-1:0];
-        i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_COEFS-1:0];
-        d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_COEFS-1:0];
-    end
-end
 
 // Output assignment
 assign dv_out = dv_p6;

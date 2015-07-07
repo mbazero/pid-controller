@@ -8,17 +8,17 @@
 // ====================================================================
 
 // TODO
-// * figure out channel activation shit
-// * add overflow checking to osf
+// 2. HUGE ==> blocking assignments won't work for a pipeline you rtard
 
+// TODO try
+// 1. make memory reads synchronous with sys_clk and see if performance
+//    is improved or some shit
 
-// TODO
-// 3. check all params
-// 3. check addresses
-// 4. check overflow in all modules
-// 5. Implement OSF write constant or constant mode
-// 8. opp write init function
+// TODO polish
 // 9. convert all operators to logical ( double symbol )
+
+// TODO pipe dream
+// 1. add overflow signal to send along pipeline
 
 module pid_controller (
     // Inputs <- Opal Kelly PLL
@@ -79,7 +79,7 @@ wire [W_EP*3-1:0] wr_data;
 
 frontpanel_interface #(
     .N_LOG          (N_ADC),
-    .W_LCHAN        (W_SRC_SEL),
+    .W_LCHAN        (W_ADC_CHAN),
     .W_LDATA        (W_ADC_DATA),
     .W_EP           (W_EP))
 fp_intf (
@@ -110,21 +110,21 @@ fp_intf (
 //--------------------------------------------------------------------
 wire adc_dv;
 reg [W_ADC_OS-1:0] adc_os = 1;
-wire [W_SRC_SEL-1:0] adc_src_a;
-wire [W_SRC_SEL-1:0] adc_src_b;
+wire [W_ADC_CHAN-1:0] adc_src_a;
+wire [W_ADC_CHAN-1:0] adc_src_b;
 wire [W_ADC_DATA-1:0] adc_data_a;
 wire [W_ADC_DATA-1:0] adc_data_b;
 
 wire adc_sync_dv;
-wire [W_SRC_SEL-1:0] adc_sync_src;
+wire [W_ADC_CHAN-1:0] adc_sync_src;
 wire [W_ADC_DATA-1:0] adc_sync_data;
 
 
 // ADC controller
 adc_controller #(
     .W_OUT          (W_ADC_DATA),
+    .W_CHAN         (W_ADC_CHAN),
     .N_CHAN         (N_ADC),
-    .W_CHS          (W_ADC_CHS),
     .W_OS           (W_ADC_OS))
 adc_cntrl (
     .clk_in         (adc_clk_in),
@@ -149,7 +149,7 @@ adc_cntrl (
 // Clock synchronizer
 clk_sync #(
     .W_DATA         (W_ADC_DATA),
-    .W_CHS          (W_ADC_CHS),
+    .W_CHAN         (W_ADC_CHAN),
     .N_ADC          (N_ADC))
 csync (
     .sys_clk_in     (sys_clk_in),
@@ -176,21 +176,19 @@ end
 //--------------------------------------------------------------------
 wire pid_dv;
 wire [W_EP-1:0] pid_chan;
-wire [W_COMP-1:0] pid_data;
+wire [W_PID_DOUT-1:0] pid_data;
 
 pid_pipeline #(
-    .W_SRC          (W_ADC_CHS),
-    .W_CHAN         (W_OUT_CHS),
-    .N_CHAN         (N_OUT),
-    .W_DATA_IN      (W_ADC_DATA),
-    .W_DATA_OUT     (W_MAX_OUT),
+    .W_SRC          (W_PID_SRC),
+    .N_CHAN         (N_PID_CHAN),
+    .W_CHAN         (W_PID_CHAN),
+    .W_DIN          (W_PID_DIN),
+    .W_DOUT         (W_PID_DOUT),
+    .W_COMP         (W_PID_COMP),
+    .W_OPRNDS       (W_PID_OPRNDS),
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),
-    .W_WR_DATA      (W_WR_DATA),
-    .W_COMP         (W_COMP),
-    .W_OSF_OS       (W_OSF_OS),
-    .W_OPP_MULT     (W_OPP_MULT),
-    .W_OPP_RS       (W_OPP_RS))
+    .W_WR_DATA      (W_WR_DATA))
 pid_pipe (
     .clk_in         (sys_clk_in),
     .rst_in         (sys_rst),
@@ -210,11 +208,11 @@ pid_pipe (
 // DAC Output
 //--------------------------------------------------------------------
 wire pid_dac_dv = (pid_chan < N_DAC) ? pid_dv : 0;
-wire pid_dac_chan = pid_chan[W_DAC_CHS-1:0];
+wire pid_dac_chan = pid_chan[W_DAC_CHAN-1:0];
 wire pid_dac_data = pid_data[W_DAC_DATA-1:0];
 
 wire diq_dv;
-wire [W_DAC_CHS-1:0] diq_chan;
+wire [W_DAC_CHAN-1:0] diq_chan;
 wire [W_DAC_DATA-1:0] diq_data;
 wire dac_wr_done;
 
@@ -230,16 +228,12 @@ fifo_19 dac_instr_queue (
     );
 
 // DAC controller
-dac_controller #(
-    .W_DATA         (W_DAC_DATA),
-    .W_CHS          (W_DAC_CHS),
-    .N_CHAN         (N_DAC))
-dac_cntrl (
+dac_controller dac_cntrl (
     .clk_in         (sys_clk_in),
     .reset_in       (sys_rst),
     .ref_set_in     (dac_ref_set),
     .data_in        (diq_data),
-    .channel_in     (diq_chan),
+    .chan_in        (diq_chan),
     .dv_in          (diq_dv),
     .nldac_out      (dac_nldac_out),
     .nsync_out      (dac_nsync_out),

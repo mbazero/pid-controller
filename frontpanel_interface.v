@@ -1,3 +1,6 @@
+`timescale 1ns / 1ps
+`include "ep_map.vh"
+
 // -----------------------------------------------------------
 // frontpanel interface
 // -----------------------------------------------------------
@@ -43,7 +46,7 @@ module frontpanel_interface #(
 
     output wire [W_EP-1:0]      wr_addr,
     output wire [W_EP-1:0]      wr_chan,
-    output wire [W_EP*3-1:0]    wr_data,
+    output wire [W_EP*4-1:0]    wr_data,
 
     // Frontpanel control
     input wire  [7:0]           hi_in,
@@ -61,7 +64,7 @@ module frontpanel_interface #(
 //--------------------------------------------------------------------
 wire ticlk;
 wire [30:0] ok1,
-wire [16:0]  ok2,
+wire [16:0] ok2,
 assign i2c_sda = 1'bz;
 assign i2c_scl = 1'bz;
 assign hi_muxsel = 1'b0;
@@ -99,14 +102,14 @@ okTriggerIn sys_gp_oti (
 wire [W_EP-1:0] opf_inject1, opf_inject0;
 assign opf_inject = {opf_inject1, opf_inject0}
 
-okTriggerIn freq_inj_oti (
+okTriggerIn opf_inject1_ti (
     .ok1            (ok1),
     .ep_addr        (opf_inject1_itep),
     .ep_clk         (sys_clk),
     .ep_trigger     (opf_inject1)
     );
 
-okTriggerIn phase_inj_oti (
+okTriggerIn opf_inject0_ti (
     .ok1            (ok1),
     .ep_addr        (opf_inject0_itep),
     .ep_clk         (sys_clk),
@@ -116,8 +119,8 @@ okTriggerIn phase_inj_oti (
 //--------------------------------------------------------------------
 // Memory Write Wire-outs
 //--------------------------------------------------------------------
-wire [W_EP-1:0] wr_data2, wr_data1, wr_data0;
-assign wr_data = {wr_data2, wr_data1, wr_data0};
+wire [W_EP-1:0] wr_data3, wr_data2, wr_data1, wr_data0;
+assign wr_data = {wr_data3, wr_data2, wr_data1, wr_data0};
 
 // Address wire-in
 okWireIn addr_owi (
@@ -134,6 +137,12 @@ okWireIn chan_owi (
     );
 
 // Data wire-ins
+okWireIn data3_owi (
+    .ok1            (ok1),
+    .ep_addr        (data3_iwep),
+    .ep_dataout     (wr_data3)
+    );
+
 okWireIn data2_owi (
     .ok1            (ok1),
     .ep_addr        (data2_iwep),
@@ -228,5 +237,7 @@ okPipeOut log_pipe (
     .ep_datain      (log_pipe_data),
     .ep_read            (log_pipe_read)
     );
+
+endmodule
 
 

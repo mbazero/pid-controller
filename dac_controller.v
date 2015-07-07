@@ -6,11 +6,6 @@
 // -----------------------------------------------------------
 
 module dac_controller #(
-	// parameters
-	parameter W_DATA	= 16,							// width of data signal
-	parameter W_CHS	= 3,							// width of channel select signal
-	parameter N_CHAN	= 8							// number of channels
-	)(
 	// inputs <- top level entity
 	input wire						clk_in,
 	input wire						reset_in,
@@ -19,8 +14,8 @@ module dac_controller #(
 	input wire						ref_set_in,		// dac sets reference voltage when asserted
 
 	// inputs <- cycle controller
-	input wire	[W_DATA-1:0]	data_in,
-	input wire	[W_CHS-1:0]		channel_in,
+	input wire	[15:0]	data_in,
+	input wire	[2:0]		chan_in,
 	input wire						dv_in,
 
 	// outputs -> dac hardware
@@ -32,8 +27,8 @@ module dac_controller #(
 
 	// outputs -> top level entity
 	output wire						wr_done_out,	// pulsed when dac finishes the instruction send
-	output wire	[W_DATA-1:0]	data_out,		// output data
-	output wire	[W_CHS-1:0]		channel_out		// output data valid
+	output wire	[15:0]	data_out,		// output data
+	output wire	[2:0]		chan_out		// output data valid
 	);
 
 //////////////////////////////////////////
@@ -54,7 +49,7 @@ localparam	ST_IDLE			= 3'd0,				// wait for new data
 /* dac instruction structures */
 wire	[3:0]	 prefix;
 wire	[3:0]	 control;
-reg	[3:0]	 address = 0;
+reg	[3:0]	 chan = 0;
 reg	[15:0] data = 0;
 wire	[3:0]	 feature;
 wire	[31:0] data_instr;
@@ -82,7 +77,7 @@ assign control = 4'b0011;							// write to selected DAC register and update
 assign feature = 4'b0000;
 
 /* dac instruction */
-assign data_instr = {prefix, control, address, data, feature};
+assign data_instr = {prefix, control, chan, data, feature};
 
 /* dac control signals */
 assign nsync_out = ~( cur_state == ST_SYNC_DATA | cur_state == ST_SYNC_REF | cur_state == ST_TX | cur_state == ST_DAC_DONE );
@@ -96,7 +91,7 @@ assign wr_done_out = ( cur_state == ST_DAC_DONE );
 
 /* output data */
 assign data_out = data;
-assign channel_out = address[W_CHS-1:0];
+assign chan_out = chan;
 
 //////////////////////////////////////////
 // sequential logic
@@ -106,10 +101,10 @@ assign channel_out = address[W_CHS-1:0];
 always @( posedge clk_in ) begin
 	if ( reset_in == 1 ) begin
 		data		<= 0;
-		address	<= 0;
+		chan	<= 0;
 	end else if (( cur_state == ST_IDLE ) & ( dv_in == 1)) begin
 		data 		<= data_in;
-		address 	<= {1'b0, channel_in};			// MSB of channel signal is only used in broadcast mode
+		chan 	<= {1'b0, chan_in};			// MSB of channel signal is only used in broadcast mode
 	end
 end
 

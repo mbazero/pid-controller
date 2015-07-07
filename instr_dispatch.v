@@ -17,13 +17,12 @@
 module instr_dispatch #(
     // parameters
     parameter W_SRC = 5,
+    parameter W_CHAN = 5,
+    parameter N_CHAN = 8,
     parameter W_DATA = 18,
     parameter W_WR_ADDR = 16,
     parameter W_WR_CHAN = 16,
-    parameter W_WR_DATA = 48,
-    parameter W_CHAN = 5,
-    parameter N_CHAN = 8,
-    parameter NULL_SRC = 9
+    parameter W_WR_DATA = 48
     )(
     // Inputs
     input wire clk_in,
@@ -45,12 +44,24 @@ module instr_dispatch #(
     );
 
 //--------------------------------------------------------------------
-// Structures
+// Channel Memory
 //--------------------------------------------------------------------
-// Writeable channel memory
+// Writeable state
 reg [N_CHAN-1:0] chan_en_mem;
-reg [W_SRC-1:0] chan_src_sel_mem[0:N_CHAN-1]; // PID channel to source mappings
+reg [W_SRC:0] chan_src_sel_mem[0:N_CHAN-1];
 
+// Initialization
+integer i;
+initial begin
+    for ( i = 0; i < N_CHAN; i = i+1 ) begin
+        chan_src_sel_mem[i] = 1 << W_SRC; // Invalid route
+        chan_en_mem[i] = 0;
+    end
+end
+
+//--------------------------------------------------------------------
+// Module Structures
+//--------------------------------------------------------------------
 // Fifo signals
 wire [W_SRC-1:0] fifo_src;
 wire [W_DATA-1:0] fifo_data;
@@ -61,7 +72,6 @@ wire fifo_dv;
 wire dec_dv;
 reg [W_CHAN-1:0] dec_chan;
 reg [N_CHAN-1:0] dec_instr_sent;
-reg [W_CHAN-1:0] i;
 
 //--------------------------------------------------------------------
 // Logic
@@ -115,19 +125,13 @@ always @( posedge clk_in ) begin
     end
 end
 
-// Channel memory initialization
-initial begin
-    for ( i = 0; i < N_CHAN; i = i+1 ) begin
-        chan_src_sel_mem[i] = NULL_SRC;
-        chan_en_mem[i] = 0;
-    end
-end
-
 // Channel memory write handling
-always @( posedge wr_en ) begin
-    case ( wr_addr ) begin
-        chan_src_sel_addr : chan_src_sel_mem[wr_chan] <= wr_data[W_SRC-1:0];
-        chan_en_addr : chan_en_mem[wr_chan] <= wr_data[0];
+always @( posedge clk_in ) begin
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            chan_src_sel_addr : chan_src_sel_mem[wr_chan] <= wr_data[W_SRC:0];
+            chan_en_addr : chan_en_mem[wr_chan] <= wr_data[0];
+        end
     end
 end
 

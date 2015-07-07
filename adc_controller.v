@@ -10,7 +10,7 @@ module adc_controller #(
 	// parameters
 	parameter W_OUT			= 18,									// width of adc data channels
 	parameter N_CHAN			= 8,									// number of channels to output
-	parameter W_CHS			= 3,									// width of channel select
+	parameter W_CHAN			= 3,									// width of channel select
 	parameter W_OS				= 2									// width of oversample signal
 	)(
 	// inputs <- top level entity
@@ -35,8 +35,8 @@ module adc_controller #(
 
 	// outputs -> pid core
 	output wire									dv_out,	// line a data valid
-	output reg				[W_CHS-1:0]		chan_a_out,			// line a adc channel
-	output reg				[W_CHS-1:0]		chan_b_out,			// line b adc channel
+	output reg				[W_CHAN-1:0]		chan_a_out,			// line a adc channel
+	output reg				[W_CHAN-1:0]		chan_b_out,			// line b adc channel
 	output reg signed		[W_OUT-1:0]		data_a_out,			// line a data out
 	output reg signed		[W_OUT-1:0]		data_b_out			// line b data out
    );
