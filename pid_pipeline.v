@@ -8,12 +8,12 @@
 //--------------------------------------------------------------------
 
 module pid_pipeline #(
-    // Parameters
     parameter W_SRC = 5,        // Width of source select signal
     parameter N_CHAN = 5,       // Number of output channels
     parameter W_CHAN = 5,       // Width of output select signal
     parameter W_DIN = 18,       // Width of source input data
     parameter W_DOUT = 64,      // Width of output data
+    parameter W_OS = 7,         // Width of oversample mode signal
     parameter W_COMP = 128,     // Width of internal computation registers
     parameter W_OPRNDS = 16,    // Width of operands
     parameter W_WR_ADDR = 16,   // Width of memory write address
@@ -79,7 +79,7 @@ oversample_filter #(
     .W_CHAN         (W_CHAN),
     .W_DATA         (W_DIN),
     .W_SUM          (W_COMP),
-    .W_COUNT        (W_COMP),
+    .W_OS           (W_OS),
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA))
@@ -149,7 +149,7 @@ opf (
     .rst_in         (rst_in),
     .dv_in          (pid_dv),
     .chan_in        (pid_chan),
-    .data_in        (pid_data),
+    .delta_in       (pid_data),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),

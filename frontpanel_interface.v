@@ -42,8 +42,6 @@ module frontpanel_interface #(
     output wire                 wr_en,
     output wire                 dac_ref_set;
 
-    output wire [W_EP*2-1:0]    opf_inject
-
     output wire [W_EP-1:0]      wr_addr,
     output wire [W_EP-1:0]      wr_chan,
     output wire [W_EP*4-1:0]    wr_data,
@@ -94,26 +92,6 @@ okTriggerIn sys_gp_oti (
     .ep_addr        (sys_gp_itep),
     .ep_clk         (adc_clk),
     .ep_trigger     (gp_trig)
-    );
-
-//--------------------------------------------------------------------
-// Output Filter Injection Triggers
-//--------------------------------------------------------------------
-wire [W_EP-1:0] opf_inject1, opf_inject0;
-assign opf_inject = {opf_inject1, opf_inject0}
-
-okTriggerIn opf_inject1_ti (
-    .ok1            (ok1),
-    .ep_addr        (opf_inject1_itep),
-    .ep_clk         (sys_clk),
-    .ep_trigger     (opf_inject1)
-    );
-
-okTriggerIn opf_inject0_ti (
-    .ok1            (ok1),
-    .ep_addr        (opf_inject0_itep),
-    .ep_clk         (sys_clk),
-    .ep_trigger     (opf_inject0)
     );
 
 //--------------------------------------------------------------------

@@ -46,6 +46,7 @@ parameter PIPE_DEPTH		= 1024;	// depth of pipe out fifo specified in during core
 // ---------------------------- derived params --------------------------------
 // - don't change these
 // ----------------------------------------------------------------------------
+parameter W_PID_OS			= 5;						// width of PID oversample signal
 parameter W_PID_SRC        = W_ADC_CHAN;        // width of PID source channel select
 parameter N_PID_CHAN  		= N_DAC + 3*N_DDS;	// total number of PID channels equal to number of output channels
 parameter W_PID_CHAN       = log2(N_PID_CHAN)   // width of PID output channel select

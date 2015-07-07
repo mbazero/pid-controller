@@ -7,13 +7,6 @@
 // Dope pid controller module.
 // ====================================================================
 
-// TODO
-// 2. HUGE ==> blocking assignments won't work for a pipeline you rtard
-
-// TODO try
-// 1. make memory reads synchronous with sys_clk and see if performance
-//    is improved or some shit
-
 // TODO polish
 // 9. convert all operators to logical ( double symbol )
 
@@ -72,7 +65,6 @@ wire sys_rst;
 wire adc_cstart;
 wire wr_en;
 wire dac_ref_set;
-wire [N_CHAN-1:0] opf_inject;
 wire [W_EP-1:0] wr_addr;
 wire [W_EP-1:0] wr_chan;
 wire [W_EP*3-1:0] wr_data;
@@ -92,7 +84,6 @@ fp_intf (
     .adc_cstart     (adc_cstart),
     .wr_en          (wr_en),
     .dac_ref_set    (dac_ref_set),
-    .opf_inject     (opf_inject),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
@@ -184,6 +175,7 @@ pid_pipeline #(
     .W_CHAN         (W_PID_CHAN),
     .W_DIN          (W_PID_DIN),
     .W_DOUT         (W_PID_DOUT),
+    .W_OS           (W_PID_OS),
     .W_COMP         (W_PID_COMP),
     .W_OPRNDS       (W_PID_OPRNDS),
     .W_WR_ADDR      (W_WR_ADDR),

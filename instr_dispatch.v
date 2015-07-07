@@ -15,7 +15,6 @@
 //--------------------------------------------------------------------
 
 module instr_dispatch #(
-    // parameters
     parameter W_SRC = 5,
     parameter W_CHAN = 5,
     parameter N_CHAN = 8,
@@ -44,6 +43,12 @@ module instr_dispatch #(
     );
 
 //--------------------------------------------------------------------
+// Constants
+//--------------------------------------------------------------------
+reg [W_SRC:0] null_src = 1 << W_SRC;
+reg [W_CHAN:0] null_chan = 1 << W_CHAN;
+
+//--------------------------------------------------------------------
 // Configuration Memory
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] chan_en_mem;
@@ -53,7 +58,7 @@ reg [W_SRC:0] chan_src_sel_mem[0:N_CHAN-1];
 integer i;
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
-        chan_src_sel_mem[i] = 1 << W_SRC; // Invalid route
+        chan_src_sel_mem[i] = null_src;
         chan_en_mem[i] = 0;
     end
 end
@@ -90,8 +95,8 @@ fifo_21 input_buffer (
 // Channel Decoder
 //--------------------------------------------------------------------
 wire dec_dv;
-reg [W_CHAN-1:0] dec_chan;
-reg [N_CHAN-1:0] dec_instr_sent;
+reg [W_CHAN:0] dec_chan;
+reg [N_CHAN-1:0] instr_sent;
 
 // Decode PID channel giving priority to lower numbered channels. If
 // valid channel found, inject instruction into pipeline and continue
@@ -100,12 +105,12 @@ reg [N_CHAN-1:0] dec_instr_sent;
 // used. Decoder functionality depends on this.
 always @( posedge clk_in ) begin
     // Default null channel assignment if source is not routed
-    dec_chan = NULL_CHAN;
+    dec_chan = null_chan;
 
     // Decode PID channel
     for ( i = N_CHAN; i >= 0; i = i - 1 ) begin
         if ( chan_src_sel_mem[i] == fifo_src
-            & dec_instr_sent[i] == 0 ) begin
+            && !instr_sent[i] ) begin
             dec_chan = i;
         end
     end
@@ -117,15 +122,15 @@ always @( posedge clk_in ) begin
     // if the channel is active and set sent flag.
     if ( rst_in | ~fifo_dv ) begin
         dec_dv = 0;
-        dec_instr_sent = 0;
+        instr_sent = 0;
         fifo_rd_en = 0;
-    end else if ( dec_chan == NULL_CHAN ) begin
+    end else if ( dec_chan == null_chan ) begin
         dec_dv = 0;
-        dec_instr_sent = 0;
+        instr_sent = 0;
         fifo_rd_en = 1;
     end else begin
         dec_dv = chan_en_mem[dec_chan];
-        dec_instr_sent[dec_chan] = 1;
+        instr_sent[dec_chan] = 1;
         fifo_rd_en = 0;
     end
 end

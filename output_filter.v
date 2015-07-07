@@ -4,17 +4,16 @@
 //--------------------------------------------------------------------
 // Output Filter
 //--------------------------------------------------------------------
-// Filters data stream before it is sent to DAC/DDS outputs.
-// Adds PID sum to previous output value and enforces max and
-// min output bounds.
+// Take delta value as an input. Optionally multiplies and right
+// shifts the delta before adding it to the previously outputted
+// value. Enforces max and min bounds on the resulting value.
 //--------------------------------------------------------------------
 
 module output_filter #(
-    // Parameters
     parameter W_CHAN = 5,
-    parameter W_DIN = 18,
+    parameter W_DELTA = 18,
     parameter W_DOUT = 64,
-    parameter W_MULT = 8,
+    parameter W_MTRS = 8,
     parameter W_RS = 8,
     parameter W_WR_ADDR = 16,
     parameter W_WR_CHAN = 16,
@@ -26,7 +25,7 @@ module output_filter #(
 
     input wire dv_in,
     input wire [W_CHAN-1:0] chan_in,
-    input wire signed [W_DATA-1:0] data_in,
+    input wire signed [W_DELTA-1:0] delta_in,
 
     input wire wr_en,
     input wire [W_WR_ADDR-1:0] wr_addr,
@@ -36,15 +35,17 @@ module output_filter #(
     // Outputs
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
-    output wire signed [W_DATA-1:0] data_out
+    output wire signed [W_OUT-1:0] data_out
     );
 
 //--------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------
-localparam W_DMULT = W_DIN + W_MULT;
-localparam W_DSUM_A = W_DMULT + 1;
-localparam W_DSUM_B = ((W_DSUM_A > W_DOUT) ? W_DSUM_A : W_DOUT) + 1;
+localparam W_DMULT = W_DELTA + W_MTRS;
+localparam W_DSUM = W_DMULT + 1;
+localparam W_DOUT_UC = ((W_DSUM > W_DOUT) ? W_DSUM : W_DOUT) + 1;
+
+reg [W_CHAN:0] null_chan = 1 << W_CHAN;
 
 //--------------------------------------------------------------------
 // Request Registers
@@ -52,13 +53,15 @@ localparam W_DSUM_B = ((W_DSUM_A > W_DOUT) ? W_DSUM_A : W_DOUT) + 1;
 reg [N_CHAN-1:0] clr_req = 0;
 reg [N_CHAN-1:0] inj_req = 0;
 
-// Handle clear requests
+// Manage clear register
 integer i;
 always @( posedge clk_in ) begin
-    if ( wr_en && wr_addr == opt_clr_reg_addr ) begin
+    // Handle writes
+    if ( wr_en && ( wr_addr == opt_clr_reg_addr )) begin
         opt_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
     end
 
+    // Zero on reset or clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
         if ( rst_in || clr_req[i] ) begin
             clr_req[i] = 0;
@@ -69,9 +72,9 @@ end
 //--------------------------------------------------------------------
 // Configuration Memory
 //--------------------------------------------------------------------
-reg [W_CHAN:0] add_chan_mem[0:N_CHAN-1];
 reg [W_RS-1:0] rs_mem[0:N_CHAN-1];
-reg signed [W_MULT-1:0] mult_mem[0:N_CHAN-1];
+reg [W_CHAN:0] add_chan_mem[0:N_CHAN-1];
+reg signed [W_MTRS-1:0] mult_mem[0:N_CHAN-1];
 reg signed [W_DOUT-1:0] max_mem[0:N_CHAN-1];
 reg signed [W_DOUT-1:0] min_mem[0:N_CHAN-1];
 reg signed [W_DOUT-1:0] init_mem[0:N_CHAN-1];
@@ -79,18 +82,18 @@ reg signed [W_DOUT-1:0] init_mem[0:N_CHAN-1];
 // Initialize memory
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
-        add_chan_mem[i] = 1 << W_CHAN; // Invalid route
+        add_chan_mem[i] = null_chan;
     end
 end
 
-// Handle write requests
+// Handle writes
 always @( posedge clk_in ) begin
     if ( wr_en ) begin
         case ( wr_addr ) begin
             opt_min_addr : min_mem[wr_chan] <= wr_data[W_DOUT-1:0];
             opt_max_addr : max_mem[wr_chan] <= wr_data[W_DOUT-1:0];
             opt_init_addr : init_mem[wr_chan] <= wr_data[W_DOUT-1:0];
-            opt_mult_addr : mult_mem[wr_chan] <= wr_data[W_MULT-1:0];
+            opt_mult_addr : mult_mem[wr_chan] <= wr_data[W_MTRS-1:0];
             opt_rs_addr : rs_mem[wr_chan] <= wr_data[W_RS-1:0];
             opt_add_chan : add_chan_mem[wr_chan] <= wr_data[W_CHAN:0];
         end
@@ -101,28 +104,28 @@ end
 // Internal Memory
 //--------------------------------------------------------------------
 reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
-reg signed [W_DMULT-1:0] dmult_prev_mem[0:N_CHAN-1];
+reg signed [W_DMULT-1:0] dmtrs_prev_mem[0:N_CHAN-1];
 
 //--------------------------------------------------------------------
-// Pipe Stage 1
+// Pipe Stage 1: Fetch
 //--------------------------------------------------------------------
 reg inj_p1 = 0;
 reg dv_p1 = 0;
 reg [W_CHAN-1:0] chan_p1 = 0;
-reg signed [W_DIN-1:0] din_p1 = 0;
-reg [W_MULT-1:0] mult_p1 = 0;
+reg signed [W_DELTA-1:0] delta_p1 = 0;
+reg signed [W_MTRS-1:0] mult_p1 = 0;
 reg [W_RS-1:0] rs_p1 = 0;
 reg [W_CHAN:0] add_chan_p1 = 0;
 
 always @( posedge clk_in ) begin
     // Register input instruction if input data is valid. Otherwise, if
-    // there are pending inject requests, inject init write instruction.
+    // there are pending inject requests, inject write instruction.
     // Injection channel preference is low to high.
     if ( dv_in ) begin
         inj_p1 = 0;
         dv_p1 = dv_in;
         chan_p1 = chan_in;
-        din_p1 = data_in;
+        delta_p1 = delta_in;
     end else begin
         // Don't inject by default
         inj_p1 = 0;
@@ -130,11 +133,31 @@ always @( posedge clk_in ) begin
 
         // Inject instruction if request is pending
         for ( i = N_CHAN; i >= 0; i = i - 1 ) begin
-            if ( inj_req[i] )
+            if ( inj_req[i] ) begin
                 inj_p1 = 1;
                 dv_p1 = 1;
                 chan_p1 = i;
-                din_p1 = 0;
+                delta_p1 = 0;
+            end
+        end
+    end
+
+    // Manage injection register
+    begin
+        // Handle writes
+        if ( wr_en && ( wr_addr == opt_clr_reg_addr )) begin
+            opt_inj_req_addr : inj_req[wr_chan] = wr_data[0];
+        end
+
+        // Zero after successful injection
+        if ( inj_p1 ) begin
+            inj_req[chan_p1] = 0;
+        end
+
+        // Zero on reset or clear
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+            if ( rst_in || clr_req[i] ) begin
+                inj_reg[i] = 0;
             end
         end
     end
@@ -144,25 +167,7 @@ always @( posedge clk_in ) begin
 	rs_p1 = rs_mem[chan_in];
     add_chan_p1 = add_chan_mem[chan_in];
 
-    // Handle injection requests
-    begin
-        if ( wr_en && wr_addr == opt_clr_reg_addr ) begin
-            opt_inj_req_addr : inj_req[wr_chan] = wr_data[0];
-            opt_clr_req_addr : clr_req[wr_chan] = wr_data[0];
-        end
-
-        if ( inj_p1 ) begin
-            inj_req[chan_p1] = 0;
-        end
-
-        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-            if ( rst_in || clr_req[i] ) begin
-                clr_req[i] = 0;
-            end
-        end
-    end
-
-    // Handle pipe flush
+    // Flush stage on reset or clear
     if ( rst_in || clr_req[chan_in] ) begin
         inj_p1 = 0;
         dv_p1 = 0;
@@ -170,13 +175,13 @@ always @( posedge clk_in ) begin
 end
 
 //--------------------------------------------------------------------
-// Pipe Stage 2
+// Pipe Stage 2: Multiply and right shift
 //--------------------------------------------------------------------
 reg inj_p2 = 0;
 reg dv_p2 = 0;
 reg [W_CHAN-1:0] chan_p2 = 0;
-reg signed [W_DMULT-1:0] dmult_p2 = 0;
-reg signed [W_DMULT-1:0] add_data_p2 = 0;
+reg signed [W_DMULT-1:0] dmtrs_p2 = 0;
+reg signed [W_DMULT-1:0] add_dmtrs_p2 = 0;
 
 always @( posedge clk_in ) begin
     // Pass instruction
@@ -184,17 +189,18 @@ always @( posedge clk_in ) begin
 	dv_p2 = dv_p1;
 	chan_p2 = chan_p1;
 
-	// Multiply data and right shift
-	dmult_p2 = (din_p1 * mult_p1) >>> rs_p1;
+	// Multiply and right shift delta
+	dmtrs_p2 = (delta_p1 * mult_p1) >>> rs_p1;
 
-    // Fetch add data if add channel is valid
+    // Fetch add data if channel is valid. Otherwise set add data
+    // value to zero.
     if ( add_chan_p1 < N_CHAN ) begin
-        add_data_p2 = dmult_prev_mem[add_chan_p1];
+        add_dmtrs_p2 = dmtrs_prev_mem[add_chan_p1];
     end else begin
-        add_data_p2 = 0;
+        add_dmtrs_p2 = 0;
     end
 
-    // Handle pipe flush
+    // Flush stage on reset or clear
     if ( rst_in || clr_req[chan_p1] ) begin
         inj_p2 = 0;
         dv_p2 = 0;
@@ -202,13 +208,16 @@ always @( posedge clk_in ) begin
 end
 
 //--------------------------------------------------------------------
-// Pipe Stage 3
+// Pipe Stage 3: Sum with add channel data
 //--------------------------------------------------------------------
 reg inj_p3 = 0;
 reg dv_p3 = 0;
 reg [W_CHAN-1:0] chan_p3 = 0;
-reg [W_DSUM_A-1:0] dsum_a_p3 = 0;
+reg signed [W_DSUM-1:0] dsum_p3 = 0;
 reg signed [W_DOUT-1:0] dout_prev_p3 = 0;
+reg signed [W_DOUT-1:0] max_p3 = 0;
+reg signed [W_DOUT-1:0] min_p3 = 0;
+reg signed [W_DOUT-1:0] init_p3 = 0;
 
 always @( posedge clk_in ) begin
     // Pass instruction
@@ -216,26 +225,28 @@ always @( posedge clk_in ) begin
 	dv_p3 = dv_p2;
 	chan_p3 = chan_p2;
 
-	// Sum data with add channel data
-	dsum_a_p3 = dmult_p2 + add_data_p2;
+	// Sum with add channel data
+	dsum_p3 = dmtrs_p2 + add_dmtrs_p2;
 
-    // Fetch previous output
+    // Fetch previous output and output bounds
 	dout_prev_p3 = dout_prev_mem[chan_p2];
+	max_p3 = max_mem[chan_p2];
+    min_p3 = min_mem[chan_p2];
 
     // Writeback multiplied and shifted data or zero on reset or clear
     begin
-        if ( dv_p3 ) begin
-            dmult_prev_mem[chan_p2] = dmult_p2;
+        if ( dv_p2 ) begin
+            dmtrs_prev_mem[chan_p2] = dmtrs_p2;
         end
 
         for ( i = 0; i < N_CHAN; i = i + 1 ) begin
             if ( rst_in || clr_req[i] ) begin
-                dmult_prev_mem[i] = 0;
+                dmtrs_prev_mem[i] = 0;
             end
         end
     end
 
-    // Handle pipe flush
+    // Flush stage on reset or clear
     if ( rst_in || clr_req[chan_p2] ) begin
         inj_p3 = 0;
         dv_p3 = 0;
@@ -244,15 +255,13 @@ always @( posedge clk_in ) begin
 end
 
 //--------------------------------------------------------------------
-// Pipe Stage 4
+// Pipe Stage 4: Compute output
 //--------------------------------------------------------------------
 reg inj_p4 = 0;
 reg dv_p4 = 0;
 reg [W_CHAN-1:0] chan_p4 = 0;
-reg signed [W_DSUM_B-1:0] dsum_b_p4 = 0;
-reg signed [W_DOUT-1:0] max_p4 = 0;
-reg signed [W_DOUT-1:0] min_p4 = 0;
-reg signed [W_DOUT-1:0] init_p4 = 0;
+reg signed [W_DOUT_UC-1:0] dout_uc_p4 = 0;
+reg signed [W_DOUT-1:0] dout_p4 = 0;
 
 always @( posedge clk_in ) begin
     // Pass instruction
@@ -261,14 +270,21 @@ always @( posedge clk_in ) begin
 	chan_p4 = chan_p3;
 
 	// Sum data with previous output
-	dsum_b_p4 = dsum_a_p3 + dout_prev_p3;
+	dout_uc_p4 = dsum_p3 + dout_prev_p3;
 
-    // Fetch output bounds
-	max_p4 = max_mem[chan_p3];
-    min_p4 = min_mem[chan_p3];
+    // Handle output bounds violations
+    if ( dout_uc_p4 > max_p3 ) begin
+        dout_p4 = max_p3;
+    end else if ( dout_uc_p4 < min_p3 ) begin
+        dout_p4 = min_p3;
+    end else begin
+        dout_p4 = dout_uc_p4[W_DOUT-1:0];
+    end
+
+    // Fetch initial output value
     init_p4 = init_mem[chan_p3];
 
-    // Handle pipe flush
+    // Flush stage on reset or clear
     if ( rst_in || clr_req[chan_p3] ) begin
         inj_p4 = 0;
         dv_p4 = 0;
@@ -276,11 +292,10 @@ always @( posedge clk_in ) begin
 end
 
 //--------------------------------------------------------------------
-// Pipe Stage 5
+// Pipe Stage 5: Inject output and writeback
 //--------------------------------------------------------------------
 reg dv_p5 = 0;
 reg [W_CHAN-1:0] chan_p5 = 0;
-reg signed [W_DINT-1:0] dinj_p5 = 0;
 reg signed [W_DOUT-1:0] dout_p5 = 0;
 
 always @( posedge clk_in ) begin
@@ -288,27 +303,12 @@ always @( posedge clk_in ) begin
 	dv_p5 = dv_p4;
 	chan_p5 = chan_p4;
 
-    // Handle init write injection
-    dinj_p5 = ( inj_p4 ) ? init_p4 : dsum_b_p4;
-
-    // Handle output bounds violoations
-    if ( dinj_p5 > max_p4 ) begin
-        dout_p5 = max_p4;
-    end else if ( dinj_p5 < min_p4 ) begin
-        dout_p5 = min_p4;
-    end else begin
-        dout_p5 = dinj_p5;
-    end
-
-    // Handle pipe flush
-    if ( rst_in || clr_req[chan_p4] ) begin
-        inj_p5 = 0;
-        dv_p5 = 0;
-    end
+    // Inject initial value if inject flag set
+    dout_p5 = ( inj_p4 ) ? init_p4 : dout_p4;
 
     // Writeback output or set to initial output on reset or clear
     begin
-        if ( dv_p5 ) begin
+        if ( dv_p4 ) begin
             dout_prev_mem[chan_p4] = dout_p5;
         end
 
@@ -318,6 +318,13 @@ always @( posedge clk_in ) begin
             end
         end
     end
+
+    // Flush stage on reset or clear
+    if ( rst_in || clr_req[chan_p4] ) begin
+        inj_p5 = 0;
+        dv_p5 = 0;
+    end
+
 end
 
 //--------------------------------------------------------------------
