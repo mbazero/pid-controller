@@ -17,7 +17,7 @@ parameter adc_os_addr           = 16'h01;
 parameter chan_en_addr          = 16'h02;
 parameter chan_src_sel_addr     = 16'h03;
 
-parameter osf_os_addr           = 16'h05;
+parameter ovr_os_addr           = 16'h05;
 
 parameter pid_clr_addr          = 16'h06;
 parameter pid_setpoint_addr     = 16'h07;
@@ -25,12 +25,12 @@ parameter pid_p_coef_addr       = 16'h08;
 parameter pid_i_coef_addr       = 16'h09;
 parameter pid_d_coef_addr       = 16'h0a;
 
-parameter opf_clr_addr          = 16'h0b;
-parameter opf_min_addr          = 16'h0c;
-parameter opf_max_addr          = 16'h0d;
-parameter opf_init_addr         = 16'h0e;
-parameter opf_mult_addr         = 16'h0f;
-parameter opf_rs_addr           = 16'h10;
+parameter opt_clr_addr          = 16'h0b;
+parameter opt_min_addr          = 16'h0c;
+parameter opt_max_addr          = 16'h0d;
+parameter opt_init_addr         = 16'h0e;
+parameter opt_mult_addr         = 16'h0f;
+parameter opt_rs_addr           = 16'h10;
 
 parameter pipe_chan_addr        = 16'h11;
 
@@ -40,16 +40,18 @@ parameter pipe_chan_addr        = 16'h11;
 //   they will clear themselves after the
 //   request has been executed
 //////////////////////////////////////////
-parameter osf_inj_req_addr      = 16'h12;
-parameter osf_clr_req_addr      = 16'h13;
+parameter ovr_clr_req_addr      = 16'h13;
+parameter pid_clr_req_addr      = 16'h13;
+parameter opt_clr_req_addr      = 16'h13;
+parameter opt_inj_req_addr      = 16'h12;
 
 //////////////////////////////////////////
 // trigger-in endpoints
 //////////////////////////////////////////
 parameter sys_gp_itep           = 8'h40;
 
-parameter opf_inject1_itep      = 8'h41;
-parameter opf_inject0_itep      = 8'h42;
+parameter opt_inject1_itep      = 8'h41;
+parameter opt_inject0_itep      = 8'h42;
 
 //////////////////////////////////////////
 // multipurpose trigger offsets

@@ -55,8 +55,8 @@ reg [N_CHAN-1:0] inj_req = 0;
 // Handle clear requests
 integer i;
 always @( posedge clk_in ) begin
-    if ( wr_en && wr_addr == opf_clr_reg_addr ) begin
-        opf_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
+    if ( wr_en && wr_addr == opt_clr_reg_addr ) begin
+        opt_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
     end
 
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
@@ -87,12 +87,12 @@ end
 always @( posedge clk_in ) begin
     if ( wr_en ) begin
         case ( wr_addr ) begin
-            opf_min_addr : min_mem[wr_chan] <= wr_data[W_DOUT-1:0];
-            opf_max_addr : max_mem[wr_chan] <= wr_data[W_DOUT-1:0];
-            opf_init_addr : init_mem[wr_chan] <= wr_data[W_DOUT-1:0];
-            opf_mult_addr : mult_mem[wr_chan] <= wr_data[W_MULT-1:0];
-            opf_rs_addr : rs_mem[wr_chan] <= wr_data[W_RS-1:0];
-            opf_add_chan : add_chan_mem[wr_chan] <= wr_data[W_CHAN:0];
+            opt_min_addr : min_mem[wr_chan] <= wr_data[W_DOUT-1:0];
+            opt_max_addr : max_mem[wr_chan] <= wr_data[W_DOUT-1:0];
+            opt_init_addr : init_mem[wr_chan] <= wr_data[W_DOUT-1:0];
+            opt_mult_addr : mult_mem[wr_chan] <= wr_data[W_MULT-1:0];
+            opt_rs_addr : rs_mem[wr_chan] <= wr_data[W_RS-1:0];
+            opt_add_chan : add_chan_mem[wr_chan] <= wr_data[W_CHAN:0];
         end
     end
 end
@@ -144,17 +144,11 @@ always @( posedge clk_in ) begin
 	rs_p1 = rs_mem[chan_in];
     add_chan_p1 = add_chan_mem[chan_in];
 
-    // Handle pipe flush
-    if ( rst_in || clr_req[chan_in] ) begin
-        inj_p1 = 0;
-        dv_p1 = 0;
-    end
-
     // Handle injection requests
-    always @( posedge clk_in ) begin
-        if ( wr_en && wr_addr == opf_clr_reg_addr ) begin
-            opf_inj_req_addr : inj_req[wr_chan] = wr_data[0];
-            opf_clr_req_addr : clr_req[wr_chan] = wr_data[0];
+    begin
+        if ( wr_en && wr_addr == opt_clr_reg_addr ) begin
+            opt_inj_req_addr : inj_req[wr_chan] = wr_data[0];
+            opt_clr_req_addr : clr_req[wr_chan] = wr_data[0];
         end
 
         if ( inj_p1 ) begin
@@ -166,6 +160,12 @@ always @( posedge clk_in ) begin
                 clr_req[i] = 0;
             end
         end
+    end
+
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_in] ) begin
+        inj_p1 = 0;
+        dv_p1 = 0;
     end
 end
 
@@ -222,21 +222,23 @@ always @( posedge clk_in ) begin
     // Fetch previous output
 	dout_prev_p3 = dout_prev_mem[chan_p2];
 
-    // Writeback multiplied and shifted data if it is valid
-    if ( dv_p3 ) begin
-        dmult_prev_mem[chan_p2] = dmult_p2;
+    // Writeback multiplied and shifted data or zero on reset or clear
+    begin
+        if ( dv_p3 ) begin
+            dmult_prev_mem[chan_p2] = dmult_p2;
+        end
+
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+            if ( rst_in || clr_req[i] ) begin
+                dmult_prev_mem[i] = 0;
+            end
+        end
     end
 
     // Handle pipe flush
     if ( rst_in || clr_req[chan_p2] ) begin
         inj_p3 = 0;
         dv_p3 = 0;
-    end
-
-    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_req[i] ) begin
-            dmult_prev_mem[i] = 0;
-        end
     end
 
 end
@@ -298,27 +300,24 @@ always @( posedge clk_in ) begin
         dout_p5 = dinj_p5;
     end
 
-    // Writeback output if data is valid
-    if ( dv_p5 ) begin
-        dout_prev_mem[chan_p4] = dout_p5;
-    end
-
     // Handle pipe flush
     if ( rst_in || clr_req[chan_p4] ) begin
         inj_p5 = 0;
         dv_p5 = 0;
     end
 
-    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_req[i] ) begin
-            dout_prev_mem[i] = init_mem[i];
+    // Writeback output or set to initial output on reset or clear
+    begin
+        if ( dv_p5 ) begin
+            dout_prev_mem[chan_p4] = dout_p5;
+        end
+
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+            if ( rst_in || clr_req[i] ) begin
+                dout_prev_mem[i] = init_mem[i];
+            end
         end
     end
-end
-
-    //----------------------Channel Memory-----------------------------
-
-        //-----------------------------------------------------------------
 end
 
 //--------------------------------------------------------------------

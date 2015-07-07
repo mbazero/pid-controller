@@ -47,37 +47,43 @@ reg signed [W_SUM-1:0] max_sum = {W_SUM{1'b1}} >> 1;
 reg signed [W_SUM-1:0] min_sum = ~max_sum;
 
 //--------------------------------------------------------------------
-// Channel Memory
+// Request Registers
 //--------------------------------------------------------------------
-// Internal state
-reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
-reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
-
-// Configuration state
-reg [W_OS-1:0] os_mem[0:N_CHAN-1];
-
-// Operation request registers
 reg [N_CHAN-1:0] clr_req = 0;
 
-// Write handling
-always @( posedge clk_in ) begin
-    if ( wr_en ) begin
-        case ( wr_addr ) begin
-            osf_clr_req_addr : clr_req[wr_chan] = wr_data[0];
-            osf_os_addr : os_mem[wr_chan] = wr_data[W_OS-1:0];
-        end
-    end
-end
-
-// Reset handling
+// Handle clear requests
 integer i;
 always @( posedge clk_in ) begin
+    if ( wr_en && wr_addr == ovr_clr_reg_addr ) begin
+        ovr_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
+    end
+
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
         if ( rst_in || clr_req[i] ) begin
             clr_req[i] = 0;
         end
     end
 end
+
+//--------------------------------------------------------------------
+// Configuration Memory
+//--------------------------------------------------------------------
+reg [W_OS-1:0] os_mem[0:N_CHAN-1];
+
+// Handle write requests
+always @( posedge clk_in ) begin
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            ovr_os_addr : os_mem[wr_chan] = wr_data[W_OS-1:0];
+        end
+    end
+end
+
+//--------------------------------------------------------------------
+// Internal Memory
+//--------------------------------------------------------------------
+reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
+reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
 
 //--------------------------------------------------------------------
 // Pipe Stage 1
@@ -169,22 +175,23 @@ always @( posedge clk_in ) begin
     // Reset sample count if os count has been satisifed
     count_p3 = ( count_sat_p3 ) ? 0 : count_p2;
 
-    // Writeback count and sum memory if data is valid
-    if ( dv_p3 == 1'b1 ) begin
-        sum_mem[chan_p2] = sum_p3;
-        count_mem[chan_p2] = count_p3;
+    // Writeback count and sum or zero on reset or clear
+    begin
+        if ( dv_p3 == 1'b1 ) begin
+            sum_mem[chan_p2] = sum_p3;
+            count_mem[chan_p2] = count_p3;
+        end
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+            if ( rst_in || clr_req[i] ) begin
+                sum_mem[i] = 0;
+                count_mem[i] = 0;
+            end
+        end
     end
 
     // Handle pipe flush
     if ( rst_in || clr_req[chan_p2] ) begin
         dv_p3 = 0;
-    end
-
-    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_req[i] ) begin
-            sum_mem[i] = 0;
-            count_mem[i] = 0;
-        end
     end
 
 end

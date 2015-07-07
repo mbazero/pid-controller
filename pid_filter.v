@@ -49,33 +49,6 @@ reg signed [W_DOUT-1:0] max_dout = {W_DOUT{1'b1}} >> 1;
 reg signed [W_DOUT-1:0] min_dout = ~max_dout;
 
 //--------------------------------------------------------------------
-// Configuration Memory
-//--------------------------------------------------------------------
-reg signed [W_DIN-1:0] setpoint_mem[0:N_CHAN-1];
-reg signed [W_PID_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
-reg signed [W_PID_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
-reg signed [W_PID_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
-
-// Handling memory write requests
-always @( posedge clk_in ) begin
-    if ( wr_en ) begin
-        case ( wr_addr ) begin
-            pid_setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DIN-1:0];
-            pid_p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
-            pid_i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
-            pid_d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
-        end
-    end
-end
-
-//--------------------------------------------------------------------
-// Internal Memory
-//--------------------------------------------------------------------
-reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
-reg signed [W_ERROR-1:0] error_prev0_mem[0:N_CHAN-1];
-reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
-
-//--------------------------------------------------------------------
 // Request Registers
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] clr_req;
@@ -93,6 +66,33 @@ always @( posedge clk_in ) begin
         end
     end
 end
+
+//--------------------------------------------------------------------
+// Configuration Memory
+//--------------------------------------------------------------------
+reg signed [W_DIN-1:0] setpoint_mem[0:N_CHAN-1];
+reg signed [W_PID_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
+reg signed [W_PID_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
+reg signed [W_PID_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
+
+// Handle write requests
+always @( posedge clk_in ) begin
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            pid_setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DIN-1:0];
+            pid_p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+            pid_i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+            pid_d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+        end
+    end
+end
+
+//--------------------------------------------------------------------
+// Internal Memory
+//--------------------------------------------------------------------
+reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
+reg signed [W_ERROR-1:0] error_prev0_mem[0:N_CHAN-1];
+reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
 
 //--------------------------------------------------------------------
 // Pipe Stage 1
@@ -179,24 +179,25 @@ always @( posedge clk_in ) begin
     ce_prod1_p3 = k2_p2 * error_prev0_p2;
     ce_prod2_p3 = k3_p2 * error_prev1_p2
 
-    // Writeback error data if data is valid
-    if ( dv_p2 == 1'b1 ) begin
-        error_prev0_mem[chan_p2] = error_p2;
-        error_prev1_mem[chan_p2] = error_prev0_p2;
+    // Writeback error data or zero on reset or clear
+    begin
+        if ( dv_p2 == 1'b1 ) begin
+            error_prev0_mem[chan_p2] = error_p2;
+            error_prev1_mem[chan_p2] = error_prev0_p2;
+        end
+
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+            if ( rst_in || clr_req[i] ) begin
+                error_prev0_mem[i] = 0;
+                error_prev1_mem[i] = 0;
+            end
+        end
     end
 
     // Handle pipe flush
     if ( rst_in || clr_req[chan_p2] ) begin
         dv_p3 = 0;
     end
-
-    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_req[i] ) begin
-            error_prev0_mem[i] = 0;
-            error_prev1_mem[i] = 0;
-        end
-    end
-
 end
 
 //--------------------------------------------------------------------
@@ -266,22 +267,23 @@ always @( posedge clk_in ) begin
         dout_p6 = dint_p5[W_DOUT-1:0];
     end
 
-    // Writeback data if valid
-    if ( dv_p6 == 1'b1 ) begin
-        dout_prev_mem[chan_p5] = dout_p6;
+    // Writeback data or zero on reset or clear
+    begin
+        if ( dv_p6 == 1'b1 ) begin
+            dout_prev_mem[chan_p5] = dout_p6;
+        end
+
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+            if ( rst_in || clr_req[i] ) begin
+                dout_prev_mem[i] = 0;
+            end
+        end
     end
 
     // Handle pipe flush
     if ( rst_in || clr_req[chan_p5] ) begin
         dv_p6 = 0;
     end
-
-    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_req[i] ) begin
-            dout_prev_mem[i] = 0;
-        end
-    end
-
 end
 
 //--------------------------------------------------------------------
