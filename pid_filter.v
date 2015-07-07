@@ -37,7 +37,7 @@ module pid_filter #(
     );
 
 //--------------------------------------------------------------------
-// Parameters
+// Constants
 //--------------------------------------------------------------------
 localparam W_ERROR = W_DIN + 1;
 localparam W_K_COEFS = W_PID_COEFS + 2;
@@ -45,28 +45,58 @@ localparam W_CE_PROD = W_K_COEFS + W_ERROR;
 localparam W_DELTA = W_CE_PROD + 2;
 localparam W_DINT = ((W_DELTA > W_DOUT) ? W_DELTA : W_DOUT) + 1;
 
-//--------------------------------------------------------------------
-// Structures
-//--------------------------------------------------------------------
-// Internal channel memory
-reg signed [W_ERROR-1:0] error_prev0_mem[0:N_CHAN-1];
-reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
-reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
+reg signed [W_DOUT-1:0] max_dout = {W_DOUT{1'b1}} >> 1;
+reg signed [W_DOUT-1:0] min_dout = ~max_dout;
 
-// Writeable channel memory
+//--------------------------------------------------------------------
+// Configuration Memory
+//--------------------------------------------------------------------
 reg signed [W_DIN-1:0] setpoint_mem[0:N_CHAN-1];
 reg signed [W_PID_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
 reg signed [W_PID_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
 reg signed [W_PID_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
 
-// Channel request registers
+// Handling memory write requests
+always @( posedge clk_in ) begin
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            pid_setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DIN-1:0];
+            pid_p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+            pid_i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+            pid_d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
+        end
+    end
+end
+
+//--------------------------------------------------------------------
+// Internal Memory
+//--------------------------------------------------------------------
+reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
+reg signed [W_ERROR-1:0] error_prev0_mem[0:N_CHAN-1];
+reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
+
+//--------------------------------------------------------------------
+// Request Registers
+//--------------------------------------------------------------------
 reg [N_CHAN-1:0] clr_req;
 
-// Constants
-reg signed [W_DOUT-1:0] max_dout = {W_DOUT{1'b1}} >> 1;
-reg signed [W_DOUT-1:0] min_dout = ~max_dout;
+// Handle clear requests
+integer i;
+always @( posedge clk_in ) begin
+    if ( wr_en && wr_addr == pid_clr_req_addr ) begin
+        pid_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
+    end
 
-// Pipe registers
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_req[i] ) begin
+            clr_req[i] = 0;
+        end
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 1
+//--------------------------------------------------------------------
 reg dv_p1 = 0;
 reg [W_CHAN-1:0] chan_p1 = 0;
 reg signed [W_DIN-1:0] din_p1 = 0;
@@ -75,6 +105,29 @@ reg signed [W_PID_COEFS-1:0] p_coef_p1 = 0;
 reg signed [W_PID_COEFS-1:0] i_coef_p1 = 0;
 reg signed [W_PID_COEFS-1:0] d_coef_p1 = 0;
 
+always @( posedge clk_in ) begin
+	// Register input instruction
+    dv_p1 = dv_in;
+    chan_p1 = chan_in;
+
+    // Register input data
+    din_p1 = data_in;
+
+    // Fetch setpoint, PID coefficients, and lock enable
+    setpoint_p1 = setpoint_mem[chan_in];
+    p_coef_p1 = p_coef_mem[chan_in];
+    i_coef_p1 = i_coef_mem[chan_in];
+    d_coef_p1 = d_coef_mem[chan_in];
+
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_in] ) begin
+        dv_p1 = 0;
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 2
+//--------------------------------------------------------------------
 reg dv_p2 = 0;
 reg [W_CHAN-1:0] chan_p2 = 0;
 reg signed [W_ERROR-1:0] error_p2 = 0;
@@ -84,46 +137,8 @@ reg signed [W_K_COEFS-1:0] k3_p2 = 0;
 reg signed [W_ERROR-1:0] error_prev0_p2 = 0;
 reg signed [W_ERROR-1:0] error_prev1_p2 = 0;
 
-reg dv_p3 = 0;
-reg [W_CHAN-1:0] chan_p3 = 0;
-reg signed [W_CE_PROD-1:0] ce_prod0_p3 = 0;
-reg signed [W_CE_PROD-1:0] ce_prod1_p3 = 0;
-reg signed [W_CE_PROD-1:0] ce_prod2_p3 = 0;
-
-reg dv_p4 = 0;
-reg [W_CHAN-1:0] chan_p4 = 0;
-reg signed [W_DELTA-1:0] delta_p4 = 0;
-reg signed [W_DOUT-1:0] dout_prev_p4 = 0;
-
-reg dv_p5 = 0;
-reg [W_CHAN-1:0] chan_p5 = 0;
-reg signed [W_DINT-1:0] dint_p5 = 0;
-
-reg dv_p6 = 0;
-reg [W_CHAN-1:0] chan_p6 = 0;
-reg signed [W_DOUT-1:0] dout_p6 = 0;
-
-reg [W_CHAN-1:0] i;
-
-//--------------------------------------------------------------------
-// Logic
-//--------------------------------------------------------------------
-// Computation pipeline
-always @( posedge sys_clk_in ) begin
-    //------------------------Pipe Stage 1-----------------------------
-    // Register inputs
-    dv_p1 = dv_in;
-    chan_p1 = chan_in;
-    din_p1 = data_in;
-
-    // Fetch setpoint, PID coefficients, and lock enable
-    setpoint_p1 = setpoint_mem[chan_in];
-    p_coef_p1 = p_coef_mem[chan_in];
-    i_coef_p1 = i_coef_mem[chan_in];
-    d_coef_p1 = d_coef_mem[chan_in];
-
-    //------------------------Pipe Stage 2-----------------------------
-    // Pass data valid and channel
+always @( posedge clk_in ) begin
+    // Pass instruction
     dv_p2 = dv_p1;
     chan_p2 = chan_p1;
 
@@ -139,8 +154,23 @@ always @( posedge sys_clk_in ) begin
     error_prev0_p2 = error_prev0_mem[chan_p1];
     error_prev1_p2 = error_prev1_mem[chan_p2];
 
-    //------------------------Pipe Stage 3-----------------------------
-    // Pass data valid and channel
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_p1] ) begin
+        dv_p2 = 0;
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 3
+//--------------------------------------------------------------------
+reg dv_p3 = 0;
+reg [W_CHAN-1:0] chan_p3 = 0;
+reg signed [W_CE_PROD-1:0] ce_prod0_p3 = 0;
+reg signed [W_CE_PROD-1:0] ce_prod1_p3 = 0;
+reg signed [W_CE_PROD-1:0] ce_prod2_p3 = 0;
+
+always @( posedge clk_in ) begin
+    // Pass instruction
     dv_p3 = dv_p2;
     chan_p3 = chan_p2;
 
@@ -155,8 +185,30 @@ always @( posedge sys_clk_in ) begin
         error_prev1_mem[chan_p2] = error_prev0_p2;
     end
 
-    //------------------------Pipe Stage 3-----------------------------
-    // Pass data valid and channel
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_p2] ) begin
+        dv_p3 = 0;
+    end
+
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_req[i] ) begin
+            error_prev0_mem[i] = 0;
+            error_prev1_mem[i] = 0;
+        end
+    end
+
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 4
+//--------------------------------------------------------------------
+reg dv_p4 = 0;
+reg [W_CHAN-1:0] chan_p4 = 0;
+reg signed [W_DELTA-1:0] delta_p4 = 0;
+reg signed [W_DOUT-1:0] dout_prev_p4 = 0;
+
+always @( posedge clk_in ) begin
+    // Pass instruction
     dv_p4 = dv_p3;
     chan_p4 = chan_p3;
 
@@ -166,16 +218,42 @@ always @( posedge sys_clk_in ) begin
     // Fetch previous output
     dout_prev_p4 = dout_prev_mem[chan_p3];
 
-    //------------------------Pipe Stage 4-----------------------------
-    // Pass data valid and channel
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_p3] ) begin
+        dv_p4 = 0;
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 5
+//--------------------------------------------------------------------
+reg dv_p5 = 0;
+reg [W_CHAN-1:0] chan_p5 = 0;
+reg signed [W_DINT-1:0] dint_p5 = 0;
+
+always @( posedge clk_in ) begin
+    // Pass instruction
     dv_p5 = dv_p4;
     chan_p5 = chan_p4;
 
     // Add delta to previous output
     dint_p5 = dout_prev_p4 + delta_p4;
 
-    //------------------------Pipe Stage 5-----------------------------
-    // Pass data valid and channel
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_p4] ) begin
+        dv_p5 = 0;
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 6
+//--------------------------------------------------------------------
+reg dv_p6 = 0;
+reg [W_CHAN-1:0] chan_p6 = 0;
+reg signed [W_DOUT-1:0] dout_p6 = 0;
+
+always @( posedge clk_in ) begin
+    // Pass instruction
     dv_p6 = dv_p5;
     chan_p6 = chan_p5;
 
@@ -188,45 +266,27 @@ always @( posedge sys_clk_in ) begin
         dout_p6 = dint_p5[W_DOUT-1:0];
     end
 
-    // Writeback data previous if data is valid
-    if ( dv_p5 == 1'b1 ) begin
+    // Writeback data if valid
+    if ( dv_p6 == 1'b1 ) begin
         dout_prev_mem[chan_p5] = dout_p6;
     end
 
-    //-----------------------Pipe Flushing-----------------------------
-    if ( rst_in || clr_req[chan_p1] ) dv_p1 = 0;
-    if ( rst_in || clr_req[chan_p2] ) dv_p2 = 0;
-    if ( rst_in || clr_req[chan_p3] ) dv_p3 = 0;
-    if ( rst_in || clr_req[chan_p4] ) dv_p4 = 0;
-    if ( rst_in || clr_req[chan_p5] ) dv_p5 = 0;
-    if ( rst_in || clr_req[chan_p6] ) dv_p6 = 0;
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_p5] ) begin
+        dv_p6 = 0;
+    end
 
-    //----------------------Channel Memory-----------------------------
-    // Clear internal memory and request registers on reset and clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
         if ( rst_in || clr_req[i] ) begin
-            error_prev0_mem[i] = 0;
-            error_prev1_mem[i] = 0;
             dout_prev_mem[i] = 0;
-            clr_req[i] = 0;
         end
     end
 
-    // Handle memory writes
-    if ( wr_en ) begin
-        case ( wr_addr ) begin
-            pid_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
-            pid_setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DIN-1:0];
-            pid_p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
-            pid_i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
-            pid_d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
-        end
-    end
-    //-----------------------------------------------------------------
 end
 
-// Channel memory write handling
-
+//--------------------------------------------------------------------
+// Output Assingment
+//--------------------------------------------------------------------
 // Output assignment
 assign dv_out = dv_p6;
 assign chan_out = chan_p6;

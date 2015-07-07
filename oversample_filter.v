@@ -39,65 +39,84 @@ module oversample_filter #(
     );
 
 //--------------------------------------------------------------------
-// Parameters
+// Constants
 //--------------------------------------------------------------------
 localparam W_OS = log2(W_COUNT);
 
-//--------------------------------------------------------------------
-// Structures
-//--------------------------------------------------------------------
-// Internal channel memory
-reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
-reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
-
-// Writeable channel memory
-reg [W_OS-1:0] os_mem[0:N_CHAN-1];
-
-// Channel request registers
-reg [N_CHAN-1:0] clr_req = 0;
-
-// Constants
 reg signed [W_SUM-1:0] max_sum = {W_SUM{1'b1}} >> 1;
 reg signed [W_SUM-1:0] min_sum = ~max_sum;
 
-// Pipe registers
+//--------------------------------------------------------------------
+// Channel Memory
+//--------------------------------------------------------------------
+// Internal state
+reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
+reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
+
+// Configuration state
+reg [W_OS-1:0] os_mem[0:N_CHAN-1];
+
+// Operation request registers
+reg [N_CHAN-1:0] clr_req = 0;
+
+// Write handling
+always @( posedge clk_in ) begin
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            osf_clr_req_addr : clr_req[wr_chan] = wr_data[0];
+            osf_os_addr : os_mem[wr_chan] = wr_data[W_OS-1:0];
+        end
+    end
+end
+
+// Reset handling
+integer i;
+always @( posedge clk_in ) begin
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_req[i] ) begin
+            clr_req[i] = 0;
+        end
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 1
+//--------------------------------------------------------------------
 reg dv_p1 = 0;
 reg [W_CHAN-1:0] chan_p1 = 0;
 reg signed [W_DATA-1:0] din_p1 = 0;
 reg signed [W_SUM-1:0] sum_p1 = 0;
 reg [W_COUNT-1:0] count_p1 = 0;
 
-reg dv_p2 = 0;
-reg [W_CHAN-1:0] chan_p2 = 0;
-reg signed [W_SUM:0] sum_p2 = 0;
-reg [W_COUNT-1:0] count_p2 = 0;
-reg [W_OS-1:0] os_p2 = 0;
-
-reg count_sat_p3 = 0;
-reg dv_p3 = 0;
-reg [W_CHAN-1:0] chan_p3 = 0;
-reg signed [W_DATA-1:0] dout_p3 = 0;
-reg signed [W_SUM-1:0] sum_p3 = 0;
-
-reg [W_CHAN-1:0] i = 0;
-
-//--------------------------------------------------------------------
-// Logic
-//--------------------------------------------------------------------
-// Compuation pipeline
 always @( posedge clk_in ) begin
-    //------------------------Pipe Stage 1-----------------------------
-	// Register inputs
+	// Register input instruction
 	dv_p1 = dv_in;
 	chan_p1 = chan_in
+
+    // Register input data
 	din_p1 = data_in;
 
     // Fetch sum and sample count
     sum_p1 = sum_mem[chan_in];
     count_p1 = count_mem[chan_in];
 
-    //-----------------------Pipe Stage 2------------------------------
-    // Pass data valid and channel
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_in] ) begin
+        dv_p1 = 0;
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 2
+//--------------------------------------------------------------------
+reg dv_p2 = 0;
+reg [W_CHAN-1:0] chan_p2 = 0;
+reg signed [W_SUM:0] sum_p2 = 0;
+reg [W_COUNT-1:0] count_p2 = 0;
+reg [W_OS-1:0] os_p2 = 0;
+
+always @( posedge clk_in ) begin
+    // Pass instruction
     dv_p2 = dv_p1;
     chan_p2 = chan_p1;
 
@@ -106,24 +125,40 @@ always @( posedge clk_in ) begin
     count_p2 = count_p1 + 1'b1;
 
     // Fetch oversample mode
-    os_p2 = os_mem[chan_pipe[1]];
+    os_p2 = os_mem[chan_p1];
 
-    //-----------------------Pipe Stage 3------------------------------
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_p1] ) begin
+        dv_p2 = 0;
+    end
+end
+
+//--------------------------------------------------------------------
+// Pipe Stage 3
+//--------------------------------------------------------------------
+reg count_sat_p3 = 0;
+reg dv_p3 = 0;
+reg [W_CHAN-1:0] chan_p3 = 0;
+reg signed [W_DATA-1:0] dout_p3 = 0;
+reg signed [W_SUM-1:0] sum_p3 = 0;
+reg signed [W_COUNT-1:0] count_p3 = 0;
+
+always @( posedge clk_in ) begin
     // Check whether the oversample count has been satisfied. This is an
     // intra-state signal so blocking assignments must be used.
-    count_sat_p3 = ( count_p2[os_mem[2]] == 1 );
+    count_sat_p3 = ( count_p2[os_p2] == 1 );
 
-    // Pass data valid signal if count satisfied
+    // Pass instruction if oversample count satisfied
     dv_p3 = ( count_sat_p3 ) ? dv_p2 : 0;
-
-    // Pass channel
     chan_p3 = chan_p2;
 
     // Divide sum by right shifting
     dout_p3 = sum_p2 >>> os_p2;
 
-    // Handle overflow
-    if ( sum_p2 > max_sum ) begin
+    // Reset sum if os count has been satisified, otherwise handle overflow
+    if ( count_sat_p3 ) begin
+        sum_p3 = 0;
+    end else if ( sum_p3 > max_sum ) begin
         sum_p3 = max_sum;
     end else if ( sum_p3 < min_sum ) begin
         sum_p3 = min_sum;
@@ -131,39 +166,32 @@ always @( posedge clk_in ) begin
         sum_p3 = sum_p2[W_SUM-1:0];
     end
 
-    // Writeback count and sum if data is valid. Reset both terms if sample
-    // count has been satisfied.
-    if ( dv_p2 == 1'b1 ) begin
-       sum_mem[chan_p2] = ( count_sat_p3 ) ? 0 : sum_p3;
-       count_mem[chan_p2] = ( count_sat_p3 ) ? 0 : count_p2;
+    // Reset sample count if os count has been satisifed
+    count_p3 = ( count_sat_p3 ) ? 0 : count_p2;
+
+    // Writeback count and sum memory if data is valid
+    if ( dv_p3 == 1'b1 ) begin
+        sum_mem[chan_p2] = sum_p3;
+        count_mem[chan_p2] = count_p3;
     end
 
-    //-----------------------Pipe Flushing-----------------------------
-    if ( rst_in || clr_req[chan_p1] ) dv_p1 = 0;
-    if ( rst_in || clr_req[chan_p2] ) dv_p2 = 0;
-    if ( rst_in || clr_req[chan_p3] ) dv_p3 = 0;
+    // Handle pipe flush
+    if ( rst_in || clr_req[chan_p2] ) begin
+        dv_p3 = 0;
+    end
 
-    //----------------------Channel Memory-----------------------------
-    // Clear internal memory and request registers on reset and clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
         if ( rst_in || clr_req[i] ) begin
             sum_mem[i] = 0;
             count_mem[i] = 0;
-            clr_req[i] = 0;
         end
     end
 
-    // Handle memory writes
-    if ( wr_en ) begin
-        case ( wr_addr ) begin
-            osf_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
-            osf_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0];
-        end
-    end
-    //-----------------------------------------------------------------
 end
 
-// Output assignment
+//--------------------------------------------------------------------
+// Output Assignment
+//--------------------------------------------------------------------
 assign dv_out = dv_p3;
 assign chan_out = chan_p3;
 assign data_out = dout_p3;

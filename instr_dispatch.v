@@ -44,13 +44,12 @@ module instr_dispatch #(
     );
 
 //--------------------------------------------------------------------
-// Channel Memory
+// Configuration Memory
 //--------------------------------------------------------------------
-// Writeable state
 reg [N_CHAN-1:0] chan_en_mem;
 reg [W_SRC:0] chan_src_sel_mem[0:N_CHAN-1];
 
-// Initialization
+// Initialize memory
 integer i;
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
@@ -59,24 +58,24 @@ initial begin
     end
 end
 
+// Handle write requests
+always @( posedge clk_in ) begin
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            chan_src_sel_addr : chan_src_sel_mem[wr_chan] <= wr_data[W_SRC:0];
+            chan_en_addr : chan_en_mem[wr_chan] <= wr_data[0];
+        end
+    end
+end
+
 //--------------------------------------------------------------------
-// Module Structures
+// Data Buffer
 //--------------------------------------------------------------------
-// Fifo signals
 wire [W_SRC-1:0] fifo_src;
 wire [W_DATA-1:0] fifo_data;
 wire fifo_rd_en;
 wire fifo_dv;
 
-// Decoder signals
-wire dec_dv;
-reg [W_CHAN-1:0] dec_chan;
-reg [N_CHAN-1:0] dec_instr_sent;
-
-//--------------------------------------------------------------------
-// Logic
-//--------------------------------------------------------------------
-// Input data buffer
 fifo_21 input_buffer (
    .clk     (clk_in),
    .rst     (rst_in),
@@ -87,7 +86,13 @@ fifo_21 input_buffer (
    .valid   (fifo_dv)
    );
 
-// PID channel decoder
+//--------------------------------------------------------------------
+// Channel Decoder
+//--------------------------------------------------------------------
+wire dec_dv;
+reg [W_CHAN-1:0] dec_chan;
+reg [N_CHAN-1:0] dec_instr_sent;
+
 // Decode PID channel giving priority to lower numbered channels. If
 // valid channel found, inject instruction into pipeline and continue
 // search for other valid channels. If no other valid channels found,
@@ -125,17 +130,9 @@ always @( posedge clk_in ) begin
     end
 end
 
-// Channel memory write handling
-always @( posedge clk_in ) begin
-    if ( wr_en ) begin
-        case ( wr_addr ) begin
-            chan_src_sel_addr : chan_src_sel_mem[wr_chan] <= wr_data[W_SRC:0];
-            chan_en_addr : chan_en_mem[wr_chan] <= wr_data[0];
-        end
-    end
-end
-
-// Output assignment
+//--------------------------------------------------------------------
+// Output Assignment
+//--------------------------------------------------------------------
 assign dv_out = dec_dv;
 assign chan_out = dec_chan;
 assign data_out = fifo_data;
