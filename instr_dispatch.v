@@ -127,7 +127,7 @@ always @( posedge clk_in ) begin
         dec_dv = 0;
         instr_sent = 0;
         fifo_rd_en = 0;
-    end else if ( dec_chan == NULL_CHAN ) begin
+    end else if ( dec_chan >= N_CHAN ) begin
         dec_dv = 0;
         instr_sent = 0;
         fifo_rd_en = 1;

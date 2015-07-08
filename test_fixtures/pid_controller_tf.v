@@ -131,18 +131,18 @@ module pid_controller_tf;
 	assign adc_data_a_in = data_a_tx[TX_LEN-1];
 	assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
+	//////////////////////////////////////////
+	// Sim Params (change these)
+	//////////////////////////////////////////
+
 	// simulation reps
 	localparam REPS = 100;
 
 	// adc params
 	reg [15:0] adc_os = 0;
 
-	//////////////////////////////////////////
-	// Sim Params (change these)
-	//////////////////////////////////////////
-
 	// channel params
-	localparam NAC = 2;
+	localparam NAC = 2; // number of active channels
 	reg [15:0] chan_focus = 1;
 	reg [15:0] chan_no = 0;
 
@@ -160,12 +160,23 @@ module pid_controller_tf;
 		dest[chan_no] = 1;
 	end
 
+    // ovr params
+    reg [15:0] os[0:NAC-1];
+
+    initial begin : set ovr_params
+        chan_no = 0;
+        os = 0;
+
+        chan_no = 1;
+        os = 0;
+    end
+
 	// pid parameters
 	reg signed [15:0] setpoint[0:NAC-1];
 	reg signed [15:0]	p_coef[0:NAC-1];
 	reg signed [15:0]	i_coef[0:NAC-1];
 	reg signed [15:0]	d_coef[0:NAC-1];
-	reg lock_en[0:NAC-1];
+    reg signed [15:0] inv_error[0:NAC-1];
 
 	initial begin : set_pid_params
 		chan_no = 0;
@@ -173,14 +184,14 @@ module pid_controller_tf;
 		p_coef[chan_no] = 10;
 		i_coef[chan_no] = 3;
 		d_coef[chan_no] = 2;
-		lock_en[chan_no] = 1;
+        inv_error[chan_no] = 0;
 
 		chan_no = 1;
 		setpoint[chan_no] = 0;
 		p_coef[chan_no] = 10;
 		i_coef[chan_no] = 3;
 		d_coef[chan_no] = 2;
-		lock_en[chan_no] = 1;
+        inv_error[chan_no] = 0;
 	end
 
 	// opp parameters
@@ -189,16 +200,18 @@ module pid_controller_tf;
 	reg signed [47:0] output_max[0:NAC-1];
 	reg signed [15:0] multiplier[0:NAC-1];
 	reg [15:0] right_shift[0:NAC-1];
+    reg [15:0] add_chan[0:NAC-1];
 	reg [5*8-1:0] dest_type[0:NAC-1];
 	reg focus[0:NAC-1];
 
-	initial begin : set_opp_params
+	initial begin : set_opt_params
 		chan_no = 0;
 		output_init[chan_no] = 13107;
 		output_min[chan_no] = 0;
 		output_max[chan_no] = 52428;
 		multiplier[chan_no] = 1;
 		right_shift[chan_no] = 2;
+        add_chan[chan_no] = N_CHAN + 1;
 		dest_type[chan_no] = "DAC";
 		focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
 
@@ -208,6 +221,7 @@ module pid_controller_tf;
 		output_max[chan_no] = 52428;
 		multiplier[chan_no] = 1;
 		right_shift[chan_no] = 10;
+        add_chan[chan_no] = N_CHAN + 1;
 		dest_type[chan_no] = "DAC";
 		focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
 	end
@@ -244,16 +258,18 @@ module pid_controller_tf;
 	end
 
 	// opp verification
-	reg signed [127:0] opp_exp[0:NAC-1];
-	reg [15:0] opp_rcv[0:NAC-1];
+	reg signed [127:0] opt_exp[0:NAC-1];
+	reg signed [127:0] opt_mtrs[0:NAC-1];
+	reg [15:0] opt_rcv[0:NAC-1];
 	integer oc_count = 0;
 	integer out_count = 0;
 	integer oc_chan = 0;
 
 	initial begin
 		for (oc_chan = 0; oc_chan < NAC; oc_chan = oc_chan+1) begin
-			opp_exp[oc_chan] = 0;
-			opp_rcv[oc_chan] = output_init[oc_chan];
+			opt_exp[oc_chan] = 0;
+            opt_mtrs[oc_chan] = 0;
+			opt_rcv[oc_chan] = output_init[oc_chan];
 		end
 	end
 
@@ -265,8 +281,9 @@ module pid_controller_tf;
 	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
 	// wire-out verification
-	reg signed [15:0] wire_out_exp;
+	reg signed [15:0] wire_out_exp[0:NAC-1];
 	reg signed [15:0] wire_out_rcv;
+    integer cwo_chan;
 	integer wc = 0;
 
 	// pipe verification
@@ -313,7 +330,6 @@ module pid_controller_tf;
 			//check_wire_out(REPS);
 			check_pipe(REPS);
 
-			//print_state(REPS);
 		join
 
 		$display("SIMULATION SUCCESSFUL.");
@@ -326,33 +342,31 @@ module pid_controller_tf;
         begin : cchan
             integer c;
             for (c = 0; c < NAC; c = c+1) begin
-                // Activate channel
-                write_data(chan_activate_addr, dest[c], 1);
-
-                // Route source to destination
-                write_data(chan_input_sel_addr, dest[c], src[c]);
+                // Route and activate channel
+                write_data(chan_src_sel_addr, dest[c], src[c]);
+                write_data(chan_en_addr, dest[c], 1);
 
                 // Set OSF ratio and activate source channel
-                write_data(osf_cycle_delay_addr, dest[c], 0);
-                write_data(osf_os_addr, dest[c], 0);
+                write_data(ovr_os_addr, dest[c], os[c]);
 
                 // Set PID params
                 write_data(pid_setpoint_addr, dest[c], setpoint[c]);
                 write_data(pid_p_coef_addr, dest[c], p_coef[c]);
                 write_data(pid_i_coef_addr, dest[c], i_coef[c]);
                 write_data(pid_d_coef_addr, dest[c], d_coef[c]);
-                write_data(pid_lock_en_addr, dest[c], lock_en[c]);
+                write_data(pid_inv_error_addr, dest[c], inv_error[c]);
 
                 // Set OPP params
-                write_data(opp_min_addr, dest[c], output_min[c]);
-                write_data(opp_max_addr, dest[c], output_max[c]);
-                write_data(opp_init_addr, dest[c], output_init[c]);
-                write_data(opp_mult_addr, dest[c], multiplier[c]);
-                write_data(opp_rs_addr, dest[c], right_shift[c]);
+                write_data(opt_min_addr, dest[c], output_min[c]);
+                write_data(opt_max_addr, dest[c], output_max[c]);
+                write_data(opt_init_addr, dest[c], output_init[c]);
+                write_data(opt_mult_addr, dest[c], multiplier[c]);
+                write_data(opt_rs_addr, dest[c], right_shift[c]);
+                write_data(opt_add_chan_addr, dest[c], add_chan[c]);
 
                 // Set focus
                 if (focus[c] == 1) begin
-                    write_data(chan_focus_addr, dest[c], 1);
+                    write_data(pipe_chan_addr, dest[c], 1);
                 end
 
             end
@@ -367,6 +381,7 @@ module pid_controller_tf;
         begin
             SetWireInValue(addr_iwep, addr, MASK);
             SetWireInValue(chan_iwep, chan, MASK);
+            SetWireInValue(data3_iwep, data[63:48], MASK);
             SetWireInValue(data2_iwep, data[47:32], MASK);
             SetWireInValue(data1_iwep, data[31:16], MASK);
             SetWireInValue(data0_iwep, data[15:0], MASK);
@@ -427,40 +442,26 @@ module pid_controller_tf;
 		input [31:0] reps;
 
 		repeat(reps) begin
-
 			pc_count = 0;
 			while (pc_count < NAC) begin
+                @(posedge pid_controller_tf.uut.pid_pipe.dv_pid) begin
+                    pc_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.chan_pid);
 
-				@(posedge |pid_controller_tf.uut.pid_data_valid) begin
+                    // compute expected PID value
+                    e_count[pc_chan] = e_count[pc_chan] + 1;
+                    error[pc_chan] = setpoint[pc_chan] - adc_val[src[pc_chan]];
+                    #1 error[pc_chan] = (inv_error[pc_chan]) ? -error[pc_chan] : error[pc_chan];
+                    #1 integral[pc_chan] = integral[pc_chan] + error[pc_chan];
+                    derivative[pc_chan] = error[pc_chan] - error_prev[pc_chan];
+                    #1 pid_exp[pc_chan] = (p_coef[pc_chan] * error[pc_chan]) + (i_coef[pc_chan] * integral[pc_chan]) + (d_coef[pc_chan] * derivative[pc_chan]);
+                    error_prev[pc_chan] = error[pc_chan];
 
-					for (dv_count = 0; dv_count < N_OUT; dv_count = dv_count + 1) begin
-						if (pid_controller_tf.uut.pid_data_valid[dv_count] == 1) begin
-
-							for (ac_count = 0; ac_count < NAC; ac_count = ac_count+1) begin
-								if (dest[ac_count] == dv_count) begin
-									pc_chan = ac_count;
-									pc_count = pc_count + 1;
-
-									// compute expected PID value
-									e_count[pc_chan] = e_count[pc_chan] + 1;
-									error[pc_chan] = setpoint[pc_chan] - adc_val[src[pc_chan]];
-									#1 integral[pc_chan] = integral[pc_chan] + error[pc_chan];
-									derivative[pc_chan] = error[pc_chan] - error_prev[pc_chan];
-									#1 pid_exp[pc_chan] = (p_coef[pc_chan] * error[pc_chan]) + (i_coef[pc_chan] * integral[pc_chan]) + (d_coef[pc_chan] * derivative[pc_chan]);
-									#1 pid_exp[pc_chan] = (lock_en[pc_chan]) ? pid_exp[pc_chan] : 0;
-									error_prev[pc_chan] = error[pc_chan];
-									// compare with received value
-									pid_rcv[pc_chan] = pid_controller_tf.uut.pid_data[src[pc_chan]];
-									#1 assert_equals(pid_exp[pc_chan], pid_rcv[pc_chan], "PID", pc_chan);
-								end
-							end
-						end
-					end
-
-				end
-
+                    // compare with received value
+                    pid_rcv[pc_chan] = pid_controller_tf.uut.pid_pipe.data_pid;
+                    #1 assert_equals(pid_exp[pc_chan], pid_rcv[pc_chan], "PID", pc_chan);
+                end
+                pc_count = pc_count + 1;
 			end
-
 		end
 	endtask
 
@@ -468,42 +469,36 @@ module pid_controller_tf;
 	task check_opp;
 		input [31:0] reps;
 
-		repeat(reps) begin
+        repeat(reps) begin
+            oc_count = 0;
+            while (oc_count < NAC) begin
+                @(posedge pid_controller_tf.uut.pid_pipe.dv_opt) begin
+                    oc_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.chan_opt);
 
-			oc_count = 0;
-			while (oc_count < NAC) begin
+                    // compute expected output value
+                    $display("pid_exp[%d] : %d", oc_chan, pid_exp[oc_chan]);
+                    #1 opt_exp[oc_chan] = pid_exp[oc_chan] * multiplier[oc_chan];
+                    #1 $display(opt_exp[oc_chan]);
+                    #1 opt_exp[oc_chan] = opt_exp[oc_chan] >>> right_shift[oc_chan];
+                    #1 opt_mtrs[oc_chan] = opt_exp[oc_chan];
+                    #1 $display(opt_exp[oc_chan]);
+                    #1;
+                    if (add_chan[oc_chan] < N_CHAN) begin
+                        opt_exp[oc_chan] = opt_exp[oc_chan] + opt_mtrs[out_to_chan(add_chan[oc_chan])];
+                    end
+                    #1 opt_exp[oc_chan] = opt_exp[oc_chan] + opt_rcv[oc_chan];
+                    #1 $display(opt_exp[oc_chan]);
+                    #1 opt_exp[oc_chan] = (opt_exp[oc_chan] > output_max[oc_chan]) ? output_max[oc_chan] : opt_exp[oc_chan];
+                    #1 $display(opt_exp[oc_chan]);
+                    #1 opt_exp[oc_chan] = (opt_exp[oc_chan] < output_min[oc_chan]) ? output_min[oc_chan] : opt_exp[oc_chan];
 
-				@(posedge |pid_controller_tf.uut.opp_data_valid) begin
-
-					for (out_count = 0; out_count < N_OUT; out_count = out_count + 1) begin
-						if (pid_controller_tf.uut.opp_data_valid[out_count] == 1) begin
-							oc_chan = out_to_chan(out_count);
-							oc_count = oc_count + 1;
-
-							// compute expected output value
-							$display("pid_exp[%d] : %d", oc_chan, pid_exp[oc_chan]);
-							#1 opp_exp[oc_chan] = pid_exp[oc_chan] * multiplier[oc_chan];
-							#1 $display(opp_exp[oc_chan]);
-							#1 opp_exp[oc_chan] = opp_exp[oc_chan] >>> right_shift[oc_chan];
-							#1 $display(opp_exp[oc_chan]);
-							#1 opp_exp[oc_chan] = opp_exp[oc_chan] + opp_rcv[oc_chan];
-							#1 $display(opp_exp[oc_chan]);
-							#1 opp_exp[oc_chan] = (lock_en[oc_chan] == 1) ? opp_exp[oc_chan] : output_init[oc_chan];
-							#1 $display(opp_exp[oc_chan]);
-							#1 opp_exp[oc_chan] = (opp_exp[oc_chan] > output_max[oc_chan]) ? output_max[oc_chan] : opp_exp[oc_chan];
-							#1 $display(opp_exp[oc_chan]);
-							#1 opp_exp[oc_chan] = (opp_exp[oc_chan] < output_min[oc_chan]) ? output_min[oc_chan] : opp_exp[oc_chan];
-							// compare with received value
-							opp_rcv[oc_chan] = pid_controller_tf.uut.opp_data[dest[oc_chan]];
-							#1 assert_equals(opp_exp[oc_chan], opp_rcv[oc_chan], "OPP", oc_chan);
-						end
-					end
-
-				end
-
-			end
-
-		end
+                    // compare with received value
+                    opt_rcv[oc_chan] = pid_controller_tf.uut.pid_pipe.data_opt;
+                    #1 assert_equals(opt_exp[oc_chan], opt_rcv[oc_chan], "OPP", oc_chan);
+                end
+                oc_count = oc_count + 1;
+            end
+        end
 	endtask
 
 	/* Verify received data */
@@ -527,7 +522,7 @@ module pid_controller_tf;
 
 				// check recevied data
 				#1 sim_chan = out_to_chan(r_address);
-				#1 assert_equals(opp_rcv[sim_chan], r_data, "RCV", sim_chan);
+				#1 assert_equals(opt_rcv[sim_chan], r_data, "RCV", sim_chan);
 			end
 		end
 	endtask
@@ -537,14 +532,16 @@ module pid_controller_tf;
 
 		begin
 			repeat(reps) begin
-				@(posedge pid_controller_tf.uut.osf_data_valid[src[chan_focus]]) begin
-					pipe_expected[rep_count] = pid_controller_tf.uut.osf_data[src[chan_focus]][17 -: 16];
-					rep_count = rep_count + 1;
+                @(posedge pid_controller_tf.uut.pid_pipe.dv_ovr) begin
+                    if(pid_controller_tf.uut.pid_pipe.chan_ovr == dest[chan_focus]) begin
+                        pipe_expected[rep_count] = pid_controller_tf.uut.pid_pipe.data_ovr[17 -: 16];
+                        rep_count = rep_count + 1;
+                    end
 				end
 			end
 
 			// read pipe data
-			ReadFromPipeOut(osf_data_opep, pipeOutSize);
+			ReadFromPipeOut(data_log_opep, pipeOutSize);
 			for(ppc = 0; ppc < (REPS); ppc = ppc + 1) begin
 				pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
 				#1;
@@ -560,38 +557,19 @@ module pid_controller_tf;
 		input [15:0] wc;
 
 		repeat(reps) begin
-			@(posedge pid_controller_tf.uut.osf_data_valid[src[wc]]) begin
-				wire_out_exp = pid_controller_tf.uut.osf_data[src[wc]][17:2];
-			end
-			@(posedge pid_controller_tf.uut.pid_data_valid[src[wc]]) begin
-				UpdateWireOuts;
-				wire_out_rcv = GetWireOutValue(osf_data0_owep);
-				//assert_equals(wire_out_exp, wire_out_rcv, "Wire-out");
-			end
-		end
-	endtask
+            fork
+                @(posedge pid_controller_tf.uut.pid_pipe.dv_ovr) begin
+                    wire_out_exp[out_to_chan(pid_controller_tf.uut.pid_pipe.chan_ovr)] =
+                        pid_controller_tf.uut.pid_pipe.data_ovr[17:2];
+                end
 
-
-	/* Print controller state */
-	task print_state;
-		input [31:0] reps;
-		input [15:0] chan;
-
-		// print internal state
-		repeat(reps) begin
-			@(posedge pid_controller_tf.uut.cs_data_valid[src[chan]]) begin
-				$display(">>> ADC Value:\t%d <<<", $signed(pid_controller_tf.uut.cs_data_a));
-			end
-			@(posedge pid_controller_tf.uut.osf_data_valid[src[chan]]) begin
-				$display(">>> OSF Value:\t%d <<<", $signed(pid_controller_tf.uut.osf_data[src[chan]]));
-			end
-			@(posedge pid_controller_tf.uut.pid_data_valid[src[chan]]) begin
-				$display(">>> PID Value:\t%d <<<", $signed(pid_controller_tf.uut.pid_data[src[chan]]));
-			end
-			@(posedge pid_controller_tf.uut.opp_data_valid[dest[chan]]) begin
-				$display(">>> OPP Value:\t%d <<<", pid_controller_tf.uut.opp_data[dest[chan]]);
-				//$display("Target Value:\t%d", target);
-			end
+                @(posedge pid_controller_tf.uut.pid_pipe.dv_pid) begin
+                    cwo_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.chan_pid);
+                    UpdateWireOuts;
+                    wire_out_rcv = GetWireOutValue(data_log0_owep + dest[cwo_chan]);
+                    assert_equals(wire_out_exp, wire_out_rcv[cwo_chan], "Wire-out");
+                end
+            join
 		end
 	endtask
 
@@ -642,10 +620,10 @@ module pid_controller_tf;
 	endfunction
 
 
-	`include "ep_map.vh"
-	`include "parameters.vh"
+	`include "../ep_map.vh"
+	`include "../parameters.vh"
     `include "assert_equals.v"
-	`include "ok_sim/okHostCalls.v"
+	`include "../ok_sim/okHostCalls.v"
 
 endmodule
 
