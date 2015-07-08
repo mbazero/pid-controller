@@ -5,47 +5,55 @@
 module oversample_filter_tf;
 
 	// Parameters
+    localparam W_CHAN = 5;
 	localparam W_DATA = 18;
+    localparam W_SUM = 128;
+    localparam W_OS = 5;
+    localparam W_WR_ADDR = W_EP;
+    localparam W_WR_CHAN = W_EP;
+    localparam W_WR_DATA = W_EP*4;
+
 	localparam W_EP = 16;
-	localparam W_OSM = 6;
-	localparam OSM_INIT = 0;
-	localparam CDLY_INIT = 0;
 
 	// Inputs
 	reg clk_in;
-	reg reset_in;
+	reg rst_in;
 
+    reg dv_in;
+    reg chan_in;
 	reg signed [W_DATA-1:0] data_in;
-	reg data_valid_in;
 
-	reg [W_EP-1:0] cycle_delay_in;
-	reg [W_OSM-1:0] osm_in;
-	reg activate_in;
-	reg update_en_in;
-	reg update_in;
+    reg wr_en;
+    reg [W_WR_ADDR-1:0] wr_addr;
+    reg [W_WR_CHAN-1:0] wr_chan;
+    reg [W_WR_DATA-1:0] wr_data;
 
 	// Outputs
+	wire dv_out;
+    wire [W_CHAN-1:0] chan_out;
 	wire signed [W_DATA-1:0] data_out;
-	wire data_valid_out;
 
 	oversample_filter #(
-		.W_DATA(W_DATA),
-		.W_EP(W_EP),
-		.W_OSM(W_OSM),
-		.OSM_INIT(OSM_INIT),
-		.CDLY_INIT(CDLY_INIT))
+        .W_CHAN(W_CHAN),
+        .W_DATA(W_DATA),
+        .W_SUM(W_SUM),
+        .W_OS(W_OS),
+        .W_WR_ADDR(W_WR_ADDR),
+        .W_WR_CHAN(W_WR_CHAN),
+        .W_WR_DATA(W_WR_DATA))
 	uut (
-		.clk_in(clk_in),
-		.reset_in(reset_in),
-		.data_in(data_in),
-		.data_valid_in(data_valid_in),
-		.cycle_delay_in(cycle_delay_in),
-		.osm_in(osm_in),
-		.activate_in(activate_in),
-		.update_en_in(update_en_in),
-		.update_in(update_in),
-		.data_out(data_out),
-		.data_valid_out(data_valid_out)
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .dv_in(dv_in),
+        .chan_in(chan_in),
+        .data_in(data_in),
+        .wr_en(wr_en),
+        .wr_addr(wr_addr),
+        .wr_chan(wr_chan),
+        .wr_data(wr_data),
+        .dv_out(dv_out),
+        .chan_out(chan_out),
+        .data_out(data_out)
 	);
 
 	// simulation structures
@@ -54,32 +62,38 @@ module oversample_filter_tf;
 	reg signed [W_DATA-1:0] received;
 	reg signed [W_DATA-1:0] expected;
 	integer delta = 0;
+    reg [W_OS-1:0] os;
 
 	// generate 50MHz clock
 	always #10 clk_in = ~clk_in;
 
 	initial begin
 		clk_in = 0;
-		reset_in = 0;
+		rst_in = 0;
+		dv_in = 0;
+        chan_in = 0;
 		data_in = 0;
-		data_valid_in = 0;
-		cycle_delay_in = 0;
-		osm_in = 0;
-		activate_in = 1;
-		update_en_in = 1;
-		update_in = 0;
+        wr_en = 0;
+        wr_addr = 0;
+        wr_chan = 0;
+        wr_data = 0;
 
 		#100;
 
-		// set oversample mode
-		osm_in = 0;
-		num_samples = 2**osm_in;
-		@(posedge clk_in) update_in = 1;
-		@(posedge clk_in) update_in = 0;
+		// initial oversample mode
+		os = 0;
 
-		repeat(2**W_OSM) begin
+		repeat(2**W_OS) begin
+            // set oversample mode in module
+            num_samples = 2**os;
+            wr_addr = ovr_os_addr;
+            wr_chan = 0;
+            wr_data = os;
+            @(posedge clk_in) wr_en = 1;
+            @(posedge clk_in) wr_en = 0;
+
 			$display("######################################");
-			$display("OSM = %d", osm_in);
+			$display("OS = %d", os);
 			$display("######################################");
 
 			repeat(10) begin
@@ -91,21 +105,21 @@ module oversample_filter_tf;
 
 						$display("data_in: %d", data_in);
 
-						@(posedge clk_in) data_valid_in = 1;
-						@(posedge clk_in) data_valid_in = 0;
+						@(posedge clk_in) dv_in = 1;
+						@(posedge clk_in) dv_in = 0;
 
 						#100;
 
-						if(oversample_filter_tf.uut.sum != sum) begin
-							$display("SUM FAILURE\t--\tReceived: %d\Expected: %d", oversample_filter_tf.uut.sum, sum);
+                        @(posedge oversample_filter_tf.uut.dv_p2) begin
+                            assert_equals(sum, oversample_filter_tf.uut.sum_p2, "SUM");
 							$stop;
-						end
+                        end
 
-						#1700;
+						#200;
 					end
 
 					// receive data
-					@(posedge data_valid_out) begin
+					@(posedge dv_out) begin
 						received = data_out;
 						expected = sum / (num_samples);
 						sum = 0;
@@ -114,7 +128,7 @@ module oversample_filter_tf;
 
 						$display("-------------------------------------------");
 						$display("Received: %d\tExpected: %d", received, expected);
-						$display("OSM: %d", osm_in);
+						$display("OSM: %d", os);
 						$display("num_samples: %d", num_samples);
 						if(delta == 0 | delta == -1 | delta == 1) begin // data received might vary by +/- 1
 							$display("SUCCESS");
@@ -127,12 +141,8 @@ module oversample_filter_tf;
 				join
 			end
 
-			// set oversample mode
-			osm_in = osm_in + 1;
-			num_samples = 2**osm_in;
-			@(posedge clk_in) update_in = 1;
-			@(posedge clk_in) update_in = 0;
-
+            // increment os
+			os = os + 1;
 		end
 
 		$display("*****SIMULATION COMPLETED SUCCESSFULLY*****");
@@ -141,11 +151,6 @@ module oversample_filter_tf;
 
 	end
 
+    `include "assert_equals.v"
+
 endmodule
-
-
-
-
-
-
-

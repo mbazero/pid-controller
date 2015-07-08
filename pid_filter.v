@@ -9,6 +9,7 @@
 
 module pid_filter #(
     parameter W_CHAN = 5,
+    parameter N_CHAN = 8,
     parameter W_DIN = 18,
     parameter W_DOUT = 128,
     parameter W_PID_COEFS = 16,

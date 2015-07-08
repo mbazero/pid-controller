@@ -321,6 +321,107 @@ module pid_controller_tf;
 
 	end
 
+    /* configure channel */
+    task configure_chans;
+        begin : cchan
+            integer c;
+            for (c = 0; c < NAC; c = c+1) begin
+                // Activate channel
+                write_data(chan_activate_addr, dest[c], 1);
+
+                // Route source to destination
+                write_data(chan_input_sel_addr, dest[c], src[c]);
+
+                // Set OSF ratio and activate source channel
+                write_data(osf_cycle_delay_addr, dest[c], 0);
+                write_data(osf_os_addr, dest[c], 0);
+
+                // Set PID params
+                write_data(pid_setpoint_addr, dest[c], setpoint[c]);
+                write_data(pid_p_coef_addr, dest[c], p_coef[c]);
+                write_data(pid_i_coef_addr, dest[c], i_coef[c]);
+                write_data(pid_d_coef_addr, dest[c], d_coef[c]);
+                write_data(pid_lock_en_addr, dest[c], lock_en[c]);
+
+                // Set OPP params
+                write_data(opp_min_addr, dest[c], output_min[c]);
+                write_data(opp_max_addr, dest[c], output_max[c]);
+                write_data(opp_init_addr, dest[c], output_init[c]);
+                write_data(opp_mult_addr, dest[c], multiplier[c]);
+                write_data(opp_rs_addr, dest[c], right_shift[c]);
+
+                // Set focus
+                if (focus[c] == 1) begin
+                    write_data(chan_focus_addr, dest[c], 1);
+                end
+
+            end
+        end
+    endtask
+
+    /* write data to PID controller */
+    task write_data;
+        input [15:0] addr;
+        input [15:0] chan;
+        input [47:0] data;
+        begin
+            SetWireInValue(addr_iwep, addr, MASK);
+            SetWireInValue(chan_iwep, chan, MASK);
+            SetWireInValue(data2_iwep, data[47:32], MASK);
+            SetWireInValue(data1_iwep, data[31:16], MASK);
+            SetWireInValue(data0_iwep, data[15:0], MASK);
+            UpdateWireIns;
+            ActivateTriggerIn(sys_gp_itep, write_data_offset);
+        end
+    endtask
+
+    /* Transmit random data words to the ADC controller */
+    task adc_transmit;
+        input [31:0] reps;
+
+        begin : adc_tx
+            integer adc_count = 0, j = 0;
+
+            repeat(reps) begin
+                // wait for convst_out to pulse and then assert busy
+                @(posedge adc_convst_out) begin
+                    @(posedge adc_clk_in) adc_busy_in = 1;
+                end
+
+                for ( j = 0; j < N_ADC; j = j+1 ) begin
+                    adc_val[j] = $random % 1000;
+                end
+
+                // simulate serial transmission from adc to fpga
+                @(negedge adc_n_cs_out) begin
+                    data_a_tx = {adc_val[0], adc_val[1], adc_val[2], adc_val[3]};
+                    data_b_tx = {adc_val[4], adc_val[5], adc_val[6], adc_val[7]};
+                end
+
+                // wait one cycle before transmitting
+                @(posedge adc_clk_in);
+
+                $display("======================================");
+                $display("Iteration #%d", adc_count);
+                $display("======================================");
+
+                // simulate serial data transmission
+                repeat (71) begin
+                    @(negedge adc_clk_in)
+                    data_a_tx = data_a_tx << 1;
+                    data_b_tx = data_b_tx << 1;
+                end
+
+                // simulate conversion end
+                #2000;
+                @(posedge adc_clk_in) adc_busy_in = 0;
+
+                adc_count = adc_count + 1;
+
+            end
+        end
+    endtask
+
 	/* Verify PID values */
 	task check_pid;
 		input [31:0] reps;
@@ -494,27 +595,6 @@ module pid_controller_tf;
 		end
 	endtask
 
-	task assert_equals;
-		input [127:0] expected;
-		input [127:0] received;
-		input [20*8-1:0] test_name;
-		input [15:0] chan_no;
-
-		begin
-
-			$display("%s [%d] Test:", test_name, chan_no);
-			$display("Expected: %d", $signed(expected));
-			$display("Received: %d", $signed(received));
-
-			if(expected == received) begin
-				$display("Success");
-			end else begin
-				$display("Failure");
-				$stop;
-			end
-		end
-	endtask
-
 	function [15:0] adc_to_chan;
 		input [15:0] adc;
 		integer x = 0;
@@ -563,10 +643,9 @@ module pid_controller_tf;
 
 
 	`include "ep_map.vh"
-	`include "adc_transmit.v"
 	`include "parameters.vh"
+    `include "assert_equals.v"
 	`include "ok_sim/okHostCalls.v"
-	`include "channel_sim.v"
 
 endmodule
 

@@ -11,6 +11,7 @@
 
 module oversample_filter #(
     parameter W_CHAN = 5,
+    parameter N_CHAN = 8,
     parameter W_DATA = 18,
     parameter W_SUM = 128,
     parameter W_OS = 5,

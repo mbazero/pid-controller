@@ -77,6 +77,7 @@ wire [W_DIN-1:0] osf_data;
 
 oversample_filter #(
     .W_CHAN         (W_CHAN),
+    .N_CHAN         (N_CHAN),
     .W_DATA         (W_DIN),
     .W_SUM          (W_COMP),
     .W_OS           (W_OS),
@@ -107,6 +108,7 @@ wire [W_COMP-1:0] pid_data;
 
 pid_filter #(
     .W_CHAN         (W_CHAN),
+    .N_CHAN         (N_CHAN),
     .W_DIN          (W_DIN),
     .W_DOUT         (W_COMP),
     .W_PID_COEFS    (W_OPRNDS),
@@ -137,6 +139,7 @@ wire [W_COMP-1:0] opf_data;
 
 output_filter #(
     .W_CHAN         (W_CHAN),
+    .N_CHAN         (N_CHAN),
     .W_DIN          (W_COMP),
     .W_DOUT         (W_DOUT),
     .W_MULT         (W_OPRNDS),

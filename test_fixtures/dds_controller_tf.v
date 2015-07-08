@@ -4,9 +4,6 @@
 
 module dds_controller_tf;
 
-	// Includes
-	`include "verification_tasks.v";
-
 	// Inputs
 	reg clk_in;
 	reg reset_in;
@@ -144,6 +141,6 @@ module dds_controller_tf;
 
 	end
 
+    `include "assert_equals.v"
+
 endmodule
-
-
