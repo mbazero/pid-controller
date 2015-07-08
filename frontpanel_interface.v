@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-`include "ep_map.vh"
 
 // -----------------------------------------------------------
 // frontpanel interface
@@ -26,43 +25,48 @@ module frontpanel_interface #(
     parameter N_LOG = 8,
     parameter W_LCHAN = 5,
     parameter W_LDATA = 18,
-    parameter W_EP = 16
+    parameter W_EP = 16,
+    parameter W_WR_ADDR = 16,
+    parameter W_WR_CHAN = 5,
+    parameter W_WR_DATA = 49
     )(
     // Inputs
-    input wire                  adc_clk,
-    input wire                  sys_clk,
+    input wire adc_clk_in,
+    input wire sys_clk_in,
 
-    input wire                  log_dv,
-    input wire  [W_LCHAN-1:0]   log_chan,
-    input wire  [W_LDATA-1:0]   log_data,
+    input wire dv_log_in,
+    input wire [W_LCHAN-1:0] chan_log_in,
+    input wire [W_LDATA-1:0] data_log_in,
 
     // Outputs
-    output wire                 sys_rst,
-    output wire                 adc_cstart,
-    output wire                 wr_en,
-    output wire                 dac_ref_set;
+    output wire sys_rst_out,
+    output wire adc_cstart_out,
+    output wire wr_en_out,
+    output wire dac_rset_out,
 
-    output wire [W_EP-1:0]      wr_addr,
-    output wire [W_EP-1:0]      wr_chan,
-    output wire [W_EP*4-1:0]    wr_data,
+    output wire [W_WR_ADDR-1:0] wr_addr_out,
+    output wire [W_WR_CHAN-1:0] wr_chan_out,
+    output wire [W_WR_DATA-11:0] wr_data_out,
 
     // Frontpanel control
-    input wire  [7:0]           hi_in,
-    output wire [1:0]           hi_out,
-    inout wire  [15:0]          hi_inout,
-    inout wire                  hi_aa,
+    input wire [7:0] hi_in,
+    output wire [1:0] hi_out,
+    inout wire [15:0] hi_inout,
+    inout wire hi_aa,
 
-    output wire                 i2c_sda,
-    output wire                 i2c_scl,
-    output wire                 hi_muxsel,
+    output wire i2c_sda,
+    output wire i2c_scl,
+    output wire hi_muxsel
 );
+
+`include "ep_map.vh"
 
 //--------------------------------------------------------------------
 // Frontpanel Host Interface
 //--------------------------------------------------------------------
 wire ticlk;
-wire [30:0] ok1,
-wire [16:0] ok2,
+wire [30:0] ok1;
+wire [16:0] ok2;
 assign i2c_sda = 1'bz;
 assign i2c_scl = 1'bz;
 assign hi_muxsel = 1'b0;
@@ -81,24 +85,30 @@ okHost hostIf (
 // General Purpose Triggers
 //--------------------------------------------------------------------
 wire [W_EP-1:0] gp_trig;
-assign sys_rst = gp_trig[sys_rst_offset];
-assign adc_cstart = gp_trig[adc_cstart_offset];
-assign wr_en = gp_trig[wr_en_offset];
-assign dac_ref_set = gp_trig[dac_ref_set_offset];
+assign sys_rst_out = gp_trig[sys_rst_offset];
+assign adc_cstart_out = gp_trig[adc_cstart_offset];
+assign wr_en_out = gp_trig[wr_en_offset];
+assign dac_rset_out = gp_trig[dac_rset_offset];
 
 // System trigger
 okTriggerIn sys_gp_oti (
     .ok1            (ok1),
     .ep_addr        (sys_gp_itep),
-    .ep_clk         (adc_clk),
+    .ep_clk         (adc_clk_in),
     .ep_trigger     (gp_trig)
     );
 
 //--------------------------------------------------------------------
 // Memory Write Wire-outs
 //--------------------------------------------------------------------
+wire [W_EP-1:0] wr_addr;
+wire [W_EP-1:0] wr_chan;
+wire [W_EP*4-1:0] wr_data;
 wire [W_EP-1:0] wr_data3, wr_data2, wr_data1, wr_data0;
 assign wr_data = {wr_data3, wr_data2, wr_data1, wr_data0};
+assign wr_addr_out = wr_addr[W_WR_ADDR-1:0];
+assign wr_chan_out = wr_chan[W_WR_CHAN-1:0];
+assign wr_data_out = wr_data[W_WR_DATA-1:0];
 
 // Address wire-in
 okWireIn addr_owi (
@@ -154,17 +164,17 @@ wireOR (
 //--------------------------------------------------------------------
 // Data Logging Wire-outs
 //--------------------------------------------------------------------
-reg [W_LDATA-1:0] log_data_reg[0:N_LOG-1];
-reg [W_LCHAN-1:0] i;
+reg [W_LDATA-1:0] data_log_reg[0:N_LOG-1];
+reg [W_LCHAN:0] i;
 
 // Wire-out registers
-always @( posedge sys_clk ) begin
-    if ( sys_reset == 1'b1 ) begin
+always @( posedge sys_clk_in ) begin
+    if ( sys_rst_out ) begin
         for ( i = 0; i < N_LOG; i = i + 1 ) begin
-            log_data_reg[i] <= 0;
+            data_log_reg[i] <= 0;
         end
-    end else begin ( log_dv == 1'b1 ) begin
-        log_data_reg[chan] <= log_data;
+    end else if ( dv_log_in ) begin
+        data_log_reg[chan_log_in] <= data_log_in;
     end
 end
 
@@ -175,8 +185,8 @@ for ( j = 0; j < N_LOG; j = j + 1 ) begin : log_owo_arr
     okWireOut log_owo (
         .ok1        (ok1),
         .ok2        (ok2x[j*17 +: 17]),
-        .ep_addr    (log_data0_owep + j[W_LCHAN-1:0]),
-        .ep_datain  (log_data_reg[j][W_LDATA-1 -: W_EP])
+        .ep_addr    (data_log0_owep + j[W_LCHAN-1:0]),
+        .ep_datain  (data_log_reg[j][W_LDATA-1 -: W_EP])
     );
 end
 endgenerate
@@ -186,23 +196,23 @@ endgenerate
 //--------------------------------------------------------------------
 reg [W_LCHAN-1:0] pipe_chan;
 wire [W_EP-1:0] log_pipe_data;
-wire log_pipe_dv = ( log_chan == pipe_chan ) ? log_dv : 0);
+wire log_pipe_dv = ( chan_log_in == pipe_chan ) ? dv_log_in : 0;
 wire log_pipe_rd;
 
 // Pipe channel write handling
-always @( posedge wr_en ) begin
-    case ( wr_addr ) begin
-        pipe_chan_addr : pipe_chan <= wr_chan;
+always @( posedge sys_clk_in ) begin
+    if ( wr_en_out && ( wr_addr_out == pipe_chan_addr )) begin
+        pipe_chan <= wr_chan_out;
     end
 end
 
 // Pipe-out fifo
 pipe_tx_fifo log_pipe_fifo (
     .ti_clk_in      (ticlk),
-    .sys_clk_in     (sys_clk),
-    .reset_in       (sys_rst),
+    .sys_clk_in     (sys_clk_in),
+    .reset_in       (sys_rst_out),
     .data_valid_in  (log_pipe_dv),
-    .data_in        (log_data[W_LDATA-1 -: W_EP]),
+    .data_in        (data_log_in[W_LDATA-1 -: W_EP]),
     .pipe_read_in   (log_pipe_rd),
     .data_out       (log_pipe_data)
     );
@@ -211,9 +221,9 @@ pipe_tx_fifo log_pipe_fifo (
 okPipeOut log_pipe (
     .ok1                (ok1),
     .ok2                (ok2x[N_LOG*17 +: 17]),
-    .ep_addr            (log_data_opep),
+    .ep_addr            (data_log_opep),
     .ep_datain      (log_pipe_data),
-    .ep_read            (log_pipe_read)
+    .ep_read            (log_pipe_rd)
     );
 
 endmodule

@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-`include "ep_map.vh"
 
 //--------------------------------------------------------------------
 // PID Filter -- mba 2015
@@ -36,6 +35,8 @@ module pid_filter #(
     output wire signed [W_DIN-1:0] data_out
     );
 
+`include "ep_map.vh"
+
 //--------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------
@@ -46,25 +47,25 @@ localparam W_DELTA = W_CE_PROD + 2;
 localparam W_DOUT_UC = ((W_DOUT > W_DELTA) ? W_DOUT : W_DELTA) + 1;
 
 reg signed [W_DOUT-1:0] max_dout = {W_DOUT{1'b1}} >> 1;
-reg signed [W_DOUT-1:0] min_dout = ~max_dout;
+reg signed [W_DOUT-1:0] min_dout = 1 << (W_DOUT - 1);
 
 //--------------------------------------------------------------------
 // Request Registers
 //--------------------------------------------------------------------
-reg [N_CHAN-1:0] clr_req;
+reg [N_CHAN-1:0] clr_rqst;
 
 // Manage clear register
 integer i;
 always @( posedge clk_in ) begin
     // Handle writes
-    if ( wr_en && ( wr_addr == pid_clr_req_addr )) begin
-        pid_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
+    if ( wr_en && ( wr_addr == pid_clr_rqst_addr )) begin
+        clr_rqst[wr_chan] = wr_data[0];
     end
 
     // Zero on reset or clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_req[i] ) begin
-            clr_req[i] = 0;
+        if ( rst_in || clr_rqst[i] ) begin
+            clr_rqst[i] = 0;
         end
     end
 end
@@ -81,13 +82,13 @@ reg [N_CHAN-1:0] inv_error_mem;
 // Handle writes
 always @( posedge clk_in ) begin
     if ( wr_en ) begin
-        case ( wr_addr ) begin
+        case ( wr_addr )
             pid_setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DIN-1:0];
             pid_p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
             pid_i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
             pid_d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
             pid_inv_error_addr : inv_error_mem[wr_chan] <= wr_data[0];
-        end
+        endcase
     end
 end
 
@@ -126,7 +127,7 @@ always @( posedge clk_in ) begin
     inv_error_p1 = inv_error_mem[chan_in];
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_in] ) begin
+    if ( rst_in || clr_rqst[chan_in] ) begin
         dv_p1 = 0;
     end
 end
@@ -159,14 +160,14 @@ always @( posedge clk_in ) begin
     // Compute z-transform coefficients
     k1_p2 = p_coef_p1 + i_coef_p1 + d_coef_p1;
     k2_p2 = -p_coef_p1 - (d_coef_p1 <<< 1);
-    k3_p2 = d_coef_p1
+    k3_p2 = d_coef_p1;
 
     // Fetch previous error values
     error_prev1_p2 = error_prev1_mem[chan_p1];
     error_prev2_p2 = error_prev2_mem[chan_p1];
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_p1] ) begin
+    if ( rst_in || clr_rqst[chan_p1] ) begin
         dv_p2 = 0;
     end
 end
@@ -190,23 +191,22 @@ always @( posedge clk_in ) begin
     ce_prod2_p3 = k2_p2 * error_prev1_p2;
     ce_prod3_p3 = k3_p2 * error_prev2_p2;
 
-    // Writeback error data or zero on reset or clear
-    begin
-        if ( dv_p2 ) begin
-            error_prev1_mem[chan_p2] = error_p2;
-            error_prev2_mem[chan_p2] = error_prev1_p2;
-        end
+    // Writeback error data
+    if ( dv_p2 ) begin
+        error_prev1_mem[chan_p2] = error_p2;
+        error_prev2_mem[chan_p2] = error_prev1_p2;
+    end
 
-        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-            if ( rst_in || clr_req[i] ) begin
-                error_prev1_mem[i] = 0;
-                error_prev2_mem[i] = 0;
-            end
+    // Zero error data memory on reset or clear
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_rqst[i] ) begin
+            error_prev1_mem[i] = 0;
+            error_prev2_mem[i] = 0;
         end
     end
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_p2] ) begin
+    if ( rst_in || clr_rqst[chan_p2] ) begin
         dv_p3 = 0;
     end
 end
@@ -231,7 +231,7 @@ always @( posedge clk_in ) begin
     dout_prev_p4 = dout_prev_mem[chan_p3];
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_p3] ) begin
+    if ( rst_in || clr_rqst[chan_p3] ) begin
         dv_p4 = 0;
     end
 end
@@ -242,7 +242,7 @@ end
 reg dv_p5 = 0;
 reg [W_CHAN-1:0] chan_p5 = 0;
 reg signed [W_DOUT_UC-1:0] dout_uc_p5 = 0;
-reg signed [W_DOUT-1:0] dout_uc_p5 = 0;
+reg signed [W_DOUT-1:0] dout_p5 = 0;
 
 always @( posedge clk_in ) begin
     // Pass instruction
@@ -262,7 +262,7 @@ always @( posedge clk_in ) begin
     end
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_p4] ) begin
+    if ( rst_in || clr_rqst[chan_p4] ) begin
         dv_p5 = 0;
     end
 end
@@ -282,21 +282,20 @@ always @( posedge clk_in ) begin
     // Pass data
     dout_p6 = dout_p5;
 
-    // Writeback output or zero on reset or clear
-    begin
-        if ( dv_p5 == 1'b1 ) begin
-            dout_prev_mem[chan_p5] = dout_p5;
-        end
+    // Writeback output
+    if ( dv_p5 == 1'b1 ) begin
+        dout_prev_mem[chan_p5] = dout_p5;
+    end
 
-        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-            if ( rst_in || clr_req[i] ) begin
-                dout_prev_mem[i] = 0;
-            end
+    // Zero previous output memomry on reset or clear
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_rqst[i] ) begin
+            dout_prev_mem[i] = 0;
         end
     end
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_p5] ) begin
+    if ( rst_in || clr_rqst[chan_p5] ) begin
         dv_p6 = 0;
     end
 end

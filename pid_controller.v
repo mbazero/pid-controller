@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-`include "ep_map.vh"
 
 // ====================================================================
 // PID Controller
@@ -45,7 +44,7 @@ module pid_controller (
     output wire [N_DDS-1:0]     dds_io_update_out,
 
     // Outputs -> Breakout Board
-    output wire                 obuf_en_out = 1'b0, // active low
+    output wire                 obuf_en_out,
 
     // Inouts <-> Frontpanel Host Interface
     input wire  [7:0]           hi_in,
@@ -58,35 +57,44 @@ module pid_controller (
     output wire                 hi_muxsel
     );
 
+`include "ep_map.vh"
+`include "parameters.vh"
+
 //--------------------------------------------------------------------
 // Frontpanel Interface
 //--------------------------------------------------------------------
 wire sys_rst;
 wire adc_cstart;
+wire dv_log;
+wire [W_ADC_CHAN:0] chan_log;
+wire [W_ADC_DATA:0] data_log;
 wire wr_en;
-wire dac_ref_set;
-wire [W_EP-1:0] wr_addr;
-wire [W_EP-1:0] wr_chan;
-wire [W_EP*3-1:0] wr_data;
+wire dac_rset;
+wire [W_WR_ADDR-1:0] wr_addr;
+wire [W_WR_CHAN-1:0] wr_chan;
+wire [W_WR_DATA-1:0] wr_data;
 
 frontpanel_interface #(
     .N_LOG          (N_ADC),
-    .W_LCHAN        (W_ADC_CHAN),
+    .W_LCHAN        (W_PID_CHAN),
     .W_LDATA        (W_ADC_DATA),
-    .W_EP           (W_EP))
+    .W_EP           (W_EP),
+    .W_WR_ADDR      (W_WR_ADDR),
+    .W_WR_CHAN      (W_WR_CHAN),
+    .W_WR_DATA      (W_WR_DATA))
 fp_intf (
-    .adc_clk        (adc_clk),
-    .sys_clk        (sys_clk_in),
-    .log_dv         (pid_pipe.osf_dv),
-    .log_chan       (pid_pipe.osf_chan),
-    .log_data       (pid_pipe.osf_data),
-    .sys_rst        (sys_rst),
-    .adc_cstart     (adc_cstart),
-    .wr_en          (wr_en),
-    .dac_ref_set    (dac_ref_set),
-    .wr_addr        (wr_addr),
-    .wr_chan        (wr_chan),
-    .wr_data        (wr_data),
+    .adc_clk_in     (adc_clk),
+    .sys_clk_in     (sys_clk_in),
+    .dv_log_in      (dv_log),
+    .chan_log_in    (chan_log),
+    .data_log_in    (data_log),
+    .sys_rst_out    (sys_rst),
+    .adc_cstart_out (adc_cstart),
+    .wr_en_out      (wr_en),
+    .dac_rset_out   (dac_rset),
+    .wr_addr_out    (wr_addr),
+    .wr_chan_out    (wr_chan),
+    .wr_data_out    (wr_data),
     .hi_in          (hi_in),
     .hi_out         (hi_out),
     .hi_inout       (hi_inout),
@@ -151,14 +159,14 @@ csync (
     .data_a_in      (adc_data_a),
     .data_b_in      (adc_data_b),
     .dv_out         (adc_sync_dv),
-    .chan_out       (cs_src),
-    .data_out       (cs_data)
+    .chan_out       (adc_sync_src),
+    .data_out       (adc_sync_data)
     );
 
 // ADC oversample mode write handling
 always @( posedge wr_en ) begin
-    case ( wr_addr ) begin
-        adc_os_addr : adc_os <= wr_data[W_ADC_OS-1:0];
+    if ( wr_en && ( wr_addr == adc_os_addr )) begin
+        adc_os <= wr_data[W_ADC_OS-1:0];
     end
 end
 
@@ -191,6 +199,9 @@ pid_pipe (
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
+    .dv_ovr         (dv_log),
+    .chan_ovr       (chan_log),
+    .data_ovr       (data_log),
     .dv_out         (pid_dv),
     .chan_out       (pid_chan),
     .data_out       (pid_data)
@@ -212,7 +223,7 @@ wire dac_wr_done;
 fifo_19 dac_instr_queue (
     .clk    (sys_clk_in),
     .rst    (sys_rst),
-    .din    ({pid_dac_chan, pid_dac_data)),
+    .din    ({pid_dac_chan, pid_dac_data}),
     .wr_en  (pid_dac_dv),
     .rd_en  (dac_wr_done),
     .dout   ({diq_chan, diq_data}),
@@ -223,7 +234,7 @@ fifo_19 dac_instr_queue (
 dac_controller dac_cntrl (
     .clk_in         (sys_clk_in),
     .reset_in       (sys_rst),
-    .ref_set_in     (dac_ref_set),
+    .ref_set_in     (dac_rset),
     .data_in        (diq_data),
     .chan_in        (diq_chan),
     .dv_in          (diq_dv),
@@ -238,15 +249,20 @@ dac_controller dac_cntrl (
 //--------------------------------------------------------------------
 // DDS Output
 //--------------------------------------------------------------------
+wire [N_DDS-1:0] pid_freq_dv;
+wire [N_DDS-1:0] pid_phase_dv;
+wire [N_DDS-1:0] pid_amp_dv;
+
+genvar i;
 generate
 for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
     localparam F = FREQ0_ADDR + i;  // frequency absolute index
     localparam P = PHASE0_ADDR + i; // phase absolute index
     localparam A = AMP0_ADDR + i;       // amplitude absolute index
 
-    pid_freq_dv[i] = (pid_chan == F) ? pid_dv : 0;
-    pid_phase_dv[i] = (pid_chan == P) ? pid_dv : 0;
-    pid_amp_dv[i] = (pid_chan == A) ? pid_dv : 0;
+    assign pid_freq_dv[i] = (pid_chan == F) ? pid_dv : 0;
+    assign pid_phase_dv[i] = (pid_chan == P) ? pid_dv : 0;
+    assign pid_amp_dv[i] = (pid_chan == A) ? pid_dv : 0;
 
     dds_controller dds_cntrl (
         .clk_in         (sys_clk_in),
@@ -261,9 +277,12 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .reset_out      (dds_reset_out[i]),
         .csb_out        (dds_csb_out[i]),
         .sdio_out       (dds_sdio_out[i]),
-        .io_update_out  (dds_io_update_out[i]),
+        .io_update_out  (dds_io_update_out[i])
     );
 end
 endgenerate
+
+// Activate output buffers (active low)
+assign obuf_en_out = 1'b0;
 
 endmodule

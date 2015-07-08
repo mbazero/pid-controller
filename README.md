@@ -25,14 +25,20 @@ controller configuration and monitoring.
   * Device  = `XC6SLX45`
   * Package = `FGG484`
   * Speed   = `-2`
-  * Prefer
-2. On the `Project Type` window select `RTL Project`
-3. On the `Add Sources` screen:
-  * add all `.v` and `.vh` files in directory `pidc/`
-  * add all `.v` and `.ngc` files in directory `pidc/ok_library`
-4. On the `Add Existing IP` screen add all `.xco` files in directory `pidc/ip_core`
-5. On the `Add Constraints` screen add file `xem6010.ucf`
-6. On the `Default Part screen select part `XC6SLX45FGG484-2`
+3. Select `Project -> Add Source` and:
+  * Add all files in directory `pidc/`
+  * Add all files in directory `pidc/ok_library`
+  * Add files `fifo_16.xco`, `fifo_19.xco` and `fifo_21.xco` from directory `pidc/ip_core`
+4. In the `Heirarchy` pane, right click `pid_controller.v` and click
+   `Set as Top Module`
+
+## Editing Existing Xilinx Generated Cores
+1. Open Xilinx ISE and select `Tools -> Core Generator`
+2. When the Core Generator window opens select `File -> Open Project`
+   and select file `coregen.cgp` from directory `pidc/ip_core`
+3. Right click the name of the core you want to edit in the `Project IP`
+   pane and click `Recustomize and Generate (Under Original Project
+   Settings)`
 
 ### Notes
 

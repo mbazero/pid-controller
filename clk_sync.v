@@ -14,7 +14,7 @@ module clk_sync #(
     parameter N_ADC     = 8
     )(
     // inputs <- top level entity
-    input wire                  sync_clk_in,
+    input wire                  sys_clk_in,
     input wire                  reset_in,
 
     // inputs <- adc controller
@@ -25,9 +25,9 @@ module clk_sync #(
     input wire  [W_DATA-1:0]    data_b_in,
 
     // outputs -> oversample filter
-    output wire [N_ADC-1:0]     dv_out,
-    output wire [W_CHAN-1:0]     chan_out,
-    output wire [W_DATA-1:0]    data_out
+    output reg dv_out,
+    output reg [W_CHAN-1:0]     chan_out,
+    output reg [W_DATA-1:0]    data_out
     );
 
 //////////////////////////////////////////
@@ -37,8 +37,9 @@ module clk_sync #(
 /* state parameters */
 localparam  ST_WAIT_DVH = 3'd0,     // wait for data valid to go high
             ST_HOLD     = 3'd1,     // latch and hold data to satisfy hold time
-            ST_SEND     = 3'd2,     // assert dv_out synchronous with 50MHz clock
-            ST_WAIT_DVL = 3'd3;     // wait for data valid to go low
+            ST_SEND_A   = 3'd2,     // send channel a data
+            ST_SEND_B   = 3'd3,     // send channel b data
+            ST_WAIT_DVL = 3'd4;     // wait for data valid to go low
 
 //////////////////////////////////////////
 // internal structures
@@ -61,7 +62,7 @@ reg [2:0] next_state = ST_WAIT_DVH;
 
 /* data output */
 always @( * ) begin
-    case ( cur_state ) begin
+    case ( cur_state )
         ST_SEND_A: begin
             data_out = data_a;
             chan_out = chan_a;
@@ -77,7 +78,7 @@ always @( * ) begin
             chan_out = 0;
             dv_out = 0;
         end
-    end
+    endcase
 end
 
 //////////////////////////////////////////
@@ -85,7 +86,7 @@ end
 //////////////////////////////////////////
 
 /* data registers */
-always @( posedge sync_clk_in ) begin
+always @( posedge sys_clk_in ) begin
     if ( reset_in == 1 ) begin
         dv <= 0;
         chan_a <= 0;
@@ -106,7 +107,7 @@ end
 //////////////////////////////////////////
 
 /* state register - synchronous with system clock */
-always @( posedge sync_clk_in ) begin
+always @( posedge sys_clk_in ) begin
     if ( reset_in == 1 ) begin
         cur_state <= ST_WAIT_DVH;
     end else begin
@@ -116,7 +117,7 @@ end
 
 /* next state transitin logic */
 always @( * ) begin
-    next_state <= cur_state; // default assignment if no case statement is satisfied
+    next_state <= cur_state; // default assignment
     case ( cur_state )
         ST_WAIT_DVH: begin
             if ( dv_in == 1 ) begin
@@ -133,7 +134,7 @@ always @( * ) begin
             next_state <= ST_WAIT_DVL;
         end
         ST_WAIT_DVL: begin
-            if ( dv_rdc == 0 ) begin
+            if ( dv_in == 0 ) begin
                 next_state <= ST_WAIT_DVH;
             end
         end

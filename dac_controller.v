@@ -5,7 +5,7 @@
 // Sends update instructions to DAC8568 chip.
 // -----------------------------------------------------------
 
-module dac_controller #(
+module dac_controller (
 	// inputs <- top level entity
 	input wire						clk_in,
 	input wire						reset_in,

@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-`include "parameters.vh"
 
 //--------------------------------------------------------------------
 // PID Pipeline
@@ -34,17 +33,23 @@ module pid_pipeline #(
     input wire [W_WR_DATA-1:0] wr_data,
 
     // Outputs
+    output wire dv_ovr,
+    output wire [W_CHAN-1:0] chan_ovr,
+    output wire [W_DIN-1:0] data_ovr,
+
     output wire dv_out,
     output wire [log2(N_CHAN)-1:0] chan_out,
     output wire signed [W_DOUT-1:0] data_out
     );
 
+`include "functions.vh"
+
 //--------------------------------------------------------------------
 // Instruction Dispatch
 //--------------------------------------------------------------------
-wire idp_dv;
-wire [W_CHAN-1:0] idp_chan;
-wire [W_DIN-1:0] idp_data;
+wire dv_idp;
+wire [W_CHAN-1:0] chan_idp;
+wire [W_DIN-1:0] data_idp;
 
 instr_dispatch #(
     .W_SRC          (W_SRC),
@@ -54,7 +59,7 @@ instr_dispatch #(
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA))
-idp #(
+idp (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
     .dv_in          (dv_in),
@@ -63,18 +68,14 @@ idp #(
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (idp_dv),
-    .chan_out       (idp_chan),
-    .data_out       (idp_data)
+    .dv_out         (dv_idp),
+    .chan_out       (chan_idp),
+    .data_out       (data_idp)
 );
 
 //--------------------------------------------------------------------
 // Oversample Filter
 //--------------------------------------------------------------------
-wire osf_dv;
-wire [W_CHAN-1:0] osf_chan;
-wire [W_DIN-1:0] osf_data;
-
 oversample_filter #(
     .W_CHAN         (W_CHAN),
     .N_CHAN         (N_CHAN),
@@ -84,27 +85,27 @@ oversample_filter #(
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA))
-osf (
+ovr (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
-    .dv_in          (idp_dv),
-    .dest_in        (idp_dest),
-    .data_in        (idp_data),
+    .dv_in          (dv_idp),
+    .chan_in        (chan_idp),
+    .data_in        (data_idp),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (osf_dv),
-    .chan_out       (osf_chan),
-    .data_out       (osf_data)
+    .dv_out         (dv_ovr),
+    .chan_out       (chan_ovr),
+    .data_out       (data_ovr)
 );
 
 //--------------------------------------------------------------------
 // PID Filter
 //--------------------------------------------------------------------
-wire pid_dv;
-wire [W_CHAN-1:0] pid_chan;
-wire [W_COMP-1:0] pid_data;
+wire dv_pid;
+wire [W_CHAN-1:0] chan_pid;
+wire [W_COMP-1:0] data_pid;
 
 pid_filter #(
     .W_CHAN         (W_CHAN),
@@ -118,53 +119,53 @@ pid_filter #(
 pid (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
-    .dv_in          (osf_dv),
-    .chan_in        (osf_chan),
-    .data_in        (osf_data),
+    .dv_in          (dv_ovr),
+    .chan_in        (chan_ovr),
+    .data_in        (data_ovr),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (pid_dv),
-    .chan_out       (pid_chan),
-    .data_out       (pid_data)
+    .dv_out         (dv_pid),
+    .chan_out       (chan_pid),
+    .data_out       (data_pid)
 );
 
 //--------------------------------------------------------------------
 // Output Filtering
 //--------------------------------------------------------------------
-wire opf_dv;
-wire [W_CHAN-1:0] opf_chan;
-wire [W_COMP-1:0] opf_data;
+wire dv_opt;
+wire [W_CHAN-1:0] chan_opt;
+wire [W_COMP-1:0] data_opt;
 
 output_filter #(
     .W_CHAN         (W_CHAN),
     .N_CHAN         (N_CHAN),
-    .W_DIN          (W_COMP),
+    .W_DELTA        (W_COMP),
     .W_DOUT         (W_DOUT),
     .W_MULT         (W_OPRNDS),
     .W_RS           (W_OPRNDS),
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA))
-opf (
+opt (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
-    .dv_in          (pid_dv),
-    .chan_in        (pid_chan),
-    .delta_in       (pid_data),
+    .dv_in          (dv_pid),
+    .chan_in        (chan_pid),
+    .delta_in       (data_pid),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (opf_dv),
-    .chan_out       (opf_chan),
-    .data_out       (opf_data)
+    .dv_out         (dv_opt),
+    .chan_out       (chan_opt),
+    .data_out       (data_opt)
 );
 
 // Output assignment
-assign dv_out = opf_dv;
-assign chan_out = opf_chan;
-assign data_out = opf_data;
+assign dv_out = dv_opt;
+assign chan_out = chan_opt;
+assign data_out = data_opt;
 
 endmodule

@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-`include "ep_map.vh"
 
 //--------------------------------------------------------------------
 // Instruction Dispatch -- mba 2015
@@ -39,8 +38,10 @@ module instr_dispatch #(
     // Outputs
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
-    output wire [W_DATA-1:0] data_out,
+    output wire [W_DATA-1:0] data_out
     );
+
+`include "ep_map.vh"
 
 //--------------------------------------------------------------------
 // Constants
@@ -66,10 +67,10 @@ end
 // Handle write requests
 always @( posedge clk_in ) begin
     if ( wr_en ) begin
-        case ( wr_addr ) begin
+        case ( wr_addr )
             chan_src_sel_addr : chan_src_sel_mem[wr_chan] <= wr_data[W_SRC:0];
             chan_en_addr : chan_en_mem[wr_chan] <= wr_data[0];
-        end
+        endcase
     end
 end
 
@@ -78,8 +79,8 @@ end
 //--------------------------------------------------------------------
 wire [W_SRC-1:0] fifo_src;
 wire [W_DATA-1:0] fifo_data;
-wire fifo_rd_en;
 wire fifo_dv;
+reg fifo_rd_en;
 
 fifo_21 input_buffer (
    .clk     (clk_in),
@@ -94,7 +95,7 @@ fifo_21 input_buffer (
 //--------------------------------------------------------------------
 // Channel Decoder
 //--------------------------------------------------------------------
-wire dec_dv;
+reg dec_dv;
 reg [W_CHAN:0] dec_chan;
 reg [N_CHAN-1:0] instr_sent;
 
@@ -108,7 +109,7 @@ always @( posedge clk_in ) begin
     dec_chan = null_chan;
 
     // Decode PID channel
-    for ( i = N_CHAN; i >= 0; i = i - 1 ) begin
+    for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
         if ( chan_src_sel_mem[i] == fifo_src
             && !instr_sent[i] ) begin
             dec_chan = i;

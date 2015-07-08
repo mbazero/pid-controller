@@ -1,6 +1,4 @@
 `timescale 1ns / 1ps
-`include "ep_map.vh"
-`include "functions.vh"
 
 //--------------------------------------------------------------------
 // Oversample Filter -- mba 2015
@@ -38,6 +36,9 @@ module oversample_filter #(
     output wire signed [W_DATA-1:0] data_out
     );
 
+`include "ep_map.vh"
+`include "functions.vh"
+
 //--------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------
@@ -45,25 +46,25 @@ localparam W_COUNT = 2**W_OS;
 localparam W_SUM_UC = ((W_SUM > W_DATA) ? W_SUM : W_DATA) + 1;
 
 reg signed [W_SUM-1:0] max_sum = {W_SUM{1'b1}} >> 1;
-reg signed [W_SUM-1:0] min_sum = ~max_sum;
+reg signed [W_SUM-1:0] min_sum = 1 << (W_SUM-1);
 
 //--------------------------------------------------------------------
 // Request Registers
 //--------------------------------------------------------------------
-reg [N_CHAN-1:0] clr_req = 0;
+reg [N_CHAN-1:0] clr_rqst = 0;
 
 // Manage clear register
 integer i;
 always @( posedge clk_in ) begin
     // Handle writes
-    if ( wr_en && ( wr_addr == ovr_clr_reg_addr )) begin
-        ovr_clr_req_addr : clr_req[wr_chan] <= wr_data[0];
+    if ( wr_en && ( wr_addr == ovr_clr_rqst_addr )) begin
+        clr_rqst[wr_chan] = wr_data[0];
     end
 
     // Zero on reset or clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_req[i] ) begin
-            clr_req[i] = 0;
+        if ( rst_in || clr_rqst[i] ) begin
+            clr_rqst[i] = 0;
         end
     end
 end
@@ -76,9 +77,9 @@ reg [W_OS-1:0] os_mem[0:N_CHAN-1];
 // Handle writes
 always @( posedge clk_in ) begin
     if ( wr_en ) begin
-        case ( wr_addr ) begin
+        case ( wr_addr )
             ovr_os_addr : os_mem[wr_chan] = wr_data[W_OS-1:0];
-        end
+        endcase
     end
 end
 
@@ -100,7 +101,7 @@ reg [W_COUNT-1:0] count_p1 = 0;
 always @( posedge clk_in ) begin
     // Register input instruction
     dv_p1 = dv_in;
-    chan_p1 = chan_in
+    chan_p1 = chan_in;
 
     // Register input data
     din_p1 = data_in;
@@ -110,7 +111,7 @@ always @( posedge clk_in ) begin
     count_p1 = count_mem[chan_in];
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_in] ) begin
+    if ( rst_in || clr_rqst[chan_in] ) begin
         dv_p1 = 0;
     end
 end
@@ -147,7 +148,7 @@ always @( posedge clk_in ) begin
     os_p2 = os_mem[chan_p1];
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_p1] ) begin
+    if ( rst_in || clr_rqst[chan_p1] ) begin
         dv_p2 = 0;
     end
 end
@@ -178,22 +179,22 @@ always @( posedge clk_in ) begin
     sum_p3 = ( count_sat_p3 ) ? 0 : sum_p2;
     count_p3 = ( count_sat_p3 ) ? 0 : count_p2;
 
-    // Writeback sum and count or zero on reset or clear
-    begin
-        if ( dv_p2 ) begin
-            sum_mem[chan_p2] = sum_p3;
-            count_mem[chan_p2] = count_p3;
-        end
-        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-            if ( rst_in || clr_req[i] ) begin
-                sum_mem[i] = 0;
-                count_mem[i] = 0;
-            end
+    // Writeback sum and count
+    if ( dv_p2 ) begin
+        sum_mem[chan_p2] = sum_p3;
+        count_mem[chan_p2] = count_p3;
+    end
+
+    // Zero sum and count memory on reset or clear
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_rqst[i] ) begin
+            sum_mem[i] = 0;
+            count_mem[i] = 0;
         end
     end
 
     // Flush stage on reset or clear
-    if ( rst_in || clr_req[chan_p2] ) begin
+    if ( rst_in || clr_rqst[chan_p2] ) begin
         dv_p3 = 0;
     end
 
