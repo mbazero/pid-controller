@@ -47,7 +47,7 @@ localparam W_DMTRS = W_DELTA + W_MULT;
 localparam W_DSUM = W_DMTRS + 1;
 localparam W_DOUT_UC = ((W_DSUM > W_DOUT) ? W_DSUM : W_DOUT) + 1;
 
-reg [W_CHAN:0] null_chan = 1 << W_CHAN;
+localparam NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
 
 //--------------------------------------------------------------------
 // Request Registers
@@ -84,7 +84,7 @@ reg signed [W_DOUT-1:0] init_mem[0:N_CHAN-1];
 // Initialize memory
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
-        add_chan_mem[i] = null_chan;
+        add_chan_mem[i] = NULL_CHAN;
     end
 end
 
@@ -138,7 +138,7 @@ always @( posedge clk_in ) begin
             if ( inj_rqst[i] ) begin
                 inj_p1 = 1;
                 dv_p1 = 1;
-                chan_p1 = i;
+                chan_p1 = i[W_CHAN-1:0];
                 delta_p1 = 0;
             end
         end
@@ -325,7 +325,7 @@ end
 // Output Assigment
 //--------------------------------------------------------------------
 assign dv_out = dv_p5;
-assign chan_out = chan_p4;
-assign data_out = dout_p4;
+assign chan_out = chan_p5;
+assign data_out = dout_p5;
 
 endmodule

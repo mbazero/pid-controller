@@ -32,7 +32,7 @@ module pid_filter #(
     // Outputs
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
-    output wire signed [W_DIN-1:0] data_out
+    output wire signed [W_DOUT-1:0] data_out
     );
 
 `include "ep_map.vh"
@@ -46,8 +46,8 @@ localparam W_CE_PROD = W_K_COEFS + W_ERROR;
 localparam W_DELTA = W_CE_PROD + 2;
 localparam W_DOUT_UC = ((W_DOUT > W_DELTA) ? W_DOUT : W_DELTA) + 1;
 
-reg signed [W_DOUT-1:0] max_dout = {W_DOUT{1'b1}} >> 1;
-reg signed [W_DOUT-1:0] min_dout = 1 << (W_DOUT - 1);
+localparam MAX_DOUT = (2**(W_DOUT - 1)) - 1;
+localparam MIN_DOUT = -(2**(W_DOUT - 1));
 
 //--------------------------------------------------------------------
 // Request Registers
@@ -253,10 +253,10 @@ always @( posedge clk_in ) begin
     dout_uc_p5 = dout_prev_p4 + delta_p4;
 
     // Handle output overflow
-    if ( dout_uc_p5 > max_dout ) begin
-        dout_p5 = max_dout;
-    end else if ( dout_uc_p5 < min_dout ) begin
-        dout_p5 = min_dout;
+    if ( dout_uc_p5 > MAX_DOUT ) begin
+        dout_p5 = MAX_DOUT;
+    end else if ( dout_uc_p5 < MIN_DOUT ) begin
+        dout_p5 = MIN_DOUT;
     end else begin
         dout_p5 = dout_uc_p5[W_DOUT-1:0];
     end

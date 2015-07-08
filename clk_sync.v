@@ -46,7 +46,6 @@ localparam  ST_WAIT_DVH = 3'd0,     // wait for data valid to go high
 //////////////////////////////////////////
 
 /* 50MHz data registers */
-reg dv = 0;
 reg [W_CHAN-1:0] chan_a = 0;
 reg [W_CHAN-1:0] chan_b = 0;
 reg [W_DATA-1:0] data_a = 0;
@@ -88,13 +87,11 @@ end
 /* data registers */
 always @( posedge sys_clk_in ) begin
     if ( reset_in == 1 ) begin
-        dv <= 0;
         chan_a <= 0;
         chan_b <= 0;
         data_a <= 0;
         data_b <= 0;
     end else if ( cur_state == ST_WAIT_DVH & dv_in == 1 ) begin
-        dv <= dv_in;
         chan_a <= chan_a_in;
         chan_b <= chan_b_in;
         data_a <= data_a_in;

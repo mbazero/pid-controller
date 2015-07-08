@@ -38,11 +38,9 @@ module pid_pipeline #(
     output wire [W_DIN-1:0] data_ovr,
 
     output wire dv_out,
-    output wire [log2(N_CHAN)-1:0] chan_out,
+    output wire [W_CHAN-1:0] chan_out,
     output wire signed [W_DOUT-1:0] data_out
     );
-
-`include "functions.vh"
 
 //--------------------------------------------------------------------
 // Instruction Dispatch
@@ -65,6 +63,7 @@ idp (
     .dv_in          (dv_in),
     .src_in         (src_in),
     .data_in        (data_in),
+    .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
@@ -136,7 +135,7 @@ pid (
 //--------------------------------------------------------------------
 wire dv_opt;
 wire [W_CHAN-1:0] chan_opt;
-wire [W_COMP-1:0] data_opt;
+wire [W_DOUT-1:0] data_opt;
 
 output_filter #(
     .W_CHAN         (W_CHAN),

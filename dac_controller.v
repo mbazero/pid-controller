@@ -28,7 +28,7 @@ module dac_controller (
 	// outputs -> top level entity
 	output wire						wr_done_out,	// pulsed when dac finishes the instruction send
 	output wire	[15:0]	data_out,		// output data
-	output wire	[2:0]		chan_out		// output data valid
+	output wire	[3:0]		chan_out		// output data valid
 	);
 
 //////////////////////////////////////////

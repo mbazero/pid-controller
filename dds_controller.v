@@ -26,7 +26,7 @@ module dds_controller(
 	output wire				io_update_out,		// io update signal to dds
 
 	// outputs -> top level entity
-	output wire				dds_done_out 		// pulsed to indicate dds has finished updating
+	output wire				wr_done_out 		// pulsed to indicate dds has finished updating
    );
 
 //////////////////////////////////////////
@@ -79,7 +79,7 @@ assign sdio_out			= tx_data[63];
 assign io_update_out		= ( cur_state == ST_IO_UPDATE );
 
 /* loop flow control */
-assign dds_done_out		= ( cur_state == ST_DDS_DONE );
+assign wr_done_out		= ( cur_state == ST_DDS_DONE );
 
 /* frequency, phase, and amplitude instruction words */
 assign freq_wr_instr 	= {1'b0, 2'b11, 13'h01AB, freq};

@@ -66,8 +66,8 @@ module pid_controller (
 wire sys_rst;
 wire adc_cstart;
 wire dv_log;
-wire [W_ADC_CHAN:0] chan_log;
-wire [W_ADC_DATA:0] data_log;
+wire [W_PID_CHAN-1:0] chan_log;
+wire [W_ADC_DATA-1:0] data_log;
 wire wr_en;
 wire dac_rset;
 wire [W_WR_ADDR-1:0] wr_addr;
@@ -83,7 +83,7 @@ frontpanel_interface #(
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA))
 fp_intf (
-    .adc_clk_in     (adc_clk),
+    .adc_clk_in     (adc_clk_in),
     .sys_clk_in     (sys_clk_in),
     .dv_log_in      (dv_log),
     .chan_log_in    (chan_log),
@@ -174,7 +174,7 @@ end
 // PID Pipeline
 //--------------------------------------------------------------------
 wire pid_dv;
-wire [W_EP-1:0] pid_chan;
+wire [W_PID_CHAN-1:0] pid_chan;
 wire [W_PID_DOUT-1:0] pid_data;
 
 pid_pipeline #(
@@ -211,8 +211,8 @@ pid_pipe (
 // DAC Output
 //--------------------------------------------------------------------
 wire pid_dac_dv = (pid_chan < N_DAC) ? pid_dv : 0;
-wire pid_dac_chan = pid_chan[W_DAC_CHAN-1:0];
-wire pid_dac_data = pid_data[W_DAC_DATA-1:0];
+wire [W_DAC_CHAN-1:0] pid_dac_chan = pid_chan[W_DAC_CHAN-1:0];
+wire [W_DAC_DATA-1:0] pid_dac_data = pid_data[W_DAC_DATA-1:0];
 
 wire diq_dv;
 wire [W_DAC_CHAN-1:0] diq_chan;
@@ -227,7 +227,9 @@ fifo_19 dac_instr_queue (
     .wr_en  (pid_dac_dv),
     .rd_en  (dac_wr_done),
     .dout   ({diq_chan, diq_data}),
-    .valid  (diq_dv)
+    .valid  (diq_dv),
+    .full   (),
+    .empty  ()
     );
 
 // DAC controller
@@ -243,7 +245,9 @@ dac_controller dac_cntrl (
     .sclk_out       (dac_sclk_out),
     .din_out        (dac_din_out),
     .nclr_out       (dac_nclr_out),
-    .wr_done_out    (dac_wr_done)
+    .wr_done_out    (dac_wr_done),
+    .data_out       (),
+    .chan_out       ()
     );
 
 //--------------------------------------------------------------------
@@ -260,9 +264,9 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
     localparam P = PHASE0_ADDR + i; // phase absolute index
     localparam A = AMP0_ADDR + i;       // amplitude absolute index
 
-    assign pid_freq_dv[i] = (pid_chan == F) ? pid_dv : 0;
-    assign pid_phase_dv[i] = (pid_chan == P) ? pid_dv : 0;
-    assign pid_amp_dv[i] = (pid_chan == A) ? pid_dv : 0;
+    assign pid_freq_dv[i] = (pid_chan == F) ? pid_dv : 1'b0;
+    assign pid_phase_dv[i] = (pid_chan == P) ? pid_dv : 1'b0;
+    assign pid_amp_dv[i] = (pid_chan == A) ? pid_dv : 1'b0;
 
     dds_controller dds_cntrl (
         .clk_in         (sys_clk_in),
@@ -277,7 +281,8 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .reset_out      (dds_reset_out[i]),
         .csb_out        (dds_csb_out[i]),
         .sdio_out       (dds_sdio_out[i]),
-        .io_update_out  (dds_io_update_out[i])
+        .io_update_out  (dds_io_update_out[i]),
+        .wr_done_out    ()
     );
 end
 endgenerate

@@ -46,8 +46,8 @@ module instr_dispatch #(
 //--------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------
-reg [W_SRC:0] null_src = 1 << W_SRC;
-reg [W_CHAN:0] null_chan = 1 << W_CHAN;
+localparam NULL_SRC = {1'b1, {W_SRC{1'b0}}};
+localparam NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
 
 //--------------------------------------------------------------------
 // Configuration Memory
@@ -59,7 +59,7 @@ reg [W_SRC:0] chan_src_sel_mem[0:N_CHAN-1];
 integer i;
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
-        chan_src_sel_mem[i] = null_src;
+        chan_src_sel_mem[i] = NULL_SRC;
         chan_en_mem[i] = 0;
     end
 end
@@ -89,7 +89,9 @@ fifo_21 input_buffer (
    .wr_en   (dv_in),
    .rd_en   (fifo_rd_en),
    .dout    ({fifo_src, fifo_data}),
-   .valid   (fifo_dv)
+   .valid   (fifo_dv),
+   .full    (),
+   .empty   ()
    );
 
 //--------------------------------------------------------------------
@@ -106,7 +108,7 @@ reg [N_CHAN-1:0] instr_sent;
 // used. Decoder functionality depends on this.
 always @( posedge clk_in ) begin
     // Default null channel assignment if source is not routed
-    dec_chan = null_chan;
+    dec_chan = NULL_CHAN;
 
     // Decode PID channel
     for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
@@ -125,7 +127,7 @@ always @( posedge clk_in ) begin
         dec_dv = 0;
         instr_sent = 0;
         fifo_rd_en = 0;
-    end else if ( dec_chan == null_chan ) begin
+    end else if ( dec_chan == NULL_CHAN ) begin
         dec_dv = 0;
         instr_sent = 0;
         fifo_rd_en = 1;
@@ -140,7 +142,7 @@ end
 // Output Assignment
 //--------------------------------------------------------------------
 assign dv_out = dec_dv;
-assign chan_out = dec_chan;
+assign chan_out = dec_chan[W_CHAN-1:0];
 assign data_out = fifo_data;
 
 endmodule

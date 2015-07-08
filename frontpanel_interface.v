@@ -46,7 +46,7 @@ module frontpanel_interface #(
 
     output wire [W_WR_ADDR-1:0] wr_addr_out,
     output wire [W_WR_CHAN-1:0] wr_chan_out,
-    output wire [W_WR_DATA-11:0] wr_data_out,
+    output wire [W_WR_DATA-1:0] wr_data_out,
 
     // Frontpanel control
     input wire [7:0] hi_in,

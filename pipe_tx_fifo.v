@@ -59,8 +59,8 @@ always @( posedge ti_clk_in ) begin
 		rd_count <= 0;
 	end else if ( cur_state == ST_READ ) begin
 		if ( pipe_read_in == 1 ) begin
-			rd_count <= rd_count + 1;
-		end else begin 
+			rd_count <= rd_count + 1'b1;
+		end else begin
 			rd_count <= rd_count;
 		end
 	end else begin

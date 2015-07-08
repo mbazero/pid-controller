@@ -45,8 +45,8 @@ module oversample_filter #(
 localparam W_COUNT = 2**W_OS;
 localparam W_SUM_UC = ((W_SUM > W_DATA) ? W_SUM : W_DATA) + 1;
 
-reg signed [W_SUM-1:0] max_sum = {W_SUM{1'b1}} >> 1;
-reg signed [W_SUM-1:0] min_sum = 1 << (W_SUM-1);
+localparam MAX_SUM = (2**(W_SUM - 1)) - 1;
+localparam MIN_SUM = -(2**(W_SUM - 1));
 
 //--------------------------------------------------------------------
 // Request Registers
@@ -136,10 +136,10 @@ always @( posedge clk_in ) begin
     count_p2 = count_p1 + 1'b1;
 
     // Handle sum overflow
-    if ( sum_uc_p2 > max_sum ) begin
-        sum_p2 = max_sum;
-    end else if ( sum_uc_p2 < min_sum ) begin
-        sum_p2 = min_sum;
+    if ( sum_uc_p2 > MAX_SUM ) begin
+        sum_p2 = MAX_SUM;
+    end else if ( sum_uc_p2 < MIN_SUM ) begin
+        sum_p2 = MIN_SUM;
     end else begin
         sum_p2 = sum_uc_p2[W_SUM-1:0];
     end
@@ -169,11 +169,11 @@ always @( posedge clk_in ) begin
     count_sat_p3 = ( count_p2[os_p2] == 1'b1 );
 
     // Pass instruction if oversample count satisfied
-    dv_p3 = ( count_sat_p3 ) ? dv_p2 : 0;
+    dv_p3 = ( count_sat_p3 ) ? dv_p2 : 1'b0;
     chan_p3 = chan_p2;
 
     // Divide sum by right shifting
-    dout_p3 = sum_p2 >>> os_p2;
+    dout_p3 = trunc(sum_p2 >>> os_p2);
 
     // Reset sum and sample count if oversample count has been satisified
     sum_p3 = ( count_sat_p3 ) ? 0 : sum_p2;
@@ -199,6 +199,11 @@ always @( posedge clk_in ) begin
     end
 
 end
+
+function [W_DATA-1:0] trunc;
+    input [W_SUM-1:0] din;
+    trunc = din[W_DATA-1:0];
+endfunction
 
 //--------------------------------------------------------------------
 // Output Assignment
