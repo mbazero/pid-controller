@@ -20,7 +20,7 @@ module oversample_filter_tf;
 	reg rst_in;
 
     reg dv_in;
-    reg chan_in;
+    reg [W_CHAN-1:0] chan_in;
 	reg signed [W_DATA-1:0] data_in;
 
     reg wr_en;
@@ -111,7 +111,7 @@ module oversample_filter_tf;
 						#100;
 
                         @(posedge oversample_filter_tf.uut.dv_p2) begin
-                            assert_equals(sum, oversample_filter_tf.uut.sum_p2, "SUM");
+                            assert_equals(sum, oversample_filter_tf.uut.sum_p2, "SUM", chan_in);
 							$stop;
                         end
 
@@ -150,7 +150,7 @@ module oversample_filter_tf;
 		$stop;
 
 	end
-
-    `include "assert_equals.v"
+   `include "../ep_map.vh"
+   `include "assert_equals.v"
 
 endmodule

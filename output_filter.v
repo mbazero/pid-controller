@@ -74,17 +74,22 @@ end
 //--------------------------------------------------------------------
 // Configuration Memory
 //--------------------------------------------------------------------
-reg [W_RS-1:0] rs_mem[0:N_CHAN-1];
 reg [W_CHAN:0] add_chan_mem[0:N_CHAN-1];
+reg [W_RS-1:0] rs_mem[0:N_CHAN-1];
 reg signed [W_MULT-1:0] mult_mem[0:N_CHAN-1];
 reg signed [W_DOUT-1:0] max_mem[0:N_CHAN-1];
 reg signed [W_DOUT-1:0] min_mem[0:N_CHAN-1];
 reg signed [W_DOUT-1:0] init_mem[0:N_CHAN-1];
 
-// Initialize memory
+// Initialize
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
         add_chan_mem[i] = NULL_CHAN;
+        rs_mem[i] = 0;
+        mult_mem[i] = 0;
+        max_mam[i] = 0;
+        min_mem[i] = 0;
+        init_mem[i] = 0;
     end
 end
 
@@ -107,6 +112,14 @@ end
 //--------------------------------------------------------------------
 reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
 reg signed [W_DMTRS-1:0] dmtrs_prev_mem[0:N_CHAN-1];
+
+// Initialize
+initial begin
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        dout_prev_mem[i] = 0;
+        dmtrs_prev_mem[i] = 0;
+    end
+end
 
 //--------------------------------------------------------------------
 // Pipe Stage 1: Fetch

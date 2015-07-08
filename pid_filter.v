@@ -79,6 +79,17 @@ reg signed [W_PID_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
 reg signed [W_PID_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
 reg [N_CHAN-1:0] inv_error_mem;
 
+// Initialize
+initial begin
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        setpoint_mem[i] = 0;
+        p_coef_mem[i] = 0;
+        i_coef_mem[i] = 0;
+        d_coef_mem[i] = 0;
+        inv_error_mem[i] = 0;
+    end
+end
+
 // Handle writes
 always @( posedge clk_in ) begin
     if ( wr_en ) begin
@@ -98,6 +109,15 @@ end
 reg signed [W_DOUT-1:0] dout_prev_mem[0:N_CHAN-1];
 reg signed [W_ERROR-1:0] error_prev1_mem[0:N_CHAN-1];
 reg signed [W_ERROR-1:0] error_prev2_mem[0:N_CHAN-1];
+
+// Initialize
+initial begin
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        dout_prev_mem[i] = 0;
+        error_prev1_mem[i] = 0;
+        error_prev2_mem[i] = 0;
+    end
+end
 
 //--------------------------------------------------------------------
 // Pipe Stage 1: Fetch

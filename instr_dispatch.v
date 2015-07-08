@@ -55,12 +55,12 @@ localparam NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
 reg [N_CHAN-1:0] chan_en_mem;
 reg [W_SRC:0] chan_src_sel_mem[0:N_CHAN-1];
 
-// Initialize memory
+// Initialize
 integer i;
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
-        chan_src_sel_mem[i] = NULL_SRC;
         chan_en_mem[i] = 0;
+        chan_src_sel_mem[i] = NULL_SRC;
     end
 end
 

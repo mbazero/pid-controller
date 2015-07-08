@@ -89,6 +89,13 @@ end
 reg signed [W_SUM-1:0] sum_mem[0:N_CHAN-1];
 reg [W_COUNT-1:0] count_mem[0:N_CHAN-1];
 
+initial begin
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        sum_mem[i] = 0;
+        count_mem[i] = 0;
+    end
+end
+
 //--------------------------------------------------------------------
 // Pipe Stage 1: Fetch
 //--------------------------------------------------------------------
