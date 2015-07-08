@@ -6,9 +6,10 @@ module oversample_filter_tf;
 
 	// Parameters
     localparam W_CHAN = 5;
+    localparam N_CHAN = 4;
 	localparam W_DATA = 18;
-    localparam W_SUM = 128;
-    localparam W_OS = 5;
+    localparam W_SUM = 20;
+    localparam W_OS = 3;
     localparam W_WR_ADDR = W_EP;
     localparam W_WR_CHAN = W_EP;
     localparam W_WR_DATA = W_EP*4;
@@ -35,6 +36,7 @@ module oversample_filter_tf;
 
 	oversample_filter #(
         .W_CHAN(W_CHAN),
+        .N_CHAN(N_CHAN),
         .W_DATA(W_DATA),
         .W_SUM(W_SUM),
         .W_OS(W_OS),
@@ -57,99 +59,160 @@ module oversample_filter_tf;
 	);
 
 	// simulation structures
-	integer num_samples;
-	reg signed [127:0] sum = 0;
-	reg signed [W_DATA-1:0] received;
-	reg signed [W_DATA-1:0] expected;
+    localparam MAX_SUM = 2**(W_SUM - 1) - 1;
+    localparam MIN_SUM = - (2**(W_SUM - 1));
+	reg signed [W_DATA-1:0] data_rcv = 0;
+	reg signed [W_DATA-1:0] data_exp = 0;
 	integer delta = 0;
-    reg [W_OS-1:0] os;
+
+	integer num_samples[N_CHAN-1:0];
+	reg signed [127:0] sum[N_CHAN-1:0];
+    reg [W_OS-1:0] os[N_CHAN-1:0];
+
+    integer i;
+    initial begin
+        for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+            num_samples[i] = 0;
+            sum[i] = 0;
+            os[i] = 0;
+        end
+    end
+
+    // misc structures
+    integer chan_int = 0;
+    integer max_samples = 0;
+    integer total_samples = 0;
+    integer scount;
+    integer cc1, cc2;
 
 	// generate 50MHz clock
 	always #10 clk_in = ~clk_in;
 
-	initial begin
-		clk_in = 0;
-		rst_in = 0;
-		dv_in = 0;
+    initial begin
+        clk_in = 0;
+        rst_in = 0;
+        dv_in = 0;
         chan_in = 0;
-		data_in = 0;
+        data_in = 0;
         wr_en = 0;
         wr_addr = 0;
-        wr_chan = 0;
+        wr_chan = -1;
         wr_data = 0;
 
-		#100;
+        #100;
 
-		// initial oversample mode
-		os = 0;
+        repeat(10) begin
+            scount = 0;
+            cc1 = 0;
+            cc2 = 0;
+            total_samples = 0;
 
-		repeat(2**W_OS) begin
-            // set oversample mode in module
-            num_samples = 2**os;
-            wr_addr = ovr_os_addr;
-            wr_chan = 0;
-            wr_data = os;
-            @(posedge clk_in) wr_en = 1;
-            @(posedge clk_in) wr_en = 0;
+            // assign random oversample modes to each channel
+            repeat(N_CHAN) begin
+                os[cc1] = $random % (2**W_OS - 1);
+                wr_addr = ovr_os_addr;
+                wr_chan = cc1;
+                wr_data = os[cc1];
 
-			$display("######################################");
-			$display("OS = %d", os);
-			$display("######################################");
+                num_samples[cc1] = 2**os[cc1];
 
-			repeat(10) begin
-				fork
-					// send data
-					repeat(num_samples) begin
-						data_in = $random;
-						sum = sum + data_in;
+                if(num_samples[cc1] > max_samples) begin
+                    max_samples = num_samples[cc1];
+                end
 
-						$display("data_in: %d", data_in);
+                total_samples = total_samples + num_samples[cc1];
 
-						@(posedge clk_in) dv_in = 1;
-						@(posedge clk_in) dv_in = 0;
+                @(posedge clk_in) wr_en = 1;
+                @(posedge clk_in) wr_en = 0;
 
-						#100;
+                $display("######################################");
+                $display("CHAN %d OS = %d", cc1, os[cc1]);
+                $display("######################################");
 
-                        @(posedge oversample_filter_tf.uut.dv_p2) begin
-                            assert_equals(sum, oversample_filter_tf.uut.sum_p2, "SUM", chan_in);
-							$stop;
+                cc1 = cc1 + 1;
+            end
+
+            fork
+                repeat(max_samples) begin
+                    cc2 = 0;
+
+                    // send data into module
+                    repeat(N_CHAN) begin
+                        if(num_samples[cc2] != 0) begin
+                            chan_in = cc2;
+                            data_in = $random;
+                            sum[chan_in] = sum[chan_in] + data_in;
+
+                            if (sum[chan_in] > MAX_SUM) begin
+                                $display("Overflow");
+                                $display("Max sum: %d", MAX_SUM);
+                                $display("Act sum: %d", sum[chan_in]);
+                                sum[chan_in] = MAX_SUM;
+                            end else if (sum[chan_in] < MIN_SUM) begin
+                                $display("Underflow");
+                                $display("Min sum: %d", MIN_SUM);
+                                $display("Act sum: %d", sum[chan_in]);
+                                sum[chan_in] = MIN_SUM;
+                            end
+
+                            @(posedge clk_in) dv_in = 1;
+                            @(posedge clk_in) dv_in = 0;
+
+                            num_samples[cc2] = num_samples[cc2] - 1;
+                        end else begin
+                            @(posedge clk_in) #1;
+                            @(posedge clk_in) #1;
                         end
+                        cc2 = cc2 + 1;
+                    end
+                end
 
-						#200;
-					end
 
-					// receive data
-					@(posedge dv_out) begin
-						received = data_out;
-						expected = sum / (num_samples);
-						sum = 0;
+                // check internal sum
+                repeat(total_samples) begin
+                    @(posedge oversample_filter_tf.uut.dv_p2) begin
+                        chan_int = oversample_filter_tf.uut.chan_p2;
+                        $display("----------------------------------------------------------");
+                        $display("INTERNAL TEST -- chan %d", chan_int);
+                        $display("----------------------------------------------------------");
+                        assert_equals(sum[chan_int], oversample_filter_tf.uut.sum_p2, "SUM", chan_int);
+                    end
+                end
 
-						delta = expected - received;
+                // receive data
+                repeat(N_CHAN) begin
+                    @(posedge dv_out) begin
+                        data_rcv = data_out;
+                        data_exp = sum[chan_out] / (2**os[chan_out]);
+                        sum[chan_out] = 0;
 
-						$display("-------------------------------------------");
-						$display("Received: %d\tExpected: %d", received, expected);
-						$display("OSM: %d", os);
-						$display("num_samples: %d", num_samples);
-						if(delta == 0 | delta == -1 | delta == 1) begin // data received might vary by +/- 1
-							$display("SUCCESS");
-						end else begin
-							$display("FAILURE");
-							$stop;
-						end
-						$display("-------------------------------------------");
-					end
-				join
-			end
+                        delta = data_exp - data_rcv;
 
-            // increment os
-			os = os + 1;
-		end
+                        $display("----------------------------------------------------------");
+                        $display("RECEIVE TEST -- chan %d", chan_out);
+                        $display("----------------------------------------------------------");
+                        $display("Received: %d\tExpected: %d", data_rcv, data_exp);
+                        $display("OSM: %d", os);
+                        $display("num_samples: %d", num_samples);
+                        if(delta == 0 | delta == -1 | delta == 1) begin // data data_rcv might vary by +/- 1
+                            $display("SUCCESS");
+                        end else begin
+                            $display("FAILURE");
+                            $stop;
+                        end
+                        $display("----------------------------------------------------------");
+                    end
+                end
+            join
+
+        end
 
 		$display("*****SIMULATION COMPLETED SUCCESSFULLY*****");
 
 		$stop;
 
 	end
+
    `include "../ep_map.vh"
    `include "assert_equals.v"
 

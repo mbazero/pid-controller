@@ -10,7 +10,38 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="28" />
+   <WVObjectSize size="38" />
+   <wvobject fp_name="divider65" type="divider">
+      <obj_property name="label">MEM WRITE</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/wr_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_addr[15:0]</obj_property>
+      <obj_property name="ObjectShortName">wr_addr[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/wr_chan" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_chan[15:0]</obj_property>
+      <obj_property name="ObjectShortName">wr_chan[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/wr_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_data[63:0]</obj_property>
+      <obj_property name="ObjectShortName">wr_data[63:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider64" type="divider">
+      <obj_property name="label">INPUTS</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/clk_in" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk_in</obj_property>
       <obj_property name="ObjectShortName">clk_in</obj_property>
@@ -55,8 +86,8 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/count_p1" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">count_p1[31:0]</obj_property>
-      <obj_property name="ObjectShortName">count_p1[31:0]</obj_property>
+      <obj_property name="ElementShortName">count_p1[7:0]</obj_property>
+      <obj_property name="ObjectShortName">count_p1[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider72" type="divider">
@@ -64,6 +95,21 @@
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/MAX_SUM" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">MAX_SUM[127:0]</obj_property>
+      <obj_property name="ObjectShortName">MAX_SUM[127:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/MIN_SUM" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">MIN_SUM[127:0]</obj_property>
+      <obj_property name="ObjectShortName">MIN_SUM[127:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/uut/sum_int_p2" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sum_int_p2[128:0]</obj_property>
+      <obj_property name="ObjectShortName">sum_int_p2[128:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/dv_p2" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">dv_p2</obj_property>
@@ -74,24 +120,19 @@
       <obj_property name="ObjectShortName">chan_p2[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/oversample_filter_tf/uut/sum_uc_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">sum_uc_p2[128:0]</obj_property>
-      <obj_property name="ObjectShortName">sum_uc_p2[128:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/sum_p2" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">sum_p2[127:0]</obj_property>
       <obj_property name="ObjectShortName">sum_p2[127:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/count_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">count_p2[31:0]</obj_property>
-      <obj_property name="ObjectShortName">count_p2[31:0]</obj_property>
+      <obj_property name="ElementShortName">count_p2[7:0]</obj_property>
+      <obj_property name="ObjectShortName">count_p2[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/os_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">os_p2[4:0]</obj_property>
-      <obj_property name="ObjectShortName">os_p2[4:0]</obj_property>
+      <obj_property name="ElementShortName">os_p2[2:0]</obj_property>
+      <obj_property name="ObjectShortName">os_p2[2:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider79" type="divider">
@@ -124,8 +165,8 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/count_p3" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">count_p3[31:0]</obj_property>
-      <obj_property name="ObjectShortName">count_p3[31:0]</obj_property>
+      <obj_property name="ElementShortName">count_p3[7:0]</obj_property>
+      <obj_property name="ObjectShortName">count_p3[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider86" type="divider">
@@ -133,6 +174,16 @@
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/max_samples" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">max_samples[31:0]</obj_property>
+      <obj_property name="ObjectShortName">max_samples[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/oversample_filter_tf/total_samples" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">total_samples[31:0]</obj_property>
+      <obj_property name="ObjectShortName">total_samples[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/dv_out" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">dv_out</obj_property>
