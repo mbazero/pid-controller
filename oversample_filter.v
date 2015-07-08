@@ -52,12 +52,14 @@ localparam signed [W_SUM-1:0] MIN_SUM = ~MAX_SUM;
 // Request Registers
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] clr_rqst = 0;
+wire wr_chan_valid = ( wr_chan < N_CHAN );
 
 // Manage clear register
 integer i;
 always @( posedge clk_in ) begin
     // Handle writes
-    if ( wr_en && ( wr_addr == ovr_clr_rqst_addr )) begin
+    if ( wr_en && wr_chan_valid &&
+        ( wr_addr == ovr_clr_rqst_addr )) begin
         clr_rqst[wr_chan] = wr_data[0];
     end
 
@@ -83,9 +85,9 @@ end
 
 // Handle writes
 always @( posedge clk_in ) begin
-    if ( wr_en ) begin
+    if ( wr_en && wr_chan_valid ) begin
         case ( wr_addr )
-            ovr_os_addr : os_mem[wr_chan] = wr_data[W_OS-1:0];
+            ovr_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0];
         endcase
     end
 end
@@ -107,11 +109,11 @@ end
 //--------------------------------------------------------------------
 // Pipe Stage 1: Fetch
 //--------------------------------------------------------------------
-// Internal signals
+// Intermediate signals
 reg flush_p1;
 
 always @( * ) begin
-    flush_p1 = ( rst_in || clr_rqst[chan_in] );
+    flush_p1 <= ( rst_in || clr_rqst[chan_in] );
 end
 
 // Registers
@@ -142,15 +144,15 @@ end
 //--------------------------------------------------------------------
 // Pipe Stage 2: Accumulate sum
 //--------------------------------------------------------------------
-// Internal signals
+// Intermediate signals
 reg flush_p2;
 reg signed [W_SUM_INT-1:0] sum_int_p2;
 
 always @( * ) begin
-    flush_p2 = ( rst_in || clr_rqst[chan_p1] );
+    flush_p2 <= ( rst_in || clr_rqst[chan_p1] );
 
     // Accumulate sum
-    sum_int_p2 = sum_p1 + din_p1;
+    sum_int_p2 <= sum_p1 + din_p1;
 end
 
 // Registers
@@ -189,19 +191,25 @@ end
 //--------------------------------------------------------------------
 // Pipe Stage 3: Divide sum and writeback
 //--------------------------------------------------------------------
-// Internal signals
+// Intermediate signals
 reg flush_p3;
 reg count_sat_p3;
 reg signed [W_SUM-1:0] sum_div_int_p3 = 0;
+reg signed [W_SUM-1:0] sum_int_p3 = 0;
+reg [W_COUNT-1:0] count_int_p3 = 0;
 
 always @( * ) begin
-    flush_p3 = ( rst_in || clr_rqst[chan_p2] );
+    flush_p3 <= ( rst_in || clr_rqst[chan_p2] );
 
     // Check whether the oversample count has been satisifed
-    count_sat_p3 = ( count_p2[os_p2] == 1'b1 );
+    count_sat_p3 <= ( count_p2[os_p2] == 1'b1 );
 
     // Divide sum by right shifting
-    sum_div_int_p3 = sum_p2 >>> os_p2;
+    sum_div_int_p3 <= sum_p2 >>> os_p2;
+
+    // Reset sum and sample count if oversample count has been satisified
+    sum_int_p3 <= ( count_sat_p3 ) ? 0 : sum_p2;
+    count_int_p3 <= ( count_sat_p3 ) ? 0 : count_p2;
 end
 
 
@@ -209,8 +217,6 @@ end
 reg dv_p3 = 0;
 reg [W_CHAN-1:0] chan_p3 = 0;
 reg signed [W_DATA-1:0] dout_p3 = 0;
-reg signed [W_SUM-1:0] sum_p3 = 0;
-reg [W_COUNT-1:0] count_p3 = 0;
 
 always @( posedge clk_in ) begin
     if ( !flush_p3 ) begin
@@ -218,12 +224,8 @@ always @( posedge clk_in ) begin
         dv_p3 <= ( count_sat_p3 ) ? dv_p2 : 1'b0;
         chan_p3 <= chan_p2;
 
-        // Truncate divided sum
+        // Truncate divided sum for output
         dout_p3 <= sum_div_int_p3[W_DATA-1:0];
-
-        // Reset sum and sample count if oversample count has been satisified
-        sum_p3 <= ( count_sat_p3 ) ? 0 : sum_p2;
-        count_p3 <= ( count_sat_p3 ) ? 0 : count_p2;
 
     end else begin
         dv_p3 <= 0;
@@ -234,8 +236,8 @@ end
 always @( posedge clk_in ) begin
     // Writeback sum and count
     if ( dv_p2 ) begin
-        sum_mem[chan_p2] = sum_p3;
-        count_mem[chan_p2] = count_p3;
+        sum_mem[chan_p2] = sum_int_p3;
+        count_mem[chan_p2] = count_int_p3;
     end
 
     // Zero sum and count memory on reset or clear

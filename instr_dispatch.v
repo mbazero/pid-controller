@@ -46,14 +46,14 @@ module instr_dispatch #(
 //--------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------
-localparam NULL_SRC = {1'b1, {W_SRC{1'b0}}};
-localparam NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
+localparam [W_SRC:0] NULL_SRC = {1'b1, {W_SRC{1'b0}}};
 
 //--------------------------------------------------------------------
 // External Memory
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] chan_en_mem;
 reg [W_SRC:0] chan_src_sel_mem[0:N_CHAN-1];
+wire wr_chan_valid = ( wr_chan < N_CHAN );
 
 // Initialize
 integer i;
@@ -64,8 +64,7 @@ initial begin
     end
 end
 
-// Handle write requests
-wire wr_chan_valid = ( wr_chan < N_CHAN );
+// Handle writes
 always @( posedge clk_in ) begin
     if ( wr_en && wr_chan_valid ) begin
         case ( wr_addr )
@@ -87,10 +86,10 @@ initial begin
     end
 end
 
-// Update chan map when new route is received
+// Update map when new route is received
 always @( posedge clk_in ) begin
-    if ( wr_en && wr_chan_valid
-        && ( wr_addr == chan_src_sel_addr )) begin
+    if ( wr_en && wr_chan_valid &&
+        ( wr_addr == chan_src_sel_addr )) begin
         // Clear old mapping
         src_chan_map[chan_src_sel_mem[wr_chan]] <= 0;
 

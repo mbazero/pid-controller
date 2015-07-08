@@ -47,19 +47,21 @@ localparam W_DMTRS = W_DELTA + W_MULT;
 localparam W_DSUM = W_DMTRS + 1;
 localparam W_DOUT_UC = ((W_DSUM > W_DOUT) ? W_DSUM : W_DOUT) + 1;
 
-localparam NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
+localparam [W_CHAN:0] NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
 
 //--------------------------------------------------------------------
 // Request Registers
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] clr_rqst = 0;
 reg [N_CHAN-1:0] inj_rqst = 0;
+wire wr_chan_valid = ( wr_chan < N_CHAN );
 
 // Manage clear register
 integer i;
 always @( posedge clk_in ) begin
     // Handle writes
-    if ( wr_en && ( wr_addr == opt_clr_rqst_addr )) begin
+    if ( wr_en && wr_chan_valid &&
+        ( wr_addr == opt_clr_rqst_addr )) begin
         clr_rqst[wr_chan] = wr_data[0];
     end
 
@@ -95,7 +97,7 @@ end
 
 // Handle writes
 always @( posedge clk_in ) begin
-    if ( wr_en ) begin
+    if ( wr_en && wr_chan_valid ) begin
         case ( wr_addr )
             opt_min_addr : min_mem[wr_chan] <= wr_data[W_DOUT-1:0];
             opt_max_addr : max_mem[wr_chan] <= wr_data[W_DOUT-1:0];
@@ -158,7 +160,8 @@ always @( posedge clk_in ) begin
     end
 
     // Manage injection register
-    if ( wr_en && ( wr_addr == opt_inj_rqst_addr )) begin
+    if ( wr_en && wr_chan_valid &&
+        ( wr_addr == opt_inj_rqst_addr )) begin
         inj_rqst[wr_chan] = wr_data[0]; // Handle writes
     end
 

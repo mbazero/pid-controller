@@ -59,8 +59,9 @@ module oversample_filter_tf;
 	);
 
 	// simulation structures
-    localparam MAX_SUM = 2**(W_SUM - 1) - 1;
-    localparam MIN_SUM = - (2**(W_SUM - 1));
+    localparam signed [W_SUM-1:0] MAX_SUM = {W_SUM{1'b1}} >> 1;
+    localparam signed [W_SUM-1:0] MIN_SUM = ~MAX_SUM;
+
 	reg signed [W_DATA-1:0] data_rcv = 0;
 	reg signed [W_DATA-1:0] data_exp = 0;
 	integer delta = 0;
@@ -89,6 +90,7 @@ module oversample_filter_tf;
 	always #10 clk_in = ~clk_in;
 
     initial begin
+
         clk_in = 0;
         rst_in = 0;
         dv_in = 0;
@@ -101,7 +103,7 @@ module oversample_filter_tf;
 
         #100;
 
-        repeat(10) begin
+        repeat(50) begin
             scount = 0;
             cc1 = 0;
             cc2 = 0;
@@ -193,7 +195,7 @@ module oversample_filter_tf;
                         $display("----------------------------------------------------------");
                         $display("Received: %d\tExpected: %d", data_rcv, data_exp);
                         $display("OSM: %d", os);
-                        $display("num_samples: %d", num_samples);
+                        $display("num_samples: %d", num_samples[chan_out]);
                         if(delta == 0 | delta == -1 | delta == 1) begin // data data_rcv might vary by +/- 1
                             $display("SUCCESS");
                         end else begin
