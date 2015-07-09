@@ -3,7 +3,7 @@ Modify this file to change GUI configuration
 '''
 
 # list of all hdl header files to parse
-hdl_headers = [ '../endpoints.vh', '../parameters.vh']
+header_list = [ '../ep_map.vh', '../parameters.vh']
 
 pid_bit_file = './pid_controller.bit' # path to hdl bit file
 serial = '' # opal kelly serial number; leave blank to connect to first device found

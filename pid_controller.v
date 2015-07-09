@@ -59,6 +59,12 @@ module pid_controller (
 
 `include "ep_map.vh"
 `include "parameters.vh"
+`include "functions.vh"
+
+//--------------------------------------------------------------------
+// Constants
+//--------------------------------------------------------------------
+localparam W_PID_CHAN = log2(N_PID_CHAN);
 
 //--------------------------------------------------------------------
 // Frontpanel Interface

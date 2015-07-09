@@ -10,12 +10,13 @@ class HDLParser:
         infile = open(map_path)
 
         for line in infile:
-            # skip line is 'parameter' is not the first word
-            if(line.find('parameter') != 0):
+            # skip line if it does not define a parameter
+            if line.find('parameter') != 0 and line.find('localparam') != 0:
                 continue
 
             # remove extraneous substrings and characters from line
             line = line.replace('parameter', '')
+            line = line.replace('localparam', '')
             line = line.replace('8\'', '\'')
             line = line.replace('16\'', '\'')
             line = line.replace('32\'', '\'')

@@ -144,7 +144,7 @@ module pid_controller_tf;
 
     // channel params
     localparam NAC = 2; // number of active channels
-    reg [15:0] chan_focus = N_CHAN + 1;
+    reg [15:0] chan_focus;
 
     // routing params
     reg[15:0] src[0:NAC-1];

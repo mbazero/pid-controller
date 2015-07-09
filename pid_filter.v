@@ -60,7 +60,7 @@ integer i;
 always @( posedge clk_in ) begin
     // Handle writes
     if ( wr_en && wr_chan_valid &&
-        ( wr_addr == pid_clr_rqst_addr )) begin
+        ( wr_addr == pid_clr_rqst )) begin
         clr_rqst[wr_chan] = wr_data[0];
     end
 

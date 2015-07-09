@@ -7,7 +7,7 @@
 // ----------------------------------------------------------------------------
 localparam N_ADC			= 8;		// number of adc channels to generate
 localparam N_DAC			= 8;		// number of dac channels to generate
-localparam N_DDS			= 1;		// number of dds channels to generate
+localparam N_DDS			= 0;		// number of dds channels to generate
 localparam W_ADC_DATA		= 18; 	// width of adc data word
 localparam W_ADC_CHAN    = 3;     // width of adc channel select
 localparam W_ADC_OS      = 3;     // width of adc oversample mode signal
@@ -44,9 +44,10 @@ localparam PIPE_DEPTH		= 1024;	// depth of pipe out fifo specified in during cor
 // ----------------------------------------------------------------------------
 localparam W_PID_OS			= 5;						// width of PID oversample signal
 localparam N_PID_SRC        = N_ADC;       // total number of PID source channels
+localparam NULL_SRC         = N_ADC + 1;
 localparam W_PID_SRC        = W_ADC_CHAN;        // width of PID source channel select
 localparam N_PID_CHAN  		= N_DAC + 3*N_DDS;	// total number of PID channels equal to number of output channels
-localparam W_PID_CHAN       = log2(N_PID_CHAN);   // width of PID output channel select
+localparam W_PID_CHAN       = 5;   // width of PID output channel select
 localparam W_PID_DIN        = W_ADC_DATA;        // width of PID input data
 localparam W_PID_DOUT       = W_FREQ_DATA + 1;   // width of PID data output; must greater or equal to the max output width plus a sign bit.
 localparam W_PID_COMP       = 64;               // width of PID computation registers. A larger value means increased PID precision, but an increased FPGA area.

@@ -75,18 +75,26 @@ class DeviceManager:
     '''
     def write_data(self, addr, chan, data):
         # split data
-        data2 = (data >> 32) & 0xffff
-        data1 = (data >> 16) & 0xffff
-        data0 = data & 0xffff
+        data3 = (int(data) >> 48) & 0xffff
+        data2 = (int(data) >> 32) & 0xffff
+        data1 = (int(data) >> 16) & 0xffff
+        data0 = int(data) & 0xffff
 
         # send data to opal kelly
+        self.set_wire_in(self.params.data3_iwep, data3)
         self.set_wire_in(self.params.data2_iwep, data2)
         self.set_wire_in(self.params.data1_iwep, data1)
         self.set_wire_in(self.params.data0_iwep, data0)
         self.set_wire_in(self.params.addr_iwep, addr)
         self.set_wire_in(self.params.chan_iwep, chan)
         self.xem.UpdateWireIns()
-        self.activate_sys_trigger(self.params.reg_update_offset)
+        self.activate_sys_trigger(self.params.wr_en_offset)
+
+    '''
+    Send request to fpga
+    '''
+    def send_request(self, rqst, chan):
+        self.write_data(rqst, chan, 0);
 
     '''
     Activate system trigger at specified offset
