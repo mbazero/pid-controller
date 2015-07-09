@@ -143,8 +143,8 @@ module pid_controller_tf;
     reg [15:0] adc_os = 0;
 
     // channel params
-    localparam NAC = 3; // number of active channels
-    reg [15:0] chan_focus = 1;
+    localparam NAC = 1; // number of active channels
+    reg [15:0] chan_focus = 0;
     reg [15:0] chan_no = 0;
 
     // routing params
@@ -156,13 +156,13 @@ module pid_controller_tf;
         src[chan_no] = 0;
         dest[chan_no] = 1;
 
-        chan_no = 1;
-        src[chan_no] = 0;
-        dest[chan_no] = 3;
+        //chan_no = 1;
+        //src[chan_no] = 0;
+        //dest[chan_no] = 3;
 
-        chan_no = 2;
-        src[chan_no] = 4;
-        dest[chan_no] = 7;
+        // chan_no = 2;
+        // src[chan_no] = 4;
+        // dest[chan_no] = 7;
     end
 
     // ovr params
@@ -172,8 +172,8 @@ module pid_controller_tf;
         chan_no = 0;
         os[chan_no] = 0;
 
-        chan_no = 1;
-        os[chan_no] = 0;
+        //chan_no = 1;
+        //os[chan_no] = 0;
     end
 
     // pid parameters
@@ -191,12 +191,12 @@ module pid_controller_tf;
         d_coef[chan_no] = 2;
         inv_error[chan_no] = 0;
 
-        chan_no = 1;
-        setpoint[chan_no] = 0;
-        p_coef[chan_no] = 10;
-        i_coef[chan_no] = 3;
-        d_coef[chan_no] = 2;
-        inv_error[chan_no] = 0;
+        //chan_no = 1;
+        //setpoint[chan_no] = 0;
+        //p_coef[chan_no] = 10;
+        //i_coef[chan_no] = 3;
+        //d_coef[chan_no] = 2;
+        //inv_error[chan_no] = 0;
     end
 
     // opp parameters
@@ -335,8 +335,8 @@ module pid_controller_tf;
             check_pid(REPS);
             check_opp(REPS);
             check_dac_rcv(REPS);
-            //check_wire_out(REPS);
-            check_pipe(REPS);
+            log_data(REPS);
+            check_data_log(REPS);
 
         join
 
@@ -385,7 +385,7 @@ module pid_controller_tf;
     task write_data;
         input [15:0] addr;
         input [15:0] chan;
-        input [47:0] data;
+        input [63:0] data;
         begin
             SetWireInValue(addr_iwep, addr, MASK);
             SetWireInValue(chan_iwep, chan, MASK);
@@ -470,7 +470,7 @@ module pid_controller_tf;
 
                     // compare with received value
                     pid_rcv[pc_chan] = pid_controller_tf.uut.pid_pipe.data_pid;
-                    #1 assert_equals(pid_exp[pc_chan], pid_rcv[pc_chan], "PID", pc_chan);
+                    #1 assert_equals(pid_exp[pc_chan], pid_rcv[pc_chan], "PID", pid_controller_tf.uut.pid_pipe.chan_pid);
                 end
                 pc_count = pc_count + 1;
             end
@@ -539,20 +539,43 @@ module pid_controller_tf;
         end
     endtask
 
-    task check_pipe;
+    /* Simulation data logging */
+    task log_data;
         input [31:0] reps;
 
         begin
             repeat(reps) begin
                 @(posedge pid_controller_tf.uut.pid_pipe.dv_ovr) begin
+                    // Log for wire outs
+                    wire_out_exp[out_to_chan(pid_controller_tf.uut.pid_pipe.chan_ovr)] =
+                        pid_controller_tf.uut.pid_pipe.data_ovr[17:2];
+
+                    // Log for pipe
                     if(pid_controller_tf.uut.pid_pipe.chan_ovr == dest[chan_focus]) begin
                         pipe_expected[rep_count] = pid_controller_tf.uut.pid_pipe.data_ovr[17 -: 16];
                         rep_count = rep_count + 1;
                     end
                 end
             end
+        end
+    endtask
 
-            // read pipe data
+    /* Verify wire-out and pipe values */
+    task check_data_log;
+        input [31:0] reps;
+
+        begin
+            // check wires
+            repeat(reps) begin
+                @(posedge pid_controller_tf.uut.pid_pipe.dv_pid) begin
+                    cwo_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.chan_pid);
+                    UpdateWireOuts;
+                    wire_out_rcv = GetWireOutValue(data_log0_owep + dest[cwo_chan]);
+                    assert_equals(wire_out_exp[cwo_chan], wire_out_rcv, "Wire-out", cwo_chan);
+                end
+            end
+
+            // check pipe
             ReadFromPipeOut(data_log_opep, pipeOutSize);
             for(ppc = 0; ppc < (REPS); ppc = ppc + 1) begin
                 pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
@@ -560,28 +583,6 @@ module pid_controller_tf;
                 $write("#%d: ", ppc);
                 assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", chan_focus);
             end
-        end
-    endtask
-
-    /* Verify wire-out values */
-    task check_wire_out;
-        input [31:0] reps;
-        input [15:0] wc;
-
-        repeat(reps) begin
-            fork
-                @(posedge pid_controller_tf.uut.pid_pipe.dv_ovr) begin
-                    wire_out_exp[out_to_chan(pid_controller_tf.uut.pid_pipe.chan_ovr)] =
-                        pid_controller_tf.uut.pid_pipe.data_ovr[17:2];
-                end
-
-                @(posedge pid_controller_tf.uut.pid_pipe.dv_pid) begin
-                    cwo_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.chan_pid);
-                    UpdateWireOuts;
-                    wire_out_rcv = GetWireOutValue(data_log0_owep + dest[cwo_chan]);
-                    assert_equals(wire_out_exp[cwo_chan], wire_out_rcv[cwo_chan], "Wire-out", cwo_chan);
-                end
-            join
         end
     endtask
 

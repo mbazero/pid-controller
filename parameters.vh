@@ -35,7 +35,7 @@ localparam AMP0_ADDR			= N_DAC + 2 * N_DDS;	// Amplitude channel 0 output addres
 // - don't change any of these unless hardware on
 //   breakout board changes
 // ----------------------------------------------------------------------------
-localparam W_COMP			= 128; 	// width of computation registers
+localparam W_COMP			= 64; 	// width of computation registers
 localparam W_EP				= 16; 	// width of opal kelly endpoint
 localparam PIPE_DEPTH		= 1024;	// depth of pipe out fifo specified in during core gen
 
@@ -49,7 +49,7 @@ localparam N_PID_CHAN  		= N_DAC + 3*N_DDS;	// total number of PID channels equa
 localparam W_PID_CHAN       = log2(N_PID_CHAN);   // width of PID output channel select
 localparam W_PID_DIN        = W_ADC_DATA;        // width of PID input data
 localparam W_PID_DOUT       = W_FREQ_DATA + 1;   // width of PID data output; must greater or equal to the max output width plus a sign bit.
-localparam W_PID_COMP       = 128;               // width of PID computation registers. A larger value means increased PID precision, but an increased FPGA area.
+localparam W_PID_COMP       = 64;               // width of PID computation registers. A larger value means increased PID precision, but an increased FPGA area.
 localparam W_PID_OPRNDS     = W_EP;              // width of PID operands
 
 localparam W_WR_ADDR     = W_EP;

@@ -352,16 +352,20 @@ end
 //--------------------------------------------------------------------
 // Intermediate signals
 reg flush_p5;
+reg signed [W_DOUT-1:0] dout_int_p5 = 0;
 
 always @( * ) begin
     flush_p5 = ( rst_in || clr_rqst[chan_p4] );
+
+    // Inject initial value if inject flag set
+    dout_int_p5 <= ( inj_p4 ) ? init_p4 : dout_p4;
 end
 
 // Memory
 always @( posedge clk_in ) begin
     // Writeback output
     if ( dv_p4 ) begin
-        dout_prev_mem[chan_p4] = dout_p5;
+        dout_prev_mem[chan_p4] = dout_int_p5;
     end
 
     // Set previous output memory to initial value on reset or clear
@@ -383,8 +387,8 @@ always @( posedge clk_in ) begin
         dv_p5 <= dv_p4;
         chan_p5 <= chan_p4;
 
-        // Inject initial value if inject flag set
-        dout_p5 <= ( inj_p4 ) ? init_p4 : dout_p4;
+        // Register data output
+        dout_p5 <= dout_int_p5;
 
     end else begin
         dv_p5 <= 0;
