@@ -133,7 +133,7 @@ module pid_controller_tf;
     assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
     //////////////////////////////////////////
-    // Sim Params (change these)
+    // Sim Params
     //////////////////////////////////////////
 
     // simulation reps
@@ -151,53 +151,15 @@ module pid_controller_tf;
     reg[15:0] src[0:NAC-1];
     reg[15:0] dest[0:NAC-1];
 
-    initial begin : set_routing
-        chan_no = 0;
-        src[chan_no] = 0;
-        dest[chan_no] = 1;
-
-        //chan_no = 1;
-        //src[chan_no] = 0;
-        //dest[chan_no] = 3;
-
-        // chan_no = 2;
-        // src[chan_no] = 4;
-        // dest[chan_no] = 7;
-    end
-
     // ovr params
     reg [15:0] os[0:NAC-1];
-
-    initial begin : set_ovr_params
-        chan_no = 0;
-        os[chan_no] = 0;
-
-        //chan_no = 1;
-        //os[chan_no] = 0;
-    end
 
     // pid parameters
     reg signed [15:0] setpoint[0:NAC-1];
     reg signed [15:0] p_coef[0:NAC-1];
     reg signed [15:0] i_coef[0:NAC-1];
     reg signed [15:0] d_coef[0:NAC-1];
-    reg signed [15:0] inv_error[0:NAC-1];
-
-    initial begin : set_pid_params
-        chan_no = 0;
-        setpoint[chan_no] = 0;
-        p_coef[chan_no] = 10;
-        i_coef[chan_no] = 3;
-        d_coef[chan_no] = 2;
-        inv_error[chan_no] = 0;
-
-        //chan_no = 1;
-        //setpoint[chan_no] = 0;
-        //p_coef[chan_no] = 10;
-        //i_coef[chan_no] = 3;
-        //d_coef[chan_no] = 2;
-        //inv_error[chan_no] = 0;
-    end
+    reg inv_error[0:NAC-1];
 
     // opp parameters
     reg signed [47:0] output_init[0:NAC-1];
@@ -208,28 +170,6 @@ module pid_controller_tf;
     reg [15:0] add_chan[0:NAC-1];
     reg [5*8-1:0] dest_type[0:NAC-1];
     reg focus[0:NAC-1];
-
-    initial begin : set_opt_params
-        chan_no = 0;
-        output_init[chan_no] = 13107;
-        output_min[chan_no] = 0;
-        output_max[chan_no] = 52428;
-        multiplier[chan_no] = 1;
-        right_shift[chan_no] = 2;
-        add_chan[chan_no] = N_CHAN + 1;
-        dest_type[chan_no] = "DAC";
-        focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
-
-        chan_no = 1;
-        output_init[chan_no] = 20000;
-        output_min[chan_no] = 0;
-        output_max[chan_no] = 52428;
-        multiplier[chan_no] = 1;
-        right_shift[chan_no] = 10;
-        add_chan[chan_no] = N_CHAN + 1;
-        dest_type[chan_no] = "DAC";
-        focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
-    end
 
     //////////////////////////////////////////
     // Verification Params
@@ -273,14 +213,6 @@ module pid_controller_tf;
     integer out_count = 0;
     integer oc_chan = 0;
 
-    initial begin
-        for (oc_chan = 0; oc_chan < NAC; oc_chan = oc_chan+1) begin
-            opt_exp[oc_chan] = 0;
-            opt_mtrs[oc_chan] = 0;
-            opt_rcv[oc_chan] = output_init[oc_chan];
-        end
-    end
-
     // dac received data verification
     reg [31:0] r_instr = 0;
     wire [15:0] r_data;
@@ -302,6 +234,7 @@ module pid_controller_tf;
 
     // adc channel assignments
     //assign adc_val[src] = r_data - target;
+    integer x;
 
     initial begin : main
         // Initialize Inputs
@@ -311,6 +244,63 @@ module pid_controller_tf;
         data_a_tx = 0;
         data_b_tx = 0;
         wire_out = 0;
+
+        //-----------------------------------------
+        // Set Parameters
+        //-----------------------------------------
+        for ( x = 0; x < NAC; x = x + 1 ) begin
+            // Routing
+            src[x] = $random % N_ADC;
+            dest[x] = x;
+
+            // Oversample
+            os[x] = 0;
+
+            // PID
+            setpoint[x] = 0;
+            p_coef[x] = $random % 1000;
+            i_coef[x] = $random % 1000;
+            d_coef[x] = $random % 1000;
+            inv_error[x] = 0;
+
+            // OPT
+            output_init[x] = 30000;
+            output_min[x] = 0;
+            output_max[x] = 65535;
+
+            multiplier[x] = $random % 1000;
+            right_shift[x] = 0;
+
+            add_chan[x] = N_CHAN + 1;
+            dest_type[x] = "DAC";
+            focus[x] = (chan_focus == chan_no) ? 1 : 0;
+
+            $display("--------------------------------------");
+            $display("Chan %d config:", x);
+            $display("--------------------------------------");
+            $display("src = %d", src[x]);
+            $display("os = %d", os[x]);
+            $display("");
+            $display("setpoint = %d", setpoint[x]);
+            $display("p_coef = %d", p_coef[x]);
+            $display("i_coef = %d", i_coef[x]);
+            $display("d_coef = %d", d_coef[x]);
+            $display("inv_error = %d", inv_error[x]);
+            $display("");
+            $display("multiplier = %d", multiplier[x]);
+            $display("right shift = %d", right_shift[x]);
+            $display("add chan = %d", add_chan[x]);
+            $display("--------------------------------------");
+        end
+        //-----------------------------------------
+
+
+        // Initialize simulation structures
+        for (oc_chan = 0; oc_chan < NAC; oc_chan = oc_chan+1) begin
+            opt_exp[oc_chan] = 0;
+            opt_mtrs[oc_chan] = 0;
+            opt_rcv[oc_chan] = output_init[oc_chan];
+        end
 
         // Frontpanel reset
         FrontPanelReset;
