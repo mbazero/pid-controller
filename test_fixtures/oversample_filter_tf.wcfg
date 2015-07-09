@@ -81,8 +81,8 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/sum_p1" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">sum_p1[127:0]</obj_property>
-      <obj_property name="ObjectShortName">sum_p1[127:0]</obj_property>
+      <obj_property name="ElementShortName">sum_p1[19:0]</obj_property>
+      <obj_property name="ObjectShortName">sum_p1[19:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/count_p1" type="array" db_ref_id="1">
@@ -97,23 +97,25 @@
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/MAX_SUM" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">MAX_SUM[127:0]</obj_property>
-      <obj_property name="ObjectShortName">MAX_SUM[127:0]</obj_property>
+      <obj_property name="ElementShortName">MAX_SUM[19:0]</obj_property>
+      <obj_property name="ObjectShortName">MAX_SUM[19:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/MIN_SUM" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">MIN_SUM[127:0]</obj_property>
-      <obj_property name="ObjectShortName">MIN_SUM[127:0]</obj_property>
+      <obj_property name="ElementShortName">MIN_SUM[19:0]</obj_property>
+      <obj_property name="ObjectShortName">MIN_SUM[19:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/sum_int_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">sum_int_p2[128:0]</obj_property>
-      <obj_property name="ObjectShortName">sum_int_p2[128:0]</obj_property>
+      <obj_property name="ElementShortName">sum_int_p2[20:0]</obj_property>
+      <obj_property name="ObjectShortName">sum_int_p2[20:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/dv_p2" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">dv_p2</obj_property>
       <obj_property name="ObjectShortName">dv_p2</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+      <obj_property name="CustomSignalColor">#ff0000</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/chan_p2" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">chan_p2[4:0]</obj_property>
@@ -121,8 +123,8 @@
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/sum_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">sum_p2[127:0]</obj_property>
-      <obj_property name="ObjectShortName">sum_p2[127:0]</obj_property>
+      <obj_property name="ElementShortName">sum_p2[19:0]</obj_property>
+      <obj_property name="ObjectShortName">sum_p2[19:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/count_p2" type="array" db_ref_id="1">
@@ -160,8 +162,8 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/sum_p3" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">sum_p3[127:0]</obj_property>
-      <obj_property name="ObjectShortName">sum_p3[127:0]</obj_property>
+      <obj_property name="ElementShortName">sum_p3[19:0]</obj_property>
+      <obj_property name="ObjectShortName">sum_p3[19:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/oversample_filter_tf/uut/count_p3" type="array" db_ref_id="1">

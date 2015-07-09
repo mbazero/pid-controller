@@ -178,6 +178,7 @@ wire [W_PID_CHAN-1:0] pid_chan;
 wire [W_PID_DOUT-1:0] pid_data;
 
 pid_pipeline #(
+    .N_SRC          (N_ADC),
     .W_SRC          (W_PID_SRC),
     .N_CHAN         (N_PID_CHAN),
     .W_CHAN         (W_PID_CHAN),

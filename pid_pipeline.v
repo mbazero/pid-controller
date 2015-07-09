@@ -7,6 +7,7 @@
 //--------------------------------------------------------------------
 
 module pid_pipeline #(
+    parameter N_SRC = 8,        // Number of source channels
     parameter W_SRC = 5,        // Width of source select signal
     parameter N_CHAN = 5,       // Number of output channels
     parameter W_CHAN = 5,       // Width of output select signal

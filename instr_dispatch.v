@@ -14,9 +14,10 @@
 //--------------------------------------------------------------------
 
 module instr_dispatch #(
+    parameter N_SRC = 8,
     parameter W_SRC = 5,
-    parameter W_CHAN = 5,
     parameter N_CHAN = 8,
+    parameter W_CHAN = 5,
     parameter W_DATA = 18,
     parameter W_WR_ADDR = 16,
     parameter W_WR_CHAN = 16,
@@ -77,7 +78,7 @@ end
 //--------------------------------------------------------------------
 // Source Channel Map
 //--------------------------------------------------------------------
-reg [N_CHAN-1:0] src_chan_map[0:W_SRC-1];
+reg [N_CHAN-1:0] src_chan_map[0:N_SRC-1];
 
 // Initialize
 initial begin
@@ -141,7 +142,7 @@ always @( posedge clk_in ) begin
     end else if ( |src_chan_map[buf_src] ) begin
         // Decode channel number
         for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
-            if ( src_chan_map[i] && !instr_sent[i] ) begin
+            if ( src_chan_map[buf_src][i] && !instr_sent[i] ) begin
                 dspch_chan = i;
             end
         end

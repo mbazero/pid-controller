@@ -141,30 +141,31 @@ module oversample_filter_tf;
                     // send data into module
                     repeat(N_CHAN) begin
                         if(num_samples[cc2] != 0) begin
-                            chan_in = cc2;
-                            data_in = $random;
-                            sum[chan_in] = sum[chan_in] + data_in;
+                            @(posedge clk_in) begin
+                                chan_in = cc2;
+                                data_in = $random;
+                                dv_in = 1;
+                                sum[chan_in] = sum[chan_in] + data_in;
 
-                            if (sum[chan_in] > MAX_SUM) begin
-                                $display("Overflow");
-                                $display("Max sum: %d", MAX_SUM);
-                                $display("Act sum: %d", sum[chan_in]);
-                                sum[chan_in] = MAX_SUM;
-                            end else if (sum[chan_in] < MIN_SUM) begin
-                                $display("Underflow");
-                                $display("Min sum: %d", MIN_SUM);
-                                $display("Act sum: %d", sum[chan_in]);
-                                sum[chan_in] = MIN_SUM;
+                                if (sum[chan_in] > MAX_SUM) begin
+                                    $display("Overflow");
+                                    $display("Max sum: %d", MAX_SUM);
+                                    $display("Act sum: %d", sum[chan_in]);
+                                    sum[chan_in] = MAX_SUM;
+                                end else if (sum[chan_in] < MIN_SUM) begin
+                                    $display("Underflow");
+                                    $display("Min sum: %d", MIN_SUM);
+                                    $display("Act sum: %d", sum[chan_in]);
+                                    sum[chan_in] = MIN_SUM;
+                                end
                             end
-
-                            @(posedge clk_in) dv_in = 1;
-                            @(posedge clk_in) dv_in = 0;
 
                             num_samples[cc2] = num_samples[cc2] - 1;
                         end else begin
-                            @(posedge clk_in) #1;
-                            @(posedge clk_in) #1;
+                            @(posedge clk_in) dv_in = 0;
                         end
+
+                        @(posedge clk_in) dv_in = 0;
                         cc2 = cc2 + 1;
                     end
                 end

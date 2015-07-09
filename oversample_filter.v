@@ -113,7 +113,7 @@ end
 reg flush_p1;
 
 always @( * ) begin
-    flush_p1 <= ( rst_in || clr_rqst[chan_in] );
+    flush_p1 = ( rst_in || clr_rqst[chan_in] );
 end
 
 // Registers
@@ -149,10 +149,10 @@ reg flush_p2;
 reg signed [W_SUM_INT-1:0] sum_int_p2;
 
 always @( * ) begin
-    flush_p2 <= ( rst_in || clr_rqst[chan_p1] );
+    flush_p2 = ( rst_in || clr_rqst[chan_p1] );
 
     // Accumulate sum
-    sum_int_p2 <= sum_p1 + din_p1;
+    sum_int_p2 = sum_p1 + din_p1;
 end
 
 // Registers
@@ -199,19 +199,35 @@ reg signed [W_SUM-1:0] sum_int_p3 = 0;
 reg [W_COUNT-1:0] count_int_p3 = 0;
 
 always @( * ) begin
-    flush_p3 <= ( rst_in || clr_rqst[chan_p2] );
+    flush_p3 = ( rst_in || clr_rqst[chan_p2] );
 
     // Check whether the oversample count has been satisifed
-    count_sat_p3 <= ( count_p2[os_p2] == 1'b1 );
+    count_sat_p3 = ( count_p2[os_p2] == 1'b1 );
 
     // Divide sum by right shifting
-    sum_div_int_p3 <= sum_p2 >>> os_p2;
+    sum_div_int_p3 = sum_p2 >>> os_p2;
 
     // Reset sum and sample count if oversample count has been satisified
-    sum_int_p3 <= ( count_sat_p3 ) ? 0 : sum_p2;
-    count_int_p3 <= ( count_sat_p3 ) ? 0 : count_p2;
+    sum_int_p3 = ( count_sat_p3 ) ? 0 : sum_p2;
+    count_int_p3 = ( count_sat_p3 ) ? 0 : count_p2;
 end
 
+// Memory
+always @( posedge clk_in ) begin
+    // Writeback sum and count
+    if ( dv_p2 ) begin
+        sum_mem[chan_p2] = sum_int_p3;
+        count_mem[chan_p2] = count_int_p3;
+    end
+
+    // Zero sum and count memory on reset or clear
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_rqst[i] ) begin
+            sum_mem[i] = 0;
+            count_mem[i] = 0;
+        end
+    end
+end
 
 // Registers
 reg dv_p3 = 0;
@@ -229,23 +245,6 @@ always @( posedge clk_in ) begin
 
     end else begin
         dv_p3 <= 0;
-    end
-end
-
-// Memory
-always @( posedge clk_in ) begin
-    // Writeback sum and count
-    if ( dv_p2 ) begin
-        sum_mem[chan_p2] = sum_int_p3;
-        count_mem[chan_p2] = count_int_p3;
-    end
-
-    // Zero sum and count memory on reset or clear
-    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_rqst[i] ) begin
-            sum_mem[i] = 0;
-            count_mem[i] = 0;
-        end
     end
 end
 

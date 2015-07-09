@@ -46,8 +46,8 @@ localparam W_CE_PROD = W_K_COEFS + W_ERROR;
 localparam W_DELTA = W_CE_PROD + 2;
 localparam W_DOUT_UC = ((W_DOUT > W_DELTA) ? W_DOUT : W_DELTA) + 1;
 
-localparam signed [W_SUM-1:0] MAX_DOUT = {W_DOUT{1'b1}} >> 1;
-localparam signed [W_SUM-1:0] MIN_DOUT = ~MAX_DOUT;
+localparam signed [W_DOUT-1:0] MAX_DOUT = {W_DOUT{1'b1}} >> 1;
+localparam signed [W_DOUT-1:0] MIN_DOUT = ~MAX_DOUT;
 
 //--------------------------------------------------------------------
 // Request Registers
@@ -144,18 +144,18 @@ reg inv_error_p1 = 0;
 always @( posedge clk_in ) begin
     if ( !flush_p1 ) begin
         // Register input instruction
-        dv_p1 = dv_in;
-        chan_p1 = chan_in;
+        dv_p1 <= dv_in;
+        chan_p1 <= chan_in;
 
         // Register input data
-        din_p1 = data_in;
+        din_p1 <= data_in;
 
         // Fetch setpoint, PID coefficients, and invert error flag
-        setpoint_p1 = setpoint_mem[chan_in];
-        p_coef_p1 = p_coef_mem[chan_in];
-        i_coef_p1 = i_coef_mem[chan_in];
-        d_coef_p1 = d_coef_mem[chan_in];
-        inv_error_p1 = inv_error_mem[chan_in];
+        setpoint_p1 <= setpoint_mem[chan_in];
+        p_coef_p1 <= p_coef_mem[chan_in];
+        i_coef_p1 <= i_coef_mem[chan_in];
+        d_coef_p1 <= d_coef_mem[chan_in];
+        inv_error_p1 <= inv_error_mem[chan_in];
 
     end else begin
         dv_p1 <= 0;
@@ -189,23 +189,23 @@ reg signed [W_ERROR-1:0] error_prev2_p2 = 0;
 always @( posedge clk_in ) begin
     if ( !flush_p2 ) begin
         // Pass instruction
-        dv_p2 = dv_p1;
-        chan_p2 = chan_p1;
+        dv_p2 <= dv_p1;
+        chan_p2 <= chan_p1;
 
         // Optionally invert error
-        error_p2 = ( inv_error_p1 ) ? ~error_int_p2 : error_int_p2;
+        error_p2 <= ( inv_error_p1 ) ? ~error_int_p2 : error_int_p2;
 
         // Compute z-transform coefficients
-        k1_p2 = p_coef_p1 + i_coef_p1 + d_coef_p1;
-        k2_p2 = -p_coef_p1 - (d_coef_p1 <<< 1);
-        k3_p2 = d_coef_p1;
+        k1_p2 <= p_coef_p1 + i_coef_p1 + d_coef_p1;
+        k2_p2 <= -p_coef_p1 - (d_coef_p1 <<< 1);
+        k3_p2 <= d_coef_p1;
 
         // Fetch previous error values
-        error_prev1_p2 = error_prev1_mem[chan_p1];
-        error_prev2_p2 = error_prev2_mem[chan_p1];
+        error_prev1_p2 <= error_prev1_mem[chan_p1];
+        error_prev2_p2 <= error_prev2_mem[chan_p1];
 
     end else begin
-        dv_p2 = 0;
+        dv_p2 <= 0;
     end
 end
 
@@ -217,29 +217,6 @@ reg flush_p3;
 
 always @( * ) begin
     flush_p3 = ( rst_in || clr_rqst[chan_p2] );
-end
-
-// Registers
-reg dv_p3 = 0;
-reg [W_CHAN-1:0] chan_p3 = 0;
-reg signed [W_CE_PROD-1:0] ce_prod1_p3 = 0;
-reg signed [W_CE_PROD-1:0] ce_prod2_p3 = 0;
-reg signed [W_CE_PROD-1:0] ce_prod3_p3 = 0;
-
-always @( posedge clk_in ) begin
-    if ( !flush_p3 ) begin
-        // Pass instruction
-        dv_p3 = dv_p2;
-        chan_p3 = chan_p2;
-
-        // Compute coefficient error products
-        ce_prod1_p3 = k1_p2 * error_p2;
-        ce_prod2_p3 = k2_p2 * error_prev1_p2;
-        ce_prod3_p3 = k3_p2 * error_prev2_p2;
-
-    end else begin
-        dv_p3 = 0;
-    end
 end
 
 // Memory
@@ -256,6 +233,29 @@ always @( posedge clk_in ) begin
             error_prev1_mem[i] = 0;
             error_prev2_mem[i] = 0;
         end
+    end
+end
+
+// Registers
+reg dv_p3 = 0;
+reg [W_CHAN-1:0] chan_p3 = 0;
+reg signed [W_CE_PROD-1:0] ce_prod1_p3 = 0;
+reg signed [W_CE_PROD-1:0] ce_prod2_p3 = 0;
+reg signed [W_CE_PROD-1:0] ce_prod3_p3 = 0;
+
+always @( posedge clk_in ) begin
+    if ( !flush_p3 ) begin
+        // Pass instruction
+        dv_p3 <= dv_p2;
+        chan_p3 <= chan_p2;
+
+        // Compute coefficient error products
+        ce_prod1_p3 <= k1_p2 * error_p2;
+        ce_prod2_p3 <= k2_p2 * error_prev1_p2;
+        ce_prod3_p3 <= k3_p2 * error_prev2_p2;
+
+    end else begin
+        dv_p3 <= 0;
     end
 end
 
@@ -278,17 +278,17 @@ reg signed [W_DOUT-1:0] dout_prev_p4 = 0;
 always @( posedge clk_in ) begin
     if ( !flush_p4 ) begin
         // Pass instruction
-        dv_p4 = dv_p3;
-        chan_p4 = chan_p3;
+        dv_p4 <= dv_p3;
+        chan_p4 <= chan_p3;
 
         // Compute PID delta
-        delta_p4 = ce_prod1_p3 + ce_prod2_p3 + ce_prod3_p3;
+        delta_p4 <= ce_prod1_p3 + ce_prod2_p3 + ce_prod3_p3;
 
         // Fetch previous output
-        dout_prev_p4 = dout_prev_mem[chan_p3];
+        dout_prev_p4 <= dout_prev_mem[chan_p3];
 
     end else begin
-        dv_p4 = 0;
+        dv_p4 <= 0;
     end
 end
 
@@ -314,20 +314,20 @@ reg signed [W_DOUT-1:0] dout_p5 = 0;
 always @( posedge clk_in ) begin
     if ( !flush_p5 ) begin
         // Pass instruction
-        dv_p5 = dv_p4;
-        chan_p5 = chan_p4;
+        dv_p5 <= dv_p4;
+        chan_p5 <= chan_p4;
 
         // Handle output overflow
         if ( dout_int_p5 > MAX_DOUT ) begin
-            dout_p5 = MAX_DOUT;
+            dout_p5 <= MAX_DOUT;
         end else if ( dout_int_p5 < MIN_DOUT ) begin
-            dout_p5 = MIN_DOUT;
+            dout_p5 <= MIN_DOUT;
         end else begin
-            dout_p5 = dout_int_p5[W_DOUT-1:0];
+            dout_p5 <= dout_int_p5[W_DOUT-1:0];
         end
 
     end else begin
-        dv_p5 = 0;
+        dv_p5 <= 0;
     end
 end
 
@@ -338,7 +338,22 @@ end
 reg flush_p6;
 
 always @( * ) begin
-    flush_p6 <= ( rst_in || clr_rqst[chan_p5] );
+    flush_p6 = ( rst_in || clr_rqst[chan_p5] );
+end
+
+// Memory
+always @( posedge clk_in ) begin
+    // Writeback output
+    if ( dv_p5 == 1'b1 ) begin
+        dout_prev_mem[chan_p5] = dout_p5;
+    end
+
+    // Zero previous output memomry on reset or clear
+    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        if ( rst_in || clr_rqst[i] ) begin
+            dout_prev_mem[i] = 0;
+        end
+    end
 end
 
 // Registers
@@ -357,21 +372,6 @@ always @( posedge clk_in ) begin
 
     end else begin
         dv_p6 <= 0;
-    end
-end
-
-// Memory
-always @( posedge clk_in ) begin
-    // Writeback output
-    if ( dv_p5 == 1'b1 ) begin
-        dout_prev_mem[chan_p5] = dout_p5;
-    end
-
-    // Zero previous output memomry on reset or clear
-    for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_rqst[i] ) begin
-            dout_prev_mem[i] = 0;
-        end
     end
 end
 
