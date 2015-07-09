@@ -100,7 +100,7 @@ fp_intf (
     .hi_inout       (hi_inout),
     .hi_aa          (hi_aa),
     .i2c_sda        (i2c_sda),
-    .i2c_scl        (i2c_sel),
+    .i2c_scl        (i2c_scl),
     .hi_muxsel      (hi_muxsel)
 );
 
@@ -178,7 +178,7 @@ wire [W_PID_CHAN-1:0] pid_chan;
 wire [W_PID_DOUT-1:0] pid_data;
 
 pid_pipeline #(
-    .N_SRC          (N_ADC),
+    .N_SRC          (N_PID_SRC),
     .W_SRC          (W_PID_SRC),
     .N_CHAN         (N_PID_CHAN),
     .W_CHAN         (W_PID_CHAN),

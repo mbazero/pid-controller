@@ -51,9 +51,10 @@ wire [W_CHAN-1:0] chan_idp;
 wire [W_DIN-1:0] data_idp;
 
 instr_dispatch #(
+    .N_SRC          (N_SRC),
     .W_SRC          (W_SRC),
-    .W_CHAN         (W_CHAN),
     .N_CHAN         (N_CHAN),
+    .W_CHAN         (W_CHAN),
     .W_DATA         (W_DIN),
     .W_WR_ADDR      (W_WR_ADDR),
     .W_WR_CHAN      (W_WR_CHAN),

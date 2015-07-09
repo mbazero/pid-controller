@@ -4,37 +4,37 @@
 
 module oversample_filter_tf;
 
-	// Parameters
+    // Parameters
     localparam W_CHAN = 5;
     localparam N_CHAN = 4;
-	localparam W_DATA = 18;
+    localparam W_DATA = 18;
     localparam W_SUM = 20;
     localparam W_OS = 3;
     localparam W_WR_ADDR = W_EP;
     localparam W_WR_CHAN = W_EP;
     localparam W_WR_DATA = W_EP*4;
 
-	localparam W_EP = 16;
+    localparam W_EP = 16;
 
-	// Inputs
-	reg clk_in;
-	reg rst_in;
+    // Inputs
+    reg clk_in;
+    reg rst_in;
 
     reg dv_in;
     reg [W_CHAN-1:0] chan_in;
-	reg signed [W_DATA-1:0] data_in;
+    reg signed [W_DATA-1:0] data_in;
 
     reg wr_en;
     reg [W_WR_ADDR-1:0] wr_addr;
     reg [W_WR_CHAN-1:0] wr_chan;
     reg [W_WR_DATA-1:0] wr_data;
 
-	// Outputs
-	wire dv_out;
+    // Outputs
+    wire dv_out;
     wire [W_CHAN-1:0] chan_out;
-	wire signed [W_DATA-1:0] data_out;
+    wire signed [W_DATA-1:0] data_out;
 
-	oversample_filter #(
+    oversample_filter #(
         .W_CHAN(W_CHAN),
         .N_CHAN(N_CHAN),
         .W_DATA(W_DATA),
@@ -43,7 +43,7 @@ module oversample_filter_tf;
         .W_WR_ADDR(W_WR_ADDR),
         .W_WR_CHAN(W_WR_CHAN),
         .W_WR_DATA(W_WR_DATA))
-	uut (
+    uut (
         .clk_in(clk_in),
         .rst_in(rst_in),
         .dv_in(dv_in),
@@ -56,18 +56,18 @@ module oversample_filter_tf;
         .dv_out(dv_out),
         .chan_out(chan_out),
         .data_out(data_out)
-	);
+    );
 
-	// simulation structures
+    // simulation structures
     localparam signed [W_SUM-1:0] MAX_SUM = {W_SUM{1'b1}} >> 1;
     localparam signed [W_SUM-1:0] MIN_SUM = ~MAX_SUM;
 
-	reg signed [W_DATA-1:0] data_rcv = 0;
-	reg signed [W_DATA-1:0] data_exp = 0;
-	integer delta = 0;
+    reg signed [W_DATA-1:0] data_rcv = 0;
+    reg signed [W_DATA-1:0] data_exp = 0;
+    integer delta = 0;
 
-	integer num_samples[N_CHAN-1:0];
-	reg signed [127:0] sum[N_CHAN-1:0];
+    integer num_samples[N_CHAN-1:0];
+    reg signed [127:0] sum[N_CHAN-1:0];
     reg [W_OS-1:0] os[N_CHAN-1:0];
 
     integer i;
@@ -86,11 +86,10 @@ module oversample_filter_tf;
     integer scount;
     integer cc1, cc2;
 
-	// generate 50MHz clock
-	always #10 clk_in = ~clk_in;
+    // generate 50MHz clock
+    always #10 clk_in = ~clk_in;
 
     initial begin
-
         clk_in = 0;
         rst_in = 0;
         dv_in = 0;
@@ -210,11 +209,11 @@ module oversample_filter_tf;
 
         end
 
-		$display("*****SIMULATION COMPLETED SUCCESSFULLY*****");
+        $display("*****SIMULATION COMPLETED SUCCESSFULLY*****");
 
-		$stop;
+        $stop;
 
-	end
+    end
 
    `include "../ep_map.vh"
    `include "assert_equals.v"

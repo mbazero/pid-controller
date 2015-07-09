@@ -127,7 +127,7 @@ always @( posedge clk_in ) begin
             opt_init_addr : init_mem[wr_chan] <= wr_data[W_DOUT-1:0];
             opt_mult_addr : mult_mem[wr_chan] <= wr_data[W_MULT-1:0];
             opt_rs_addr : rs_mem[wr_chan] <= wr_data[W_RS-1:0];
-            opt_add_chan : add_chan_mem[wr_chan] <= wr_data[W_CHAN:0];
+            opt_add_chan_addr : add_chan_mem[wr_chan] <= wr_data[W_CHAN:0];
         endcase
     end
 end

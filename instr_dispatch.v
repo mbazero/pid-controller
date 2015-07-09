@@ -37,9 +37,9 @@ module instr_dispatch #(
     input wire [W_WR_DATA-1:0] wr_data,
 
     // Outputs
-    output wire dv_out,
-    output wire [W_CHAN-1:0] chan_out,
-    output wire [W_DATA-1:0] data_out
+    output reg dv_out,
+    output reg [W_CHAN-1:0] chan_out,
+    output reg [W_DATA-1:0] data_out
     );
 
 `include "ep_map.vh"
@@ -48,6 +48,7 @@ module instr_dispatch #(
 // Constants
 //--------------------------------------------------------------------
 localparam [W_SRC:0] NULL_SRC = {1'b1, {W_SRC{1'b0}}};
+localparam [W_CHAN:0] NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
 
 //--------------------------------------------------------------------
 // External Memory
@@ -79,6 +80,7 @@ end
 // Source Channel Map
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] src_chan_map[0:N_SRC-1];
+wire [W_SRC:0] wr_src_chan = wr_data[W_SRC:0];
 
 // Initialize
 initial begin
@@ -92,11 +94,11 @@ always @( posedge clk_in ) begin
     if ( wr_en && wr_chan_valid &&
         ( wr_addr == chan_src_sel_addr )) begin
         // Clear old mapping
-        src_chan_map[chan_src_sel_mem[wr_chan]] <= 0;
+        src_chan_map[chan_src_sel_mem[wr_chan]][wr_src_chan] <= 0;
 
         // Register new mapping if valid
-        if ( wr_data[W_SRC-1:0] < N_SRC ) begin
-            src_chan_map[wr_data[W_SRC-1:0]] <= 1;
+        if ( wr_src_chan < N_SRC ) begin
+            src_chan_map[wr_src_chan][wr_chan] <= 1;
         end
     end
 end
@@ -104,9 +106,9 @@ end
 //--------------------------------------------------------------------
 // Input Buffer
 //--------------------------------------------------------------------
+wire buf_dv;
 wire [W_SRC-1:0] buf_src;
 wire [W_DATA-1:0] buf_data;
-wire buf_dv;
 reg buf_rd_en;
 
 fifo_21 input_buffer (
@@ -127,30 +129,52 @@ fifo_21 input_buffer (
 reg dspch_dv;
 reg [W_CHAN:0] dspch_chan;
 reg [N_CHAN-1:0] instr_sent;
+reg [W_CHAN-1:0] icount;
+reg [N_CHAN-1:0] instr_to_send;
 
 // Dispatch instructions if source has valid channel mappings and if
-// the mapped channels are activated. Otherwise, pull new data from
-// the input buffer. A new instruction is dispatched every clock cycle
-// for each valid channel mapping. Lower numbered channels are given
-// dispatch priority.
-always @( posedge clk_in ) begin
+// the mapped channels are active. A new instruction is dispatched
+// every clock cycle for each valid channel mapping. Lower numbered
+// channels are given dispatch priority. Buffer read enable is asserted
+// when there is one instruction left to send, so new data is available
+// on the next clock cycle.
+always @( * ) begin
+    // Defualt assignment
+    dspch_chan = NULL_CHAN;
+    icount = 0;
+
+    // Mask source channel map with complement of instruction sent
+    // register to get a map of remaining instructions to send
+    instr_to_send = src_chan_map[buf_src] & ~instr_sent;
+
+    // Don't send on reset or buffer data invalid
     if ( rst_in | ~buf_dv ) begin
         dspch_dv = 0;
         instr_sent = 0;
         buf_rd_en = 0;
 
-    end else if ( |src_chan_map[buf_src] ) begin
+    // Decode and dispatch
+    end else if ( |instr_to_send ) begin
         // Decode channel number
         for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
-            if ( src_chan_map[buf_src][i] && !instr_sent[i] ) begin
+            if ( instr_to_send[i] ) begin
+                icount = icount + 1;
                 dspch_chan = i;
             end
         end
 
         // Dispatch instruction
         dspch_dv = chan_en_mem[dspch_chan];
-        instr_sent[dspch_chan] = 1;
-        buf_rd_en = 0;
+
+        // Read new data from buffer and reset sent instruction buffer
+        // if this is the last instruction for the current source
+        if ( icount == 1 ) begin
+            buf_rd_en = 1;
+            instr_sent = 0;
+        end else begin
+            buf_rd_en = 0;
+            instr_sent[dspch_chan] = 1;
+        end
 
     end else begin
         dspch_dv = 0;
@@ -162,8 +186,11 @@ end
 //--------------------------------------------------------------------
 // Output Assignment
 //--------------------------------------------------------------------
-assign dv_out = dspch_dv;
-assign chan_out = dspch_chan[W_CHAN-1:0];
-assign data_out = buf_data;
+// Register outputs to account for decoder propagation delay
+always @( posedge clk_in ) begin
+    dv_out = dspch_dv;
+    chan_out = dspch_chan[W_CHAN-1:0];
+    data_out = buf_data;
+end
 
 endmodule

@@ -8,334 +8,342 @@
 
 module pid_controller_tf;
 
-	// Parameters
-	localparam	MASK		= 32'hffffffff;
-	localparam 	N_ADC_RD	= 8;
-	localparam	T_CYCLE 	= 85;
-	localparam	TX_LEN	= W_ADC_DATA*N_ADC_RD/2;
+    // Parameters
+    localparam  MASK = 32'hffffffff;
+    localparam  N_CHAN = N_PID_CHAN;
+    localparam  N_ADC_RD = 8;
+    localparam  T_CYCLE = 85;
+    localparam  TX_LEN = W_ADC_DATA*N_ADC_RD/2;
 
-	// Simulation structures
-	reg signed [W_ADC_DATA-1:0] adc_val[0:N_ADC_RD-1];
-	reg [TX_LEN-1:0] data_a_tx = 0;
-	reg [TX_LEN-1:0] data_b_tx = 0;
-	reg [15:0] wire_out = 0;
+    // Simulation structures
+    reg signed [W_ADC_DATA-1:0] adc_val[0:N_ADC_RD-1];
+    reg [TX_LEN-1:0] data_a_tx = 0;
+    reg [TX_LEN-1:0] data_b_tx = 0;
+    reg [15:0] wire_out = 0;
 
-	// Inputs
-	reg sys_clk_in;
-	reg adc_clk_in;
-	reg adc_busy_in;
-	wire adc_data_a_in;
-	wire adc_data_b_in;
+    // Inputs
+    reg sys_clk_in;
+    reg adc_clk_in;
+    reg adc_busy_in;
+    wire adc_data_a_in;
+    wire adc_data_b_in;
 
-	// Outputs
-	wire [2:0] adc_os_out;
-	wire adc_convst_out;
-	wire adc_reset_out;
-	wire adc_sclk_out;
-	wire adc_n_cs_out;
-	wire dac_nldac_out;
-	wire dac_nsync_out;
-	wire dac_sclk_out;
-	wire dac_din_out;
-	wire dac_nclr_out;
-	wire [1:0] dds_sclk_out;
-	wire [1:0] dds_reset_out;
-	wire [1:0] dds_csb_out;
-	wire [1:0] dds_sdio_out;
-	wire [1:0] dds_io_update_out;
-	wire obuf_en_out;
+    // Outputs
+    wire [2:0] adc_os_out;
+    wire adc_convst_out;
+    wire adc_reset_out;
+    wire adc_sclk_out;
+    wire adc_n_cs_out;
+    wire dac_nldac_out;
+    wire dac_nsync_out;
+    wire dac_sclk_out;
+    wire dac_din_out;
+    wire dac_nclr_out;
+    wire [1:0] dds_sclk_out;
+    wire [1:0] dds_reset_out;
+    wire [1:0] dds_csb_out;
+    wire [1:0] dds_sdio_out;
+    wire [1:0] dds_io_update_out;
+    wire obuf_en_out;
 
-	// Frontpanel
-	reg [7:0] hi_in;
-	wire [1:0] hi_out;
-	wire [15:0] hi_inout;
-	wire hi_aa;
+    // Frontpanel
+    reg [7:0] hi_in;
+    wire [1:0] hi_out;
+    wire [15:0] hi_inout;
+    wire hi_aa;
 
-	// Instantiate the Unit Under Test (UUT)
-	pid_controller uut (
-		.sys_clk_in(sys_clk_in),
-		.adc_clk_in(adc_clk_in),
-		.adc_busy_in(adc_busy_in),
-		.adc_data_a_in(adc_data_a_in),
-		.adc_data_b_in(adc_data_b_in),
-		.adc_os_out(adc_os_out),
-		.adc_convst_out(adc_convst_out),
-		.adc_reset_out(adc_reset_out),
-		.adc_sclk_out(adc_sclk_out),
-		.adc_n_cs_out(adc_n_cs_out),
-		.dac_nldac_out(dac_nldac_out),
-		.dac_nsync_out(dac_nsync_out),
-		.dac_sclk_out(dac_sclk_out),
-		.dac_din_out(dac_din_out),
-		.dac_nclr_out(dac_nclr_out),
-		.dds_sclk_out(dds_sclk_out),
-		.dds_reset_out(dds_reset_out),
-		.dds_csb_out(dds_csb_out),
-		.dds_sdio_out(dds_sdio_out),
-		.dds_io_update_out(dds_io_update_out),
-		.obuf_en_out(obuf_en_out),
-		.hi_in(hi_in),
-		.hi_out(hi_out),
-		.hi_inout(hi_inout),
-		.hi_aa(hi_aa)
-	);
+    // Instantiate the Unit Under Test (UUT)
+    pid_controller uut (
+        .sys_clk_in(sys_clk_in),
+        .adc_clk_in(adc_clk_in),
+        .adc_busy_in(adc_busy_in),
+        .adc_data_a_in(adc_data_a_in),
+        .adc_data_b_in(adc_data_b_in),
+        .adc_os_out(adc_os_out),
+        .adc_convst_out(adc_convst_out),
+        .adc_reset_out(adc_reset_out),
+        .adc_sclk_out(adc_sclk_out),
+        .adc_n_cs_out(adc_n_cs_out),
+        .dac_nldac_out(dac_nldac_out),
+        .dac_nsync_out(dac_nsync_out),
+        .dac_sclk_out(dac_sclk_out),
+        .dac_din_out(dac_din_out),
+        .dac_nclr_out(dac_nclr_out),
+        .dds_sclk_out(dds_sclk_out),
+        .dds_reset_out(dds_reset_out),
+        .dds_csb_out(dds_csb_out),
+        .dds_sdio_out(dds_sdio_out),
+        .dds_io_update_out(dds_io_update_out),
+        .obuf_en_out(obuf_en_out),
+        .hi_in(hi_in),
+        .hi_out(hi_out),
+        .hi_inout(hi_inout),
+        .hi_aa(hi_aa)
+    );
 
-	//------------------------------------------------------------------------
-	// Begin okHostInterface simulation user configurable  global data
-	//------------------------------------------------------------------------
-	parameter BlockDelayStates = 5;   // REQUIRED: # of clocks between blocks of pipe data
-	parameter ReadyCheckDelay = 5;    // REQUIRED: # of clocks before block transfer before
-												 //           host interface checks for ready (0-255)
-	parameter PostReadyDelay = 5;     // REQUIRED: # of clocks after ready is asserted and
-												 //           check that the block transfer begins (0-255)
-	parameter pipeInSize = 2048;      // REQUIRED: byte (must be even) length of default
-												 //           PipeIn; Integer 0-2^32
-	parameter pipeOutSize = 2048;     // REQUIRED: byte (must be even) length of default
-												 //           PipeOut; Integer 0-2^32
+    //------------------------------------------------------------------------
+    // Begin okHostInterface simulation user configurable  global data
+    //------------------------------------------------------------------------
+    parameter BlockDelayStates = 5;   // REQUIRED: # of clocks between blocks of pipe data
+    parameter ReadyCheckDelay = 5;    // REQUIRED: # of clocks before block transfer before
+                                                 //           host interface checks for ready (0-255)
+    parameter PostReadyDelay = 5;     // REQUIRED: # of clocks after ready is asserted and
+                                                 //           check that the block transfer begins (0-255)
+    parameter pipeInSize = 2048;      // REQUIRED: byte (must be even) length of default
+                                                 //           PipeIn; Integer 0-2^32
+    parameter pipeOutSize = 2048;     // REQUIRED: byte (must be even) length of default
+                                                 //           PipeOut; Integer 0-2^32
 
-	integer k;
-	reg  [7:0]  pipeIn [0:(pipeInSize-1)];
-	initial for (k=0; k<pipeInSize; k=k+1) pipeIn[k] = 8'h00;
+    integer k;
+    reg  [7:0]  pipeIn [0:(pipeInSize-1)];
+    initial for (k=0; k<pipeInSize; k=k+1) pipeIn[k] = 8'h00;
 
-	reg  [7:0]  pipeOut [0:(pipeOutSize-1)];
-	initial for (k=0; k<pipeOutSize; k=k+1) pipeOut[k] = 8'h00;
+    reg  [7:0]  pipeOut [0:(pipeOutSize-1)];
+    initial for (k=0; k<pipeOutSize; k=k+1) pipeOut[k] = 8'h00;
 
-	//------------------------------------------------------------------------
-	//  Available User Task and Function Calls:
-	//    FrontPanelReset;                  // Always start routine with FrontPanelReset;
-	//    SetWireInValue(ep, val, mask);
-	//    UpdateWireIns;
-	//    UpdateWireOuts;
-	//    GetWireOutValue(ep);
-	//    ActivateTriggerIn(ep, bit);       // bit is an integer 0-15
-	//    UpdateTriggerOuts;
-	//    IsTriggered(ep, mask);            // Returns a 1 or 0
-	//    WriteToPipeIn(ep, length);        // passes pipeIn array data
-	//    ReadFromPipeOut(ep, length);      // passes data to pipeOut array
-	//    WriteToBlockPipeIn(ep, blockSize, length);    // pass pipeIn array data; blockSize and length are integers
-	//    ReadFromBlockPipeOut(ep, blockSize, length);  // pass data to pipeOut array; blockSize and length are integers
-	//
-	//    *Pipes operate by passing arrays of data back and forth to the user's
-	//    design.  If you need multiple arrays, you can create a new procedure
-	//    above and connect it to a differnet array.  More information is
-	//    available in Opal Kelly documentation and online support tutorial.
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //  Available User Task and Function Calls:
+    //    FrontPanelReset;                  // Always start routine with FrontPanelReset;
+    //    SetWireInValue(ep, val, mask);
+    //    UpdateWireIns;
+    //    UpdateWireOuts;
+    //    GetWireOutValue(ep);
+    //    ActivateTriggerIn(ep, bit);       // bit is an integer 0-15
+    //    UpdateTriggerOuts;
+    //    IsTriggered(ep, mask);            // Returns a 1 or 0
+    //    WriteToPipeIn(ep, length);        // passes pipeIn array data
+    //    ReadFromPipeOut(ep, length);      // passes data to pipeOut array
+    //    WriteToBlockPipeIn(ep, blockSize, length);    // pass pipeIn array data; blockSize and length are integers
+    //    ReadFromBlockPipeOut(ep, blockSize, length);  // pass data to pipeOut array; blockSize and length are integers
+    //
+    //    *Pipes operate by passing arrays of data back and forth to the user's
+    //    design.  If you need multiple arrays, you can create a new procedure
+    //    above and connect it to a differnet array.  More information is
+    //    available in Opal Kelly documentation and online support tutorial.
+    //------------------------------------------------------------------------
 
-	// generate ~17MHz clock
-	always #30 adc_clk_in = ~adc_clk_in;
+    // generate ~17MHz clock
+    always #30 adc_clk_in = ~adc_clk_in;
 
-	// generate 50MHz clock
-	always #10 sys_clk_in = ~sys_clk_in;
+    // generate 50MHz clock
+    always #10 sys_clk_in = ~sys_clk_in;
 
-	// serial data channels
-	assign adc_data_a_in = data_a_tx[TX_LEN-1];
-	assign adc_data_b_in = data_b_tx[TX_LEN-1];
+    // serial data channels
+    assign adc_data_a_in = data_a_tx[TX_LEN-1];
+    assign adc_data_b_in = data_b_tx[TX_LEN-1];
 
-	//////////////////////////////////////////
-	// Sim Params (change these)
-	//////////////////////////////////////////
+    //////////////////////////////////////////
+    // Sim Params (change these)
+    //////////////////////////////////////////
 
-	// simulation reps
-	localparam REPS = 100;
+    // simulation reps
+    localparam REPS = 100;
 
-	// adc params
-	reg [15:0] adc_os = 0;
+    // adc params
+    reg [15:0] adc_os = 0;
 
-	// channel params
-	localparam NAC = 2; // number of active channels
-	reg [15:0] chan_focus = 1;
-	reg [15:0] chan_no = 0;
+    // channel params
+    localparam NAC = 3; // number of active channels
+    reg [15:0] chan_focus = 1;
+    reg [15:0] chan_no = 0;
 
-	// routing params
-	reg[15:0] src[0:NAC-1];
-	reg[15:0] dest[0:NAC-1];
+    // routing params
+    reg[15:0] src[0:NAC-1];
+    reg[15:0] dest[0:NAC-1];
 
-	initial begin : set_routing
-		chan_no = 0;
-		src[chan_no] = 0;
-		dest[chan_no] = 0;
+    initial begin : set_routing
+        chan_no = 0;
+        src[chan_no] = 0;
+        dest[chan_no] = 1;
 
-		chan_no = 1;
-		src[chan_no] = 1;
-		dest[chan_no] = 1;
-	end
+        chan_no = 1;
+        src[chan_no] = 0;
+        dest[chan_no] = 3;
+
+        chan_no = 2;
+        src[chan_no] = 4;
+        dest[chan_no] = 7;
+    end
 
     // ovr params
     reg [15:0] os[0:NAC-1];
 
-    initial begin : set ovr_params
+    initial begin : set_ovr_params
         chan_no = 0;
-        os = 0;
+        os[chan_no] = 0;
 
         chan_no = 1;
-        os = 0;
+        os[chan_no] = 0;
     end
 
-	// pid parameters
-	reg signed [15:0] setpoint[0:NAC-1];
-	reg signed [15:0]	p_coef[0:NAC-1];
-	reg signed [15:0]	i_coef[0:NAC-1];
-	reg signed [15:0]	d_coef[0:NAC-1];
+    // pid parameters
+    reg signed [15:0] setpoint[0:NAC-1];
+    reg signed [15:0] p_coef[0:NAC-1];
+    reg signed [15:0] i_coef[0:NAC-1];
+    reg signed [15:0] d_coef[0:NAC-1];
     reg signed [15:0] inv_error[0:NAC-1];
 
-	initial begin : set_pid_params
-		chan_no = 0;
-		setpoint[chan_no] = 0;
-		p_coef[chan_no] = 10;
-		i_coef[chan_no] = 3;
-		d_coef[chan_no] = 2;
+    initial begin : set_pid_params
+        chan_no = 0;
+        setpoint[chan_no] = 0;
+        p_coef[chan_no] = 10;
+        i_coef[chan_no] = 3;
+        d_coef[chan_no] = 2;
         inv_error[chan_no] = 0;
 
-		chan_no = 1;
-		setpoint[chan_no] = 0;
-		p_coef[chan_no] = 10;
-		i_coef[chan_no] = 3;
-		d_coef[chan_no] = 2;
+        chan_no = 1;
+        setpoint[chan_no] = 0;
+        p_coef[chan_no] = 10;
+        i_coef[chan_no] = 3;
+        d_coef[chan_no] = 2;
         inv_error[chan_no] = 0;
-	end
+    end
 
-	// opp parameters
-	reg signed [47:0] output_init[0:NAC-1];
-	reg signed [47:0] output_min[0:NAC-1];
-	reg signed [47:0] output_max[0:NAC-1];
-	reg signed [15:0] multiplier[0:NAC-1];
-	reg [15:0] right_shift[0:NAC-1];
+    // opp parameters
+    reg signed [47:0] output_init[0:NAC-1];
+    reg signed [47:0] output_min[0:NAC-1];
+    reg signed [47:0] output_max[0:NAC-1];
+    reg signed [15:0] multiplier[0:NAC-1];
+    reg [15:0] right_shift[0:NAC-1];
     reg [15:0] add_chan[0:NAC-1];
-	reg [5*8-1:0] dest_type[0:NAC-1];
-	reg focus[0:NAC-1];
+    reg [5*8-1:0] dest_type[0:NAC-1];
+    reg focus[0:NAC-1];
 
-	initial begin : set_opt_params
-		chan_no = 0;
-		output_init[chan_no] = 13107;
-		output_min[chan_no] = 0;
-		output_max[chan_no] = 52428;
-		multiplier[chan_no] = 1;
-		right_shift[chan_no] = 2;
+    initial begin : set_opt_params
+        chan_no = 0;
+        output_init[chan_no] = 13107;
+        output_min[chan_no] = 0;
+        output_max[chan_no] = 52428;
+        multiplier[chan_no] = 1;
+        right_shift[chan_no] = 2;
         add_chan[chan_no] = N_CHAN + 1;
-		dest_type[chan_no] = "DAC";
-		focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
+        dest_type[chan_no] = "DAC";
+        focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
 
-		chan_no = 1;
-		output_init[chan_no] = 20000;
-		output_min[chan_no] = 0;
-		output_max[chan_no] = 52428;
-		multiplier[chan_no] = 1;
-		right_shift[chan_no] = 10;
+        chan_no = 1;
+        output_init[chan_no] = 20000;
+        output_min[chan_no] = 0;
+        output_max[chan_no] = 52428;
+        multiplier[chan_no] = 1;
+        right_shift[chan_no] = 10;
         add_chan[chan_no] = N_CHAN + 1;
-		dest_type[chan_no] = "DAC";
-		focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
-	end
+        dest_type[chan_no] = "DAC";
+        focus[chan_no] = (chan_focus == chan_no) ? 1 : 0;
+    end
 
-	//////////////////////////////////////////
-	// Verification Params
-	//////////////////////////////////////////
+    //////////////////////////////////////////
+    // Verification Params
+    //////////////////////////////////////////
 
-	// pid verification
-	reg signed [63:0]	pid_exp[0:NAC-1];
-	reg signed [63:0] pid_rcv[0:NAC-1];
-	reg signed [63:0] error[0:NAC-1];
-	reg signed [63:0]	error_prev[0:NAC-1];
-	reg signed [63:0]	integral[0:NAC-1];
-	reg signed [63:0]	derivative[0:NAC-1];
-	reg signed [63:0]	e_count[0:NAC-1];
-	reg [15:0] target[0:NAC-1];
-	integer pc_count;
-	integer dv_count = 0;
-	integer pc_chan = 0;
-	integer ac_count = 0;
+    // pid verification
+    reg signed [63:0] pid_exp[0:NAC-1];
+    reg signed [63:0] pid_rcv[0:NAC-1];
+    reg signed [63:0] error[0:NAC-1];
+    reg signed [63:0] error_prev[0:NAC-1];
+    reg signed [63:0] integral[0:NAC-1];
+    reg signed [63:0] derivative[0:NAC-1];
+    reg signed [63:0] e_count[0:NAC-1];
+    reg [15:0] target[0:NAC-1];
+    integer pc_count;
+    integer dv_count = 0;
+    integer pc_chan = 0;
+    integer ac_count = 0;
 
-	initial begin
-		for (pc_chan = 0; pc_chan < NAC; pc_chan = pc_chan+1) begin
-			pid_exp[pc_chan] = 0;
-			pid_rcv[pc_chan] = 0;
-			error[pc_chan] = 0;
-			error_prev[pc_chan] = 0;
-			integral[pc_chan] = 0;
-			derivative[pc_chan] = 0;
-			e_count[pc_chan] = 0;
-			target[pc_chan] = 0;
-		end
-	end
+    initial begin
+        for (pc_chan = 0; pc_chan < NAC; pc_chan = pc_chan+1) begin
+            pid_exp[pc_chan] = 0;
+            pid_rcv[pc_chan] = 0;
+            error[pc_chan] = 0;
+            error_prev[pc_chan] = 0;
+            integral[pc_chan] = 0;
+            derivative[pc_chan] = 0;
+            e_count[pc_chan] = 0;
+            target[pc_chan] = 0;
+        end
+    end
 
-	// opp verification
-	reg signed [127:0] opt_exp[0:NAC-1];
-	reg signed [127:0] opt_mtrs[0:NAC-1];
-	reg [15:0] opt_rcv[0:NAC-1];
-	integer oc_count = 0;
-	integer out_count = 0;
-	integer oc_chan = 0;
+    // adc verification
+    integer ac = 0;
 
-	initial begin
-		for (oc_chan = 0; oc_chan < NAC; oc_chan = oc_chan+1) begin
-			opt_exp[oc_chan] = 0;
+    // opp verification
+    reg signed [127:0] opt_exp[0:NAC-1];
+    reg signed [127:0] opt_mtrs[0:NAC-1];
+    reg [15:0] opt_rcv[0:NAC-1];
+    integer oc_count = 0;
+    integer out_count = 0;
+    integer oc_chan = 0;
+
+    initial begin
+        for (oc_chan = 0; oc_chan < NAC; oc_chan = oc_chan+1) begin
+            opt_exp[oc_chan] = 0;
             opt_mtrs[oc_chan] = 0;
-			opt_rcv[oc_chan] = output_init[oc_chan];
-		end
-	end
+            opt_rcv[oc_chan] = output_init[oc_chan];
+        end
+    end
 
-	// dac received data verification
-	reg [31:0] r_instr = 0;
-	wire [15:0] r_data;
-	wire [3:0] r_prefix, r_control, r_address, r_feature;
-	integer rc = 0;
-	assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
+    // dac received data verification
+    reg [31:0] r_instr = 0;
+    wire [15:0] r_data;
+    wire [3:0] r_prefix, r_control, r_address, r_feature;
+    integer rc = 0;
+    assign {r_prefix, r_control, r_address, r_data, r_feature} = r_instr;
 
-	// wire-out verification
-	reg signed [15:0] wire_out_exp[0:NAC-1];
-	reg signed [15:0] wire_out_rcv;
+    // wire-out verification
+    reg signed [15:0] wire_out_exp[0:NAC-1];
+    reg signed [15:0] wire_out_rcv;
     integer cwo_chan;
-	integer wc = 0;
+    integer wc = 0;
 
-	// pipe verification
-	reg signed [15:0] pipeOutWord;
-	reg signed [15:0] pipe_expected[REPS-1:0];
-	integer rep_count = 0;
-	integer ppc = 0;
+    // pipe verification
+    reg signed [15:0] pipeOutWord;
+    reg signed [15:0] pipe_expected[REPS-1:0];
+    integer rep_count = 0;
+    integer ppc = 0;
 
-	// adc channel assignments
-	//assign adc_val[src] = r_data - target;
+    // adc channel assignments
+    //assign adc_val[src] = r_data - target;
 
-	initial begin : main
-		// Initialize Inputs
-		sys_clk_in = 0;
-		adc_clk_in = 0;
-		adc_busy_in = 0;
-		data_a_tx = 0;
-		data_b_tx = 0;
-		wire_out = 0;
+    initial begin : main
+        // Initialize Inputs
+        sys_clk_in = 0;
+        adc_clk_in = 0;
+        adc_busy_in = 0;
+        data_a_tx = 0;
+        data_b_tx = 0;
+        wire_out = 0;
 
-		// Frontpanel reset
-		FrontPanelReset;
+        // Frontpanel reset
+        FrontPanelReset;
 
-		// Configure channels
-		configure_chans();
+        // Configure channels
+        configure_chans();
 
-		// Reset system
-		ActivateTriggerIn(sys_gp_itep, sys_reset_offset);
+        // Reset system
+        ActivateTriggerIn(sys_gp_itep, sys_rst_offset);
 
-		// Trigger dac reference set
-		ActivateTriggerIn(sys_gp_itep, dac_ref_set_offset);
+        // Trigger dac reference set
+        ActivateTriggerIn(sys_gp_itep, dac_rset_offset);
 
-		// Set adc oversample mode and trigger cstart
-		write_data(adc_os_addr, 0, adc_os);
-		ActivateTriggerIn(sys_gp_itep, adc_cstart_offset);
+        // Set adc oversample mode and trigger cstart
+        write_data(adc_os_addr, 0, adc_os);
+        ActivateTriggerIn(sys_gp_itep, adc_cstart_offset);
 
-		#200;
+        #200;
 
-		fork
-			adc_transmit(REPS);
-			check_pid(REPS);
-			check_opp(REPS);
-			check_dac_rcv(REPS);
-			//check_wire_out(REPS);
-			check_pipe(REPS);
+        fork
+            adc_transmit(REPS);
+            check_pid(REPS);
+            check_opp(REPS);
+            check_dac_rcv(REPS);
+            //check_wire_out(REPS);
+            check_pipe(REPS);
 
-		join
+        join
 
-		$display("SIMULATION SUCCESSFUL.");
-		$stop;
+        $display("SIMULATION SUCCESSFUL.");
+        $stop;
 
-	end
+    end
 
     /* configure channel */
     task configure_chans;
@@ -386,7 +394,7 @@ module pid_controller_tf;
             SetWireInValue(data1_iwep, data[31:16], MASK);
             SetWireInValue(data0_iwep, data[15:0], MASK);
             UpdateWireIns;
-            ActivateTriggerIn(sys_gp_itep, write_data_offset);
+            ActivateTriggerIn(sys_gp_itep, wr_en_offset);
         end
     endtask
 
@@ -420,6 +428,10 @@ module pid_controller_tf;
                 $display("Iteration #%d", adc_count);
                 $display("======================================");
 
+                for ( ac = 0; ac < NAC; ac = ac + 1 ) begin
+                    $display("ADC %d val: %d", src[ac], adc_val[src[ac]]);
+                end
+
                 // simulate serial data transmission
                 repeat (71) begin
                     @(negedge adc_clk_in)
@@ -437,13 +449,13 @@ module pid_controller_tf;
         end
     endtask
 
-	/* Verify PID values */
-	task check_pid;
-		input [31:0] reps;
+    /* Verify PID values */
+    task check_pid;
+        input [31:0] reps;
 
-		repeat(reps) begin
-			pc_count = 0;
-			while (pc_count < NAC) begin
+        repeat(reps) begin
+            pc_count = 0;
+            while (pc_count < NAC) begin
                 @(posedge pid_controller_tf.uut.pid_pipe.dv_pid) begin
                     pc_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.chan_pid);
 
@@ -461,13 +473,13 @@ module pid_controller_tf;
                     #1 assert_equals(pid_exp[pc_chan], pid_rcv[pc_chan], "PID", pc_chan);
                 end
                 pc_count = pc_count + 1;
-			end
-		end
-	endtask
+            end
+        end
+    endtask
 
-	/* Verify output */
-	task check_opp;
-		input [31:0] reps;
+    /* Verify output */
+    task check_opp;
+        input [31:0] reps;
 
         repeat(reps) begin
             oc_count = 0;
@@ -499,64 +511,64 @@ module pid_controller_tf;
                 oc_count = oc_count + 1;
             end
         end
-	endtask
+    endtask
 
-	/* Verify received data */
-	task check_dac_rcv;
-		input [31:0] reps;
-		integer sim_chan;
-		integer n_active_dacs;
+    /* Verify received data */
+    task check_dac_rcv;
+        input [31:0] reps;
+        integer sim_chan;
+        integer n_active_dacs;
 
-		begin
-			n_active_dacs = nac_of_type("DAC");
+        begin
+            n_active_dacs = nac_of_type("DAC");
 
-			repeat(reps * n_active_dacs) begin
-				// simulate dac receiving data
-				@(negedge dac_nsync_out) begin
-					repeat(32) begin
-						@(negedge dac_sclk_out) begin
-							r_instr = {r_instr[30:0], dac_din_out}; // shift data in
-						end
-					end
-				end
+            repeat(reps * n_active_dacs) begin
+                // simulate dac receiving data
+                @(negedge dac_nsync_out) begin
+                    repeat(32) begin
+                        @(negedge dac_sclk_out) begin
+                            r_instr = {r_instr[30:0], dac_din_out}; // shift data in
+                        end
+                    end
+                end
 
-				// check recevied data
-				#1 sim_chan = out_to_chan(r_address);
-				#1 assert_equals(opt_rcv[sim_chan], r_data, "RCV", sim_chan);
-			end
-		end
-	endtask
+                // check recevied data
+                #1 sim_chan = out_to_chan(r_address);
+                #1 assert_equals(opt_rcv[sim_chan], r_data, "RCV", sim_chan);
+            end
+        end
+    endtask
 
-	task check_pipe;
-		input [31:0] reps;
+    task check_pipe;
+        input [31:0] reps;
 
-		begin
-			repeat(reps) begin
+        begin
+            repeat(reps) begin
                 @(posedge pid_controller_tf.uut.pid_pipe.dv_ovr) begin
                     if(pid_controller_tf.uut.pid_pipe.chan_ovr == dest[chan_focus]) begin
                         pipe_expected[rep_count] = pid_controller_tf.uut.pid_pipe.data_ovr[17 -: 16];
                         rep_count = rep_count + 1;
                     end
-				end
-			end
+                end
+            end
 
-			// read pipe data
-			ReadFromPipeOut(data_log_opep, pipeOutSize);
-			for(ppc = 0; ppc < (REPS); ppc = ppc + 1) begin
-				pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
-				#1;
-				$write("#%d: ", ppc);
-				assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", chan_focus);
-			end
-		end
-	endtask
+            // read pipe data
+            ReadFromPipeOut(data_log_opep, pipeOutSize);
+            for(ppc = 0; ppc < (REPS); ppc = ppc + 1) begin
+                pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
+                #1;
+                $write("#%d: ", ppc);
+                assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", chan_focus);
+            end
+        end
+    endtask
 
-	/* Verify wire-out values */
-	task check_wire_out;
-		input [31:0] reps;
-		input [15:0] wc;
+    /* Verify wire-out values */
+    task check_wire_out;
+        input [31:0] reps;
+        input [15:0] wc;
 
-		repeat(reps) begin
+        repeat(reps) begin
             fork
                 @(posedge pid_controller_tf.uut.pid_pipe.dv_ovr) begin
                     wire_out_exp[out_to_chan(pid_controller_tf.uut.pid_pipe.chan_ovr)] =
@@ -567,63 +579,63 @@ module pid_controller_tf;
                     cwo_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.chan_pid);
                     UpdateWireOuts;
                     wire_out_rcv = GetWireOutValue(data_log0_owep + dest[cwo_chan]);
-                    assert_equals(wire_out_exp, wire_out_rcv[cwo_chan], "Wire-out");
+                    assert_equals(wire_out_exp[cwo_chan], wire_out_rcv[cwo_chan], "Wire-out", cwo_chan);
                 end
             join
-		end
-	endtask
+        end
+    endtask
 
-	function [15:0] adc_to_chan;
-		input [15:0] adc;
-		integer x = 0;
-		reg hit = 0;
-		reg [15:0] chan;
-		begin
-			for (x = 0; x < NAC; x = x+1) begin
-				if (src[x] == adc) begin
-					chan = x;
-					hit = 1;
-				end
-			end
-			adc_to_chan = (hit) ? chan : 9;
-		end
-	endfunction
+    function [15:0] adc_to_chan;
+        input [15:0] adc;
+        integer x = 0;
+        reg hit = 0;
+        reg [15:0] chan;
+        begin
+            for (x = 0; x < NAC; x = x+1) begin
+                if (src[x] == adc) begin
+                    chan = x;
+                    hit = 1;
+                end
+            end
+            adc_to_chan = (hit) ? chan : 9;
+        end
+    endfunction
 
-	function [15:0] out_to_chan;
-		input [15:0] out;
-		integer x = 0;
-		reg hit = 0;
-		reg [15:0] chan;
-		begin
-			for (x = 0; x < NAC; x = x+1) begin
-				if (dest[x] == out) begin
-					chan = x;
-					hit = 1;
-				end
-			end
-			out_to_chan = (hit) ? chan : 9;
-		end
-	endfunction
+    function [15:0] out_to_chan;
+        input [15:0] out;
+        integer x = 0;
+        reg hit = 0;
+        reg [15:0] chan;
+        begin
+            for (x = 0; x < NAC; x = x+1) begin
+                if (dest[x] == out) begin
+                    chan = x;
+                    hit = 1;
+                end
+            end
+            out_to_chan = (hit) ? chan : 9;
+        end
+    endfunction
 
-	function [15:0] nac_of_type;
-		input [5*8-1:0] type;
-		reg [15:0] num = 0;
-		integer x = 0;
-		begin
-			for (x = 0; x < NAC; x = x+1) begin
-				if (dest_type[x] == type) begin
-					num = num + 1;
-				end
-			end
-			nac_of_type = num;
-		end
-	endfunction
+    function [15:0] nac_of_type;
+        input [5*8-1:0] type;
+        reg [15:0] num = 0;
+        integer x = 0;
+        begin
+            for (x = 0; x < NAC; x = x+1) begin
+                if (dest_type[x] == type) begin
+                    num = num + 1;
+                end
+            end
+            nac_of_type = num;
+        end
+    endfunction
 
 
-	`include "../ep_map.vh"
-	`include "../parameters.vh"
+    `include "../ep_map.vh"
+    `include "../parameters.vh"
     `include "assert_equals.v"
-	`include "../ok_sim/okHostCalls.v"
+    `include "../ok_sim/okHostCalls.v"
 
 endmodule
 

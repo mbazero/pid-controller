@@ -41,7 +41,7 @@ localparam opt_max_addr          = 16'h0b;
 localparam opt_init_addr         = 16'h0c;
 localparam opt_mult_addr         = 16'h0d;
 localparam opt_rs_addr           = 16'h0e;
-localparam opt_add_chan          = 16'h0f;
+localparam opt_add_chan_addr     = 16'h0f;
 
 localparam pipe_chan_addr        = 16'h10;
 
