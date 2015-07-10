@@ -103,17 +103,6 @@ class DeviceManager:
         self.activate_trigger_in(self.params.sys_gp_itep, offset)
 
     '''
-    Activate OPP injection trigger for specified channel
-    Injection triggers should only be used when a channel is deactivated
-    to cause OPP to write its initial value.
-    '''
-    def activate_opp_injection(self, chan):
-        if chan < self.params.w_ep:
-            self.activate_trigger_in(self.params.opp_inject0_itep, chan)
-        elif chan < 2 * self.params.w_ep:
-            self.activate_trigger_in(self.params.opp_inject1_itep, chan)
-
-    '''
     Return wire out value at specified endpoint
     '''
     def get_wire_out_value(self, ep):

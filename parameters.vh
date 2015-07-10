@@ -56,5 +56,3 @@ localparam W_PID_OPRNDS     = W_EP;              // width of PID operands
 localparam W_WR_ADDR     = W_EP;
 localparam W_WR_CHAN     = W_PID_CHAN;
 localparam W_WR_DATA     = W_FREQ_DATA + 1;
-
-`include "functions.vh"

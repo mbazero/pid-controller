@@ -13,7 +13,7 @@
 // the type of data being received. The channel specifies
 // the target PID input or output channel.
 //
-//  Output data is sent in two modes. Single-word modes sends
+// Output data is sent in two modes. Single-word modes sends
 // single osf data words across wire-outs (one for each
 // input channel). Block mode sends blocks of 1024 osf data
 // words at a time. Block mode is only active for one
@@ -34,9 +34,9 @@ module frontpanel_interface #(
     input wire adc_clk_in,
     input wire sys_clk_in,
 
-    input wire dv_log_in,
-    input wire [W_LCHAN-1:0] chan_log_in,
-    input wire [W_LDATA-1:0] data_log_in,
+    input wire log_dv_in,
+    input wire [W_LCHAN-1:0] log_chan_in,
+    input wire [W_LDATA-1:0] log_data_in,
 
     // Outputs
     output wire sys_rst_out,
@@ -173,8 +173,8 @@ always @( posedge sys_clk_in ) begin
         for ( i = 0; i < N_LOG; i = i + 1 ) begin
             data_log_reg[i] <= 0;
         end
-    end else if ( dv_log_in ) begin
-        data_log_reg[chan_log_in] <= data_log_in;
+    end else if ( log_dv_in ) begin
+        data_log_reg[log_chan_in] <= 30000;
     end
 end
 
@@ -196,7 +196,7 @@ endgenerate
 //--------------------------------------------------------------------
 reg [W_LCHAN-1:0] pipe_chan;
 wire [W_EP-1:0] log_pipe_data;
-wire log_pipe_dv = ( chan_log_in == pipe_chan ) ? dv_log_in : 0;
+wire log_pipe_dv = ( log_chan_in == pipe_chan ) ? log_dv_in : 0;
 wire log_pipe_rd;
 
 // Pipe channel write handling
@@ -212,7 +212,7 @@ pipe_tx_fifo log_pipe_fifo (
     .sys_clk_in     (sys_clk_in),
     .reset_in       (sys_rst_out),
     .data_valid_in  (log_pipe_dv),
-    .data_in        (data_log_in[W_LDATA-1 -: W_EP]),
+    .data_in        (log_data_in[W_LDATA-1 -: W_EP]),
     .pipe_read_in   (log_pipe_rd),
     .data_out       (log_pipe_data)
     );

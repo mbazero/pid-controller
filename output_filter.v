@@ -159,7 +159,6 @@ always @( * ) begin
     inj_in = ( !dv_in && |inj_rqst );
 
     // Decode injection channel preferencing low to high
-    inj_chan_in = NULL_CHAN;
     for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
         if ( inj_rqst[i] ) begin
             inj_chan_in = i[W_CHAN-1:0];
@@ -222,7 +221,7 @@ reg signed [W_DMTRS-1:0] dmtrs_p2 = 0;
 reg signed [W_DMTRS-1:0] add_dmtrs_p2 = 0;
 
 always @( posedge clk_in ) begin
-    if ( !flush_p1 ) begin
+    if ( !flush_p2 ) begin
         // Pass instruction
         inj_p2 <= inj_p1;
         dv_p2 <= dv_p1;

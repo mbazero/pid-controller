@@ -34,9 +34,9 @@ module pid_pipeline #(
     input wire [W_WR_DATA-1:0] wr_data,
 
     // Outputs
-    output wire dv_ovr,
-    output wire [W_CHAN-1:0] chan_ovr,
-    output wire [W_DIN-1:0] data_ovr,
+    output wire ovr_dv,
+    output wire [W_CHAN-1:0] ovr_chan,
+    output wire [W_DIN-1:0] ovr_data,
 
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
@@ -46,9 +46,9 @@ module pid_pipeline #(
 //--------------------------------------------------------------------
 // Instruction Dispatch
 //--------------------------------------------------------------------
-wire dv_idp;
-wire [W_CHAN-1:0] chan_idp;
-wire [W_DIN-1:0] data_idp;
+wire idp_dv;
+wire [W_CHAN-1:0] ipd_chan;
+wire [W_DIN-1:0] idp_data;
 
 instr_dispatch #(
     .N_SRC          (N_SRC),
@@ -69,9 +69,9 @@ idp (
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (dv_idp),
-    .chan_out       (chan_idp),
-    .data_out       (data_idp)
+    .dv_out         (idp_dv),
+    .chan_out       (ipd_chan),
+    .data_out       (idp_data)
 );
 
 //--------------------------------------------------------------------
@@ -89,24 +89,24 @@ oversample_filter #(
 ovr (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
-    .dv_in          (dv_idp),
-    .chan_in        (chan_idp),
-    .data_in        (data_idp),
+    .dv_in          (idp_dv),
+    .chan_in        (ipd_chan),
+    .data_in        (idp_data),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (dv_ovr),
-    .chan_out       (chan_ovr),
-    .data_out       (data_ovr)
+    .dv_out         (ovr_dv),
+    .chan_out       (ovr_chan),
+    .data_out       (ovr_data)
 );
 
 //--------------------------------------------------------------------
 // PID Filter
 //--------------------------------------------------------------------
-wire dv_pid;
-wire [W_CHAN-1:0] chan_pid;
-wire [W_COMP-1:0] data_pid;
+wire pid_dv;
+wire [W_CHAN-1:0] pid_chan;
+wire [W_COMP-1:0] pid_data;
 
 pid_filter #(
     .W_CHAN         (W_CHAN),
@@ -120,24 +120,24 @@ pid_filter #(
 pid (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
-    .dv_in          (dv_ovr),
-    .chan_in        (chan_ovr),
-    .data_in        (data_ovr),
+    .dv_in          (ovr_dv),
+    .chan_in        (ovr_chan),
+    .data_in        (ovr_data),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (dv_pid),
-    .chan_out       (chan_pid),
-    .data_out       (data_pid)
+    .dv_out         (pid_dv),
+    .chan_out       (pid_chan),
+    .data_out       (pid_data)
 );
 
 //--------------------------------------------------------------------
 // Output Filtering
 //--------------------------------------------------------------------
-wire dv_opt;
-wire [W_CHAN-1:0] chan_opt;
-wire [W_DOUT-1:0] data_opt;
+wire opt_dv;
+wire [W_CHAN-1:0] opt_chan;
+wire [W_DOUT-1:0] opt_data;
 
 output_filter #(
     .W_CHAN         (W_CHAN),
@@ -152,21 +152,21 @@ output_filter #(
 opt (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
-    .dv_in          (dv_pid),
-    .chan_in        (chan_pid),
-    .delta_in       (data_pid),
+    .dv_in          (pid_dv),
+    .chan_in        (pid_chan),
+    .delta_in       (pid_data),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_out         (dv_opt),
-    .chan_out       (chan_opt),
-    .data_out       (data_opt)
+    .dv_out         (opt_dv),
+    .chan_out       (opt_chan),
+    .data_out       (opt_data)
 );
 
 // Output assignment
-assign dv_out = dv_opt;
-assign chan_out = chan_opt;
-assign data_out = data_opt;
+assign dv_out = opt_dv;
+assign chan_out = opt_chan;
+assign data_out = opt_data;
 
 endmodule

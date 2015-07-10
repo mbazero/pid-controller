@@ -162,7 +162,7 @@ always @( posedge clk_in ) begin
         // Dispatch instruction
         dspch_dv = chan_en_mem[dspch_chan];
         instr_sent[dspch_chan] = 1;
-        buf_rd_en = ( icount == 1 ) ? 1 : 0;
+        buf_rd_en = ( icount == 1 ) ? 1'b1 : 1'b0;
 
     end else begin
         dspch_dv = 0;

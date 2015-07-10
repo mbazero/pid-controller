@@ -191,25 +191,29 @@ class Controller():
         self.fpga.send_request(rqst, chan)
 
     '''
-    Read data from fpga and update model
+    Read single word data logs for all active channels and block data log for
+    tab focused channel
     '''
     def read_fpga_data(self):
-        self.read_data_log_single()
+        for chan, chan_en in enumerate(self.model.chan_en):
+            if chan_en:
+                print "Reading from active chan: " + str(chan)
+                self.read_data_log_single(chan)
         self.read_data_log_block()
 
     '''
-    Read single word logged data from fpga and store in model
+    Read single word logged data for specified channel
     '''
-    def read_data_log_single(self):
-        for chan in range(self.params.n_pid_chan):
-            data_log_owep = self.params.data_log0_owep + chan
-            data = self.fpga.get_wire_out_value(data_log_owep)
-            data = self.uint16_to_int32(data)
-            data = self.model.denormalize_input(chan, data)
-            self.model.update_data_log_single(chan, time.time(), data)
+    def read_data_log_single(self, chan):
+        data_log_owep = self.params.data_log0_owep + chan
+        data = self.fpga.get_wire_out_value(data_log_owep)
+        print "Wire-out data: " + str(data)
+        data = self.uint16_to_int32(data)
+        data = self.model.denormalize_input(chan, data)
+        self.model.update_data_log_single(chan, time.time(), data)
 
     '''
-    Read block logged data from fpga and store in model
+    Read block logged data for tab focused channel and store in model
     '''
     def read_data_log_block(self):
         buf = bytearray(self.params.pipe_depth * 2)
@@ -220,6 +224,7 @@ class Controller():
         data = struct.unpack(fmt_str, buf)
 
         chan = self.model.pipe_chan
+        print "Focused chan = " + str(chan)
         data = [self.model.denormalize_input(chan, word) for word in data]
         self.model.update_data_log_block(chan, data)
 
@@ -396,7 +401,7 @@ class WorkerThread(QThread):
 
             self.controller.read_fpga_data()
             self.emit(SIGNAL('new_plot_data()')) # signal gui that new data is available to be plotted
-            time.sleep(self.controller.polling_period) # sleep for a period of time
+            time.sleep(self.controller.sample_period) # sleep for a period of time
 
     def shutDown(self):
         self.exiting = True

@@ -59,21 +59,15 @@ module pid_controller (
 
 `include "ep_map.vh"
 `include "parameters.vh"
-`include "functions.vh"
-
-//--------------------------------------------------------------------
-// Constants
-//--------------------------------------------------------------------
-localparam W_PID_CHAN = log2(N_PID_CHAN);
 
 //--------------------------------------------------------------------
 // Frontpanel Interface
 //--------------------------------------------------------------------
 wire sys_rst;
 wire adc_cstart;
-wire dv_log;
-wire [W_PID_CHAN-1:0] chan_log;
-wire [W_ADC_DATA-1:0] data_log;
+wire log_dv;
+wire [W_PID_CHAN-1:0] log_chan;
+wire [W_ADC_DATA-1:0] log_data;
 wire wr_en;
 wire dac_rset;
 wire [W_WR_ADDR-1:0] wr_addr;
@@ -91,9 +85,9 @@ frontpanel_interface #(
 fp_intf (
     .adc_clk_in     (adc_clk_in),
     .sys_clk_in     (sys_clk_in),
-    .dv_log_in      (dv_log),
-    .chan_log_in    (chan_log),
-    .data_log_in    (data_log),
+    .log_dv_in      (log_dv),
+    .log_chan_in    (log_chan),
+    .log_data_in    (log_data),
     .sys_rst_out    (sys_rst),
     .adc_cstart_out (adc_cstart),
     .wr_en_out      (wr_en),
@@ -206,9 +200,9 @@ pid_pipe (
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
-    .dv_ovr         (dv_log),
-    .chan_ovr       (chan_log),
-    .data_ovr       (data_log),
+    .ovr_dv         (log_dv),
+    .ovr_chan       (log_chan),
+    .ovr_data       (log_data),
     .dv_out         (pid_dv),
     .chan_out       (pid_chan),
     .data_out       (pid_data)

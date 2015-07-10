@@ -89,17 +89,17 @@ NET "dac_din_out" OFFSET = OUT 4 ns AFTER "sys_clk_in" RISING;
 
 # DDS CONTROL #########################################################
 # maps DDS[0] and (optionally) DDS[1] to breakout board OUT1
-NET "dds_io_update_out[0]"	LOC="A13"	| IOSTANDARD=LVCMOS33;
-NET "dds_sdio_out[0]"		LOC="C15"	| IOSTANDARD=LVCMOS33;
-NET "dds_csb_out[0]"			LOC="A15"	| IOSTANDARD=LVCMOS33;
-NET "dds_reset_out[0]"		LOC="C17"	| IOSTANDARD=LVCMOS33;
-NET "dds_sclk_out[0]"		LOC="A17"	| IOSTANDARD=LVCMOS33;
+#NET "dds_io_update_out[0]"	LOC="A13"	| IOSTANDARD=LVCMOS33;
+#NET "dds_sdio_out[0]"		LOC="C15"	| IOSTANDARD=LVCMOS33;
+#NET "dds_csb_out[0]"			LOC="A15"	| IOSTANDARD=LVCMOS33;
+#NET "dds_reset_out[0]"		LOC="C17"	| IOSTANDARD=LVCMOS33;
+#NET "dds_sclk_out[0]"		LOC="A17"	| IOSTANDARD=LVCMOS33;
 #NET "dds_csb_out[1]"			LOC="A18"	| IOSTANDARD=LVCMOS33;
 #NET "dds_sdio_out[1]"		LOC="C11"	| IOSTANDARD=LVCMOS33;
 #NET "dds_io_update_out[1]" LOC="A11"	| IOSTANDARD=LVCMOS33;
 
 # specify dds max clock-to-output delays
-NET "dds_sdio_out[0]" OFFSET = OUT 8 ns AFTER "sys_clk_in" FALLING;
+#NET "dds_sdio_out[0]" OFFSET = OUT 8 ns AFTER "sys_clk_in" FALLING;
 #NET "dds_sdio_out[1]" OFFSET = OUT 8 ns AFTER "sys_clk_in" FALLING;
 
 ## ADC ################################################################
