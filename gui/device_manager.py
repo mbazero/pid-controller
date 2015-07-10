@@ -103,6 +103,12 @@ class DeviceManager:
         self.activate_trigger_in(self.params.sys_gp_itep, offset)
 
     '''
+    Update wire outs
+    '''
+    def update_wire_outs(self):
+        self.xem.UpdateWireOuts();
+
+    '''
     Return wire out value at specified endpoint
     '''
     def get_wire_out_value(self, ep):

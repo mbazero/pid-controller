@@ -70,7 +70,7 @@ NET "adc_clk_in"        LOC="Y11"   | IOSTANDARD="LVCMOS33";
 NET "sys_clk_in"        TNM_NET = "sys_clk_in";
 NET "adc_clk_in"        TNM_NET = "adc_clk_in";
 
-TIMESPEC "TS_clk50" = PERIOD "sys_clk_in" 33.33 ns HIGH 50%;
+TIMESPEC "TS_clk50" = PERIOD "sys_clk_in" 20 ns HIGH 50%;
 TIMESPEC "TS_clk17" = PERIOD "adc_clk_in" 60 ns HIGH 50%;
 
 ############################################################################
@@ -85,7 +85,7 @@ NET "dac_sclk_out"      LOC="B18"   | IOSTANDARD=LVCMOS33;
 NET "dac_din_out"       LOC="A16"   | IOSTANDARD=LVCMOS33;
 
 # specify dac max clock-to-output delay
-NET "dac_din_out" OFFSET = OUT 4 ns AFTER "sys_clk_in" RISING;
+NET "dac_din_out" OFFSET = OUT 6 ns AFTER "sys_clk_in" RISING;
 
 # DDS CONTROL #########################################################
 # maps DDS[0] and (optionally) DDS[1] to breakout board OUT1

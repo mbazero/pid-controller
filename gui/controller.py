@@ -195,9 +195,9 @@ class Controller():
     tab focused channel
     '''
     def read_fpga_data(self):
+        self.fpga.update_wire_outs()
         for chan, chan_en in enumerate(self.model.chan_en):
             if chan_en:
-                print "Reading from active chan: " + str(chan)
                 self.read_data_log_single(chan)
         self.read_data_log_block()
 
@@ -206,9 +206,7 @@ class Controller():
     '''
     def read_data_log_single(self, chan):
         data_log_owep = self.params.data_log0_owep + chan
-        print "Wire-out ep: " + str(data_log_owep)
         data = self.fpga.get_wire_out_value(data_log_owep)
-        print "Wire-out data: " + str(data)
         data = self.uint16_to_int32(data)
         data = self.model.denormalize_input(chan, data)
         self.model.update_data_log_single(chan, time.time(), data)

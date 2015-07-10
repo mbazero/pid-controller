@@ -109,7 +109,7 @@ end
 wire buf_dv;
 wire [W_SRC-1:0] buf_src;
 wire [W_DATA-1:0] buf_data;
-reg buf_rd_en;
+wire buf_rd_en;
 
 fifo_21 input_buffer (
    .clk     (clk_in),
@@ -124,58 +124,64 @@ fifo_21 input_buffer (
    );
 
 //--------------------------------------------------------------------
-// Dispatcher
+// Channel Decoder
 //--------------------------------------------------------------------
-reg dspch_dv;
-reg [W_CHAN:0] dspch_chan;
-reg [N_CHAN-1:0] instr_sent;
-reg [W_CHAN-1:0] icount;
+reg [W_CHAN:0] dec_chan = 0;
+reg [N_CHAN-1:0] instr_sent = 0;
+reg [W_CHAN-1:0] icount = 0;
 
 // Mask source channel map with complement of instruction sent
 // register to get a map of remaining instructions to send
 wire [N_CHAN-1:0] instr_to_send = src_chan_map[buf_src] & ~instr_sent;
 
-// Dispatch instructions if source has valid channel mappings and if
-// the mapped channels are active. A new instruction is dispatched
-// every clock cycle for each valid channel mapping. Lower numbered
-// channels are given dispatch priority. Buffer read enable is asserted
-// when there is one instruction left to send, so new data is available
-// on the next clock cycle.
-always @( posedge clk_in ) begin
-    dspch_chan = NULL_CHAN;
+// Decode channel from source. Lower numbered channels get priority
+// if a source has multiple mappings.
+always @( * ) begin
+    dec_chan = NULL_CHAN;
     icount = 0;
 
-    if ( rst_in | ~buf_dv ) begin
-        dspch_dv = 0;
-        instr_sent = 0;
-        buf_rd_en = 0;
-
-    end else if ( |instr_to_send ) begin
-        // Decode channel number
-        for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
-            if ( instr_to_send[i] ) begin
-                icount = icount + 1;
-                dspch_chan = i;
-            end
+    for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
+        if ( instr_to_send[i] ) begin
+            icount = icount + 1;
+            dec_chan = i[W_CHAN-1:0];
         end
-
-        // Dispatch instruction
-        dspch_dv = chan_en_mem[dspch_chan];
-        instr_sent[dspch_chan] = 1;
-        buf_rd_en = ( icount == 1 ) ? 1'b1 : 1'b0;
-
-    end else begin
-        dspch_dv = 0;
-        instr_sent = 0;
-        buf_rd_en = 1;
     end
 end
+
+//--------------------------------------------------------------------
+// Dispatcher
+//--------------------------------------------------------------------
+reg dspch_dv = 0;
+reg [W_CHAN-1:0] dspch_chan = 0;
+reg [W_DATA-1:0] dspch_data = 0;
+
+// Dispatch instructions if source has valid channel mappings and if
+// the mapped channels are active. A new instruction is dispatched
+// every clock cycle for each valid channel mapping.
+always @( posedge clk_in ) begin
+    if ( rst_in || !buf_dv || icount == 0 ) begin
+        dspch_dv = 0;
+        instr_sent = 0;
+
+    end else begin
+        dspch_dv = chan_en_mem[dspch_chan];
+        dspch_chan = dec_chan[W_CHAN-1:0];
+        dspch_data = buf_data;
+        instr_sent[dspch_chan] = 1;
+    end
+end
+
+// Request new data from the buffer when there is one or zero
+// instructions left to send for the active source. Read requesting
+// when there is one instruction left allows independent instructions
+// to be dispatched every clock cycle.
+assign buf_rd_en = ( !rst_in && buf_dv && icount <= 1 );
 
 //--------------------------------------------------------------------
 // Output Assignment
 //--------------------------------------------------------------------
 assign dv_out = dspch_dv;
-assign chan_out = dspch_chan[W_CHAN-1:0];
-assign data_out = buf_data;
+assign chan_out = dspch_chan;
+assign data_out = dspch_data;
 
 endmodule
