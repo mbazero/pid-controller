@@ -54,7 +54,15 @@ module pid_controller (
 
     output wire                 i2c_sda,
     output wire                 i2c_scl,
-    output wire                 hi_muxsel
+    output wire                 hi_muxsel,
+
+    // Debug
+    output wire idp_dv,
+    output wire ovrf_dv,
+    output wire pidf_dv,
+    output wire optf_dv,
+    output wire [1:0] idp_src,
+    output wire [1:0] idp_chan
     );
 
 `include "ep_map.vh"
@@ -205,7 +213,14 @@ pid_pipe (
     .ovr_data       (log_data),
     .dv_out         (pid_dv),
     .chan_out       (pid_chan),
-    .data_out       (pid_data)
+    .data_out       (pid_data),
+    // DEBUG
+    .idp_dv_db (idp_dv),
+    .ovr_dv_db (ovrf_dv),
+    .pid_dv_db (pidf_dv),
+    .opt_dv_db (optf_dv),
+    .idp_src_db (idp_src),
+    .idp_chan_db (idp_chan)
 );
 
 //--------------------------------------------------------------------

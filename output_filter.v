@@ -47,7 +47,7 @@ localparam W_DMTRS = W_DELTA + W_MULT;
 localparam W_DSUM = W_DMTRS + 1;
 localparam W_DOUT_UC = ((W_DSUM > W_DOUT) ? W_DSUM : W_DOUT) + 1;
 
-localparam [W_CHAN:0] NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
+localparam [W_CHAN:0] NULL_CHAN = {W_CHAN+1{1'b1}};
 
 //--------------------------------------------------------------------
 // Request Registers
@@ -159,6 +159,7 @@ always @( * ) begin
     inj_in = ( !dv_in && |inj_rqst );
 
     // Decode injection channel preferencing low to high
+    inj_chan_in = NULL_CHAN;
     for ( i = N_CHAN - 1; i >= 0; i = i - 1 ) begin
         if ( inj_rqst[i] ) begin
             inj_chan_in = i[W_CHAN-1:0];

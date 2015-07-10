@@ -47,8 +47,8 @@ module instr_dispatch #(
 //--------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------
-localparam [W_SRC:0] NULL_SRC = {1'b1, {W_SRC{1'b0}}};
-localparam [W_CHAN:0] NULL_CHAN = {1'b1, {W_CHAN{1'b0}}};
+localparam [W_SRC:0] NULL_SRC = {W_SRC+1{1'b1}};
+localparam [W_CHAN:0] NULL_CHAN = {W_CHAN+1{1'b1}};
 
 //--------------------------------------------------------------------
 // External Memory

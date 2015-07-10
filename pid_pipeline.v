@@ -40,14 +40,22 @@ module pid_pipeline #(
 
     output wire dv_out,
     output wire [W_CHAN-1:0] chan_out,
-    output wire signed [W_DOUT-1:0] data_out
+    output wire signed [W_DOUT-1:0] data_out,
+
+    // Debug
+    output wire idp_dv_db,
+    output wire ovr_dv_db,
+    output wire pid_dv_db,
+    output wire opt_dv_db,
+    output wire [1:0] idp_src_db,
+    output wire [1:0] idp_chan_db
     );
 
 //--------------------------------------------------------------------
 // Instruction Dispatch
 //--------------------------------------------------------------------
 wire idp_dv;
-wire [W_CHAN-1:0] ipd_chan;
+wire [W_CHAN-1:0] idp_chan;
 wire [W_DIN-1:0] idp_data;
 
 instr_dispatch #(
@@ -70,7 +78,7 @@ idp (
     .wr_chan        (wr_chan),
     .wr_data        (wr_data),
     .dv_out         (idp_dv),
-    .chan_out       (ipd_chan),
+    .chan_out       (idp_chan),
     .data_out       (idp_data)
 );
 
@@ -90,7 +98,7 @@ ovr (
     .clk_in         (clk_in),
     .rst_in         (rst_in),
     .dv_in          (idp_dv),
-    .chan_in        (ipd_chan),
+    .chan_in        (idp_chan),
     .data_in        (idp_data),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
@@ -168,5 +176,14 @@ opt (
 assign dv_out = opt_dv;
 assign chan_out = opt_chan;
 assign data_out = opt_data;
+
+// Debug
+assign idp_dv_db = idp_dv;
+assign ovr_dv_db = ovr_dv;
+assign pid_dv_db = pid_dv;
+assign opt_dv_db = opt_dv;
+assign idp_src_db = src_in[1:0];
+assign idp_chan_db = idp_chan[1:0];
+
 
 endmodule

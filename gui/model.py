@@ -74,28 +74,26 @@ class Model:
     Initialize input and output parameters
     '''
     def init_io_params(self, params):
-        # Initialize input params
         self.adc_units = 'V'
         self.adc_range_units = [-5, 5]
-        self.adc_range_norm = self.range_from_bitwidth(params.w_adc_data, 'signed')
+        self.adc_range_norm = self.range_from_bitwidth(params.w_ep, 'signed')
         self.adc_cycle_t = 85; # TODO needs dynamic assignment
 
-        # Initialize output params
         self.dac_units = 'V'
         self.dac_range_units = [0, 5]
-        self.dac_range_norm = self.range_from_bitwidth(params.w_dac_data, 'unsigned')
+        self.dac_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
 
         self.freq_units = 'MHz'
         self.freq_range_units = [0, 1000]
-        self.freq_range_norm = self.range_from_bitwidth(params.w_freq_data, 'unsigned')
+        self.freq_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
 
         self.phase_units = '?'
         self.phase_range_units = [0, 100]
-        self.phase_range_norm = self.range_from_bitwidth(params.w_phase_data, 'unsigned')
+        self.phase_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
 
         self.amp_units = '?'
         self.amp_range_units = [0, 100]
-        self.amp_range_norm = self.range_from_bitwidth(params.w_amp_data, 'unsigned')
+        self.amp_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
 
     '''
     Initialize data logging arrays
@@ -229,7 +227,7 @@ class Model:
     Return input range with units and normalized input range for
     specified channel
     '''
-    def input_ranges(self, chan):
+    def get_input_ranges(self, chan):
         input_string = self.input_to_string(chan)
 
         if 'ADC' in input_string:
@@ -242,7 +240,7 @@ class Model:
     Return output range with units and normalized output range for
     specified channel
     '''
-    def output_ranges(self, chan):
+    def get_output_ranges(self, chan):
         output_string = self.output_to_string(chan)
 
         if 'DAC' in output_string:
@@ -265,7 +263,7 @@ class Model:
     integer range
     '''
     def normalize_input(self, chan, value):
-        [range_units, range_norm] = self.input_ranges(chan)
+        [range_units, range_norm] = self.get_input_ranges(chan)
         return self.map_value(value, range_units, range_norm)
 
     '''
@@ -273,7 +271,7 @@ class Model:
     with units
     '''
     def denormalize_input(self, chan, value):
-        [range_units, range_norm] = self.input_ranges(chan)
+        [range_units, range_norm] = self.get_input_ranges(chan)
         return self.map_value(value, range_norm, range_units)
 
     '''
@@ -281,7 +279,7 @@ class Model:
     integer range
     '''
     def normalize_output(self, chan, value):
-        [range_units, range_norm] = self.output_ranges(chan)
+        [range_units, range_norm] = self.get_output_ranges(chan)
         return self.map_value(value, range_units, range_norm)
 
     '''
@@ -289,16 +287,16 @@ class Model:
     with units
     '''
     def denormalize_output(self, chan, value):
-        [range_units, range_norm] = self.output_ranges(chan)
+        [range_units, range_norm] = self.get_output_ranges(chan)
         return self.map_value(value, range_norm, range_units)
 
     '''
     Helper function to map value from one range to another
     '''
-    def map_value(self, value, cur_range, norm_range):
+    def map_value(self, value, cur_range, new_range):
         rel_value = value - cur_range[0]
-        slope = float(norm_range[1] - norm_range[0]) / float(cur_range[1] - cur_range[0])
-        return slope * rel_value + norm_range[0]
+        slope = float(new_range[1] - new_range[0]) / float(cur_range[1] - cur_range[0])
+        return slope * rel_value + new_range[0]
 
     '''
     Helper function to return the integer range for a bit precision. The

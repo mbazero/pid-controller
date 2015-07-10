@@ -206,6 +206,7 @@ class Controller():
     '''
     def read_data_log_single(self, chan):
         data_log_owep = self.params.data_log0_owep + chan
+        print "Wire-out ep: " + str(data_log_owep)
         data = self.fpga.get_wire_out_value(data_log_owep)
         print "Wire-out data: " + str(data)
         data = self.uint16_to_int32(data)
@@ -224,7 +225,6 @@ class Controller():
         data = struct.unpack(fmt_str, buf)
 
         chan = self.model.pipe_chan
-        print "Focused chan = " + str(chan)
         data = [self.model.denormalize_input(chan, word) for word in data]
         self.model.update_data_log_block(chan, data)
 

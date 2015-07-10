@@ -152,7 +152,7 @@ okWireIn data0_owi (
 //--------------------------------------------------------------------
 // Data Logging Wire-or
 //--------------------------------------------------------------------
-wire [17*(N_LOG+1)-1:0] ok2x;
+wire [(N_LOG+1)*17-1:0] ok2x;
 
 okWireOR #(
     .N                  (N_LOG+1))
@@ -174,7 +174,7 @@ always @( posedge sys_clk_in ) begin
             data_log_reg[i] <= 0;
         end
     end else if ( log_dv_in ) begin
-        data_log_reg[log_chan_in] <= 30000;
+        data_log_reg[log_chan_in] <= log_data_in;
     end
 end
 
@@ -196,13 +196,13 @@ endgenerate
 //--------------------------------------------------------------------
 reg [W_LCHAN-1:0] pipe_chan;
 wire [W_EP-1:0] log_pipe_data;
-wire log_pipe_dv = ( log_chan_in == pipe_chan ) ? log_dv_in : 0;
+wire log_pipe_dv = ( log_chan_in == pipe_chan ) ? log_dv_in : 1'b0;
 wire log_pipe_rd;
 
 // Pipe channel write handling
 always @( posedge sys_clk_in ) begin
     if ( wr_en_out && ( wr_addr_out == pipe_chan_addr )) begin
-        pipe_chan <= wr_chan_out;
+        pipe_chan <= wr_chan_out[W_LCHAN-1:0];
     end
 end
 
@@ -219,11 +219,11 @@ pipe_tx_fifo log_pipe_fifo (
 
 // Pipe-out
 okPipeOut log_pipe (
-    .ok1                (ok1),
-    .ok2                (ok2x[N_LOG*17 +: 17]),
-    .ep_addr            (data_log_opep),
+    .ok1            (ok1),
+    .ok2            (ok2x[N_LOG*17 +: 17]),
+    .ep_addr        (data_log_opep),
     .ep_datain      (log_pipe_data),
-    .ep_read            (log_pipe_rd)
+    .ep_read        (log_pipe_rd)
     );
 
 endmodule
