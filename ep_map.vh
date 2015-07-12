@@ -43,18 +43,17 @@ localparam opt_mult_addr         = 16'h0d;
 localparam opt_rs_addr           = 16'h0e;
 localparam opt_add_chan_addr     = 16'h0f;
 
-localparam pipe_chan_addr        = 16'h10;
-
 //////////////////////////////////////////
 // request register addresses
 // - request registers are unique in that
 //   they will clear themselves after the
 //   request has been executed
 //////////////////////////////////////////
-localparam ovr_clr_rqst          = 16'h11;
-localparam pid_clr_rqst          = 16'h12;
-localparam opt_clr_rqst          = 16'h13;
-localparam opt_inj_rqst          = 16'h14;
+localparam ovr_clr_rqst          = 16'h10;
+localparam pid_clr_rqst          = 16'h11;
+localparam opt_clr_rqst          = 16'h12;
+localparam opt_inj_rqst          = 16'h13;
+localparam pipe_cset_rqst        = 16'h14;
 
 //////////////////////////////////////////
 // trigger-in endpoints

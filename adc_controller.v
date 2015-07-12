@@ -61,8 +61,11 @@ localparam	RD_ST_IDLE		= 3'd0,								// wait for busy signal to begin read
 // internal structures
 //////////////////////////////////////////
 
-/* data valid vectors */
+/* data valid vector */
 wire	[N_CHAN/2-1:0]		dv_vect;
+
+/* adc cstart register */
+reg cstart_reg;
 
 /* state registers */
 reg	[7:0] 				cv_counter = 0; 						// convert state machine counter
@@ -95,6 +98,11 @@ endgenerate
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
+
+/* adc cstart register */
+always @( posedge cstart_in ) begin
+    cstart_reg = !reset_in;
+end
 
 /* serial read shift register */
 always @( posedge clk_in ) begin
@@ -181,7 +189,7 @@ always @( * ) begin
 	cv_next_state <= cv_cur_state; // default assignment if no case and condition is satisfied
 	case ( cv_cur_state )
 		CV_ST_IDLE: begin
-			if ( cstart_in == 1 )
+			if ( cstart_reg == 1 )
 				cv_next_state <= CV_ST_CONVST;
 		end
 		CV_ST_CONVST: begin

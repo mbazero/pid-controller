@@ -94,7 +94,7 @@ assign dac_rset_out = gp_trig[dac_rset_offset];
 okTriggerIn sys_gp_oti (
     .ok1            (ok1),
     .ep_addr        (sys_gp_itep),
-    .ep_clk         (adc_clk_in),
+    .ep_clk         (sys_clk_in),
     .ep_trigger     (gp_trig)
     );
 
@@ -201,7 +201,7 @@ wire log_pipe_rd;
 
 // Pipe channel write handling
 always @( posedge sys_clk_in ) begin
-    if ( wr_en_out && ( wr_addr_out == pipe_chan_addr )) begin
+    if ( wr_en_out && ( wr_addr_out == pipe_cset_rqst )) begin
         pipe_chan <= wr_chan_out[W_LCHAN-1:0];
     end
 end

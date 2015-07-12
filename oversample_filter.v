@@ -37,7 +37,7 @@ module oversample_filter #(
     );
 
 `include "ep_map.vh"
-`include "functions.vh"
+`include "init.vh"
 
 //--------------------------------------------------------------------
 // Constants
@@ -79,7 +79,7 @@ reg [W_OS-1:0] os_mem[0:N_CHAN-1];
 // Initialization
 initial begin
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        os_mem[i] = 0;
+        os_mem[i] = OVR_OS_INIT;
     end
 end
 

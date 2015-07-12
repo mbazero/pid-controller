@@ -61,6 +61,12 @@ class View(QWidget):
     def update_graph(self, chan, data_x, data_y):
         self.chan_views[chan].update_graph(data_x, data_y)
 
+    def get_open_file(self, title):
+        return QFileDialog.getOpenFileName(self, title, '', '*.pid')
+
+    def get_save_file(self, title):
+        return QFileDialog.getSaveFileName(self, title, '', '*.pid')
+
     def closeEvent(self, event):
         QWidget.closeEvent(self, event)
 
@@ -90,7 +96,7 @@ class GlobalParamsView(QGroupBox):
                                 '64']
         self.adc_os = QComboBox(self)
         self.adc_os.addItems(self.adc_os_ops)
-        self.form_layout.addRow('ADC Oversample Ratio:', self.adc_os)
+        self.form_layout.addRow('ADC oversample', self.adc_os)
 
         #################### sample period #######################
         self.sample_period = QLineEdit(self)
@@ -99,13 +105,13 @@ class GlobalParamsView(QGroupBox):
         spv = QDoubleValidator(0.0, 10.0, 3)
         self.sample_period.setValidator(spv)
 
-        self.form_layout.addRow('Sampling period (s): ', self.sample_period)
+        self.form_layout.addRow('Sampling period (s)', self.sample_period)
 
         # add form layout to main layout
         self.layout.addLayout(self.form_layout)
 
         #################### block_transfer #######################
-        self.block_transfer = QPushButton('Block Transfer Mode', self)
+        self.block_transfer = QPushButton('Block logging', self)
         self.block_transfer.setCheckable(True)
         self.layout.addWidget(self.block_transfer)
 
@@ -129,15 +135,14 @@ class GlobalParamsView(QGroupBox):
         self.layout.addLayout(self.dds_status_layout)
         self.layout.addStretch(1)
 
-        #################### adc_cstart #######################
-        self.adc_cstart = QPushButton('Start ADC', self)
-        self.adc_cstart.setCheckable(True)
-        self.layout.addWidget(self.adc_cstart)
+        #################### save_config #######################
+        self.save_config = QPushButton('Save Config', self)
+        self.layout.addWidget(self.save_config)
 
-        #################### dac_ref_set #######################
-        self.dac_ref_set = QPushButton('Set DAC Reference', self)
-        # self.dac_ref_set.setStyleSheet('background-color: red')
-        self.layout.addWidget(self.dac_ref_set)
+        #################### load_config #######################
+        self.load_config = QPushButton('Load Config', self)
+        # self.load_config.setStyleSheet('background-color: red')
+        self.layout.addWidget(self.load_config)
 
         #################### sys_reset #######################
         self.sys_reset = QPushButton('System Reset', self)
@@ -153,7 +158,8 @@ class ChannelView(QWidget):
         self.chan_no = chan_no
 
         # initialize channel control components
-        self.input_view = InputView()
+        self.mode_view = ModeView()
+        self.error_view = ErrorView()
         self.pid_view = PIDView()
         self.proc_view = ProcessingView()
         self.output_view = OutputView()
@@ -166,7 +172,8 @@ class ChannelView(QWidget):
 
         # create HBox layout; add channel control components
         self.cc_layout = QHBoxLayout()
-        self.cc_layout.addWidget(self.input_view)
+        self.cc_layout.addWidget(self.mode_view)
+        self.cc_layout.addWidget(self.error_view)
         self.cc_layout.addWidget(self.pid_view)
         self.cc_layout.addWidget(self.proc_view)
         self.cc_layout.addWidget(self.output_view)
@@ -204,16 +211,24 @@ class ChannelView(QWidget):
     def update_graph(self, data_x, data_y):
         self.plotItem.clear()
         self.plotItem.plot(data_x, data_y)
-        self.std_dev.setText(str(np.std(data_y)))
-        self.mean.setText(str(np.mean(data_y)))
+
+        if data_x and data_y:
+            std_dev = np.std(data_y)
+            mean = np.mean(data_y)
+        else:
+            std_dev = 0
+            mean = 0
+
+        self.std_dev.setText(str(std_dev))
+        self.mean.setText(str(mean))
 
 # Source params widget
-class InputView(QGroupBox):
+class ModeView(QGroupBox):
 
     def __init__(self):
         # initialize widget
         QGroupBox.__init__(self)
-        self.setTitle('Input')
+        self.setTitle('Channel')
 
         # create widget layout
         self.layout = QVBoxLayout()
@@ -221,22 +236,17 @@ class InputView(QGroupBox):
         # create form layout
         self.form_layout = QFormLayout()
 
+        #################### chan_mode #######################
+        self.chan_mode = QComboBox(self)
+        self.chan_mode.addItems(['PID lock', 'Constant drive'])
+        self.form_layout.addRow('Mode', self.chan_mode)
+
         #################### chan_src_sel #######################
         # create and fill source channel combo box
         self.chan_src_sel = QComboBox(self)
 
         # add source combo box to form with label
-        self.form_layout.addRow('Input Channel: ', self.chan_src_sel)
-
-        #################### ovr_os #######################
-        self.ovr_os_ops = ['Off'] + [str(2**x) for x in range(1, 10)]
-
-        # create and fill oversampling combo box
-        self.ovr_os = QComboBox(self)
-        self.ovr_os.addItems(self.ovr_os_ops)
-
-        # add oversampling combo box to form with label
-        self.form_layout.addRow('Oversample Ratio: ', self.ovr_os)
+        self.form_layout.addRow('Input', self.chan_src_sel)
         self.layout.addLayout(self.form_layout)
 
         #################### chan_en #######################
@@ -251,6 +261,46 @@ class InputView(QGroupBox):
         # set vbox as widget's main layout
         self.setLayout(self.layout)
 
+# Error params
+class ErrorView(QGroupBox):
+
+    def __init__(self):
+        # initialize widget
+        QGroupBox.__init__(self)
+        self.setTitle('Error Signal')
+
+        # create widget layout
+        self.layout = QVBoxLayout()
+        self.form_layout = QFormLayout()
+
+        #################### ovr_os #######################
+        self.ovr_os_ops = ['Off'] + [str(2**x) for x in range(1, 10)]
+
+        # create and fill oversampling combo box
+        self.ovr_os = QComboBox(self)
+        self.ovr_os.addItems(self.ovr_os_ops)
+
+        # add oversampling combo box to form with label
+        self.form_layout.addRow('Oversample', self.ovr_os)
+        self.layout.addLayout(self.form_layout)
+
+        #################### pid_setpoint #######################
+        self.pid_setpoint = QLineEdit(self)
+
+        # create and add apply input validator
+        ps_validator = QDoubleValidator(-5.0, 5.0, 3)
+        self.pid_setpoint.setValidator(ps_validator)
+
+        self.pid_setpoint.setPlaceholderText('-5 to 5V')
+        self.form_layout.addRow('Setpoint', self.pid_setpoint)
+        self.layout.addLayout(self.form_layout)
+
+        #################### pid_inv_error #######################
+        self.pid_inv_error = QCheckBox('Invert Error', self)
+        self.layout.addWidget(self.pid_inv_error)
+
+        # set vbox as widget's main layout
+        self.setLayout(self.layout)
 
 class PIDView(QGroupBox):
 
@@ -262,47 +312,26 @@ class PIDView(QGroupBox):
         # create widget layout
         self.layout = QVBoxLayout()
 
-        # create form layout
+        # create form layouts
         self.form_layout = QFormLayout()
 
-        #################### pid_setpoint #######################
-        self.pid_setpoint = QLineEdit(self)
-
-        # create and add apply input validator
-        ps_validator = QDoubleValidator(-5.0, 5.0, 3)
-        self.pid_setpoint.setValidator(ps_validator)
-
-        self.pid_setpoint.setPlaceholderText('-5 to 5V')
-        self.form_layout.addRow('Setpoint:', self.pid_setpoint)
-
         #################### pid_p_coef #######################
-        self.pid_p_coef = QLineEdit(self)
-
-        # create and apply input validator
-        pcoef_validator = QIntValidator(0, 32768)
-        self.pid_p_coef.setValidator(pcoef_validator)
-
-        self.pid_p_coef.setPlaceholderText('0 to 32768')
-        self.form_layout.addRow('P Coef:', self.pid_p_coef)
+        self.pid_p_coef = QSpinBox(self)
+        self.pid_p_coef.setMinimumWidth(100)
+        self.form_layout.addRow('P coef', self.pid_p_coef)
+        self.pid_p_coef.setMaximum(1000)
 
         #################### pid_i_coef #######################
-        self.pid_i_coef = QLineEdit(self)
-
-        # apply input validator
-        self.pid_i_coef.setValidator(pcoef_validator)
-
-        self.pid_i_coef.setPlaceholderText('0 to 32768')
-        self.form_layout.addRow('I Coef:', self.pid_i_coef)
-
+        self.pid_i_coef = QSpinBox(self)
+        self.pid_i_coef.setMinimumWidth(100)
+        self.form_layout.addRow('I coef', self.pid_i_coef)
+        self.pid_i_coef.setMaximum(1000)
 
         #################### pid_d_coef #######################
-        self.pid_d_coef = QLineEdit(self)
-
-        # apply input validator
-        self.pid_d_coef.setValidator(pcoef_validator)
-
-        self.pid_d_coef.setPlaceholderText('0 to 32768')
-        self.form_layout.addRow('D Coef:', self.pid_d_coef)
+        self.pid_d_coef = QSpinBox(self)
+        self.pid_d_coef.setMinimumWidth(100)
+        self.pid_d_coef.setMaximum(1000)
+        self.form_layout.addRow('D coef', self.pid_d_coef)
 
         # add form layout to main layout
         self.layout.addLayout(self.form_layout)
@@ -328,31 +357,30 @@ class ProcessingView(QGroupBox):
         self.form_layout = QFormLayout()
 
         #################### opt_multiplier #######################
-        self.opt_mult = QLineEdit(self)
-
-        # create and apply input validator
-        mult_validator = QIntValidator(-2**9, 2**9 - 1)
-        self.opt_mult.setValidator(mult_validator)
-
-        self.opt_mult.setPlaceholderText(str(-2**9) + ' to ' + str(2**9 - 1))
-        self.form_layout.addRow('Multiplier:', self.opt_mult)
+        self.opt_mult = QSpinBox(self)
+        self.opt_mult.setMinimumWidth(100)
+        self.opt_mult.setMaximum(1000)
+        self.form_layout.addRow('Multiplier', self.opt_mult)
 
         #################### opt_rs #######################
-        self.opt_rs_wgt = QLineEdit(self)
+        self.opt_rs = QSpinBox(self)
+        self.opt_rs.setMinimumWidth(100)
+        self.opt_rs.setMaximum(1000)
+        self.form_layout.addRow('Right shift', self.opt_rs)
 
-        # create and apply input validator
-        rs_validator = QIntValidator(0, 2**16 - 1)
-        self.opt_rs_wgt.setValidator(rs_validator)
-
-        self.opt_rs_wgt.setPlaceholderText(str(0) + ' to ' + str(2**16 - 1))
-        self.form_layout.addRow('Right shift:', self.opt_rs_wgt)
+        #################### scale_factor #######################
+        self.scale_factor = QLineEdit(self)
+        self.scale_factor.setEnabled(False)
+        self.scale_factor.setStyleSheet("QLineEdit {background-color: tomato; }")
+        self.form_layout.addRow('Scale factor', self.scale_factor)
+        self.scale_factor.setEnabled(False)
 
         #################### opt_add_chan #######################
         # create and fill source channel combo box
         self.opt_add_chan = QComboBox(self)
 
         # add source combo box to form with label
-        self.form_layout.addRow('Add channel: ', self.opt_add_chan)
+        self.form_layout.addRow('Add channel ', self.opt_add_chan)
 
         # add form layout to main layout
         self.layout.addLayout(self.form_layout)
@@ -375,44 +403,43 @@ class OutputView(QGroupBox):
 
         #################### opt_init #######################
         self.opt_init = QLineEdit(self)
+        self.opt_init.setMinimumWidth(100)
 
         # create and apply input validator
         init_validator = QDoubleValidator(0.0, 5.0, 2)
         self.opt_init.setValidator(init_validator)
 
         self.opt_init.setPlaceholderText('0 to 5V')
-        self.form_layout.addRow('Initial:', self.opt_init)
+        self.form_layout.addRow('Initial', self.opt_init)
 
         #################### opt_max #######################
         self.opt_max = QLineEdit(self)
+        self.opt_max.setMinimumWidth(100)
 
         # create and apply input validator
         max_validator = QDoubleValidator(0.0, 5.0, 2)
         self.opt_max.setValidator(max_validator)
 
         self.opt_max.setPlaceholderText('0 to 5V')
-        self.form_layout.addRow('Max:', self.opt_max)
+        self.form_layout.addRow('Max', self.opt_max)
 
         #################### opt_min #######################
         self.opt_min = QLineEdit(self)
+        self.opt_min.setMinimumWidth(100)
 
         # create and apply input validator
         min_validator = QDoubleValidator(0.0, 5.0, 2)
         self.opt_min.setValidator(min_validator)
 
         self.opt_min.setPlaceholderText('0 to 5V')
-        self.form_layout.addRow('Min:', self.opt_min)
+        self.form_layout.addRow('Min', self.opt_min)
 
         # add form layout to main layout
         self.layout.addLayout(self.form_layout)
 
         #################### opt_inject #######################
-        self.opt_inject = QPushButton('Inject', self)
+        self.opt_inject = QPushButton('Write initial', self)
         self.layout.addWidget(self.opt_inject)
-
-        #################### opt_clear #######################
-        self.opt_clear = QPushButton('Clear', self)
-        self.layout.addWidget(self.opt_clear)
 
         # set the VBox as the main layout
         self.setLayout(self.layout)

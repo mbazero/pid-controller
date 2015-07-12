@@ -311,7 +311,7 @@ module pid_controller_tf;
 
         // Set focus
         chan_focus = dest[$unsigned($random) % NAC];
-        write_data(pipe_chan_addr, chan_focus, 1);
+        write_data(pipe_cset_rqst, chan_focus, 0);
 
         // Reset system
         ActivateTriggerIn(sys_gp_itep, sys_rst_offset);
@@ -323,14 +323,22 @@ module pid_controller_tf;
         write_data(adc_os_addr, 0, adc_os);
         ActivateTriggerIn(sys_gp_itep, adc_cstart_offset);
 
+        // Inject dac write instruction and verify
+        for (x = 0; x < NAC; x = x+1) begin
+            write_data(opt_inj_rqst, x, 0);
+            opt_rcv[x] = output_init[x];
+            check_dac_rcv(1);
+        end
+        $stop;
+
         #200;
 
         fork
             adc_transmit(REPS);
-            check_pid(REPS);
-            check_opp(REPS);
-            check_dac_rcv(REPS);
-            log_data(REPS);
+            check_pid(NAC * REPS);
+            check_opp(NAC * REPS);
+            check_dac_rcv(nac_of_type("DAC") * REPS);
+            log_data(REPS * NAC);
             check_data_log(REPS);
 
         join
@@ -443,7 +451,7 @@ module pid_controller_tf;
         input [31:0] reps;
 
         begin
-        for(pcx = 0; pcx < reps * NAC;) begin
+        for(pcx = 0; pcx < reps;) begin
             @(posedge sys_clk_in) begin
                 if (pid_controller_tf.uut.pid_pipe.pid_dv) begin
                     pc_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.pid_chan);
@@ -472,7 +480,7 @@ module pid_controller_tf;
     task check_opp;
         input [31:0] reps;
 
-        for(opx = 0; opx < reps * NAC;) begin
+        for(opx = 0; opx < reps;) begin
             @(posedge sys_clk_in) begin
                 if (pid_controller_tf.uut.pid_pipe.opt_dv) begin
                     oc_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.opt_chan);
@@ -513,7 +521,7 @@ module pid_controller_tf;
         begin
             n_active_dacs = nac_of_type("DAC");
 
-            repeat(reps * n_active_dacs) begin
+            repeat(reps) begin
                 // simulate dac receiving data
                 @(negedge dac_nsync_out) begin
                     repeat(32) begin
@@ -534,7 +542,7 @@ module pid_controller_tf;
     task log_data;
         input [31:0] reps;
 
-        for(ldx = 0; ldx < reps * NAC;) begin
+        for(ldx = 0; ldx < reps;) begin
             @(posedge sys_clk_in) begin
                 if(pid_controller_tf.uut.pid_pipe.ovr_dv) begin
                     // Log for wire outs

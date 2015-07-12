@@ -58,15 +58,19 @@ module pid_controller (
 
     // Debug
     output wire idp_dv,
-    output wire ovrf_dv,
+    output wire din_db,
     output wire pidf_dv,
     output wire optf_dv,
     output wire [1:0] idp_src,
     output wire [1:0] idp_chan
     );
 
+// Debug
+assign din_db = dac_din_out;
+
 `include "ep_map.vh"
 `include "parameters.vh"
+`include "init.vh"
 
 //--------------------------------------------------------------------
 // Frontpanel Interface
@@ -116,7 +120,7 @@ fp_intf (
 // ADC Input
 //--------------------------------------------------------------------
 wire adc_dv;
-reg [W_ADC_OS-1:0] adc_os = 1;
+reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
 wire [W_ADC_CHAN-1:0] adc_src_a;
 wire [W_ADC_CHAN-1:0] adc_src_b;
 wire [W_ADC_DATA-1:0] adc_data_a;
@@ -216,7 +220,6 @@ pid_pipe (
     .data_out       (pid_data),
     // DEBUG
     .idp_dv_db (idp_dv),
-    .ovr_dv_db (ovrf_dv),
     .pid_dv_db (pidf_dv),
     .opt_dv_db (optf_dv),
     .idp_src_db (idp_src),

@@ -36,6 +36,7 @@ module pid_filter #(
     );
 
 `include "ep_map.vh"
+`include "init.vh"
 
 //--------------------------------------------------------------------
 // Constants
@@ -84,11 +85,11 @@ reg [N_CHAN-1:0] inv_error_mem;
 // Initialize
 initial begin
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        setpoint_mem[i] = 0;
-        p_coef_mem[i] = 0;
-        i_coef_mem[i] = 0;
-        d_coef_mem[i] = 0;
-        inv_error_mem[i] = 0;
+        setpoint_mem[i] = PID_SETPOINT_INIT;
+        p_coef_mem[i] = PID_P_COEF_INIT;
+        i_coef_mem[i] = PID_I_COEF_INIT;
+        d_coef_mem[i] = PID_D_COEF_INIT;
+        inv_error_mem[i] = PID_INV_ERROR_INIT;
     end
 end
 

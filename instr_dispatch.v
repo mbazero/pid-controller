@@ -43,12 +43,7 @@ module instr_dispatch #(
     );
 
 `include "ep_map.vh"
-
-//--------------------------------------------------------------------
-// Constants
-//--------------------------------------------------------------------
-localparam [W_SRC:0] NULL_SRC = {W_SRC+1{1'b1}};
-localparam [W_CHAN:0] NULL_CHAN = {W_CHAN+1{1'b1}};
+`include "init.vh"
 
 //--------------------------------------------------------------------
 // External Memory
@@ -61,8 +56,8 @@ wire wr_chan_valid = ( wr_chan < N_CHAN );
 integer i;
 initial begin
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        chan_en_mem[i] = 0;
-        chan_src_sel_mem[i] = NULL_SRC;
+        chan_en_mem[i] = CHAN_EN_INIT;
+        chan_src_sel_mem[i] = CHAN_SRC_SEL_INIT;
     end
 end
 
@@ -80,7 +75,8 @@ end
 // Source Channel Map
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] src_chan_map[0:N_SRC-1];
-wire [W_SRC:0] wr_src_chan = wr_data[W_SRC:0];
+wire [W_SRC:0] old_src = chan_src_sel_mem[wr_chan];
+wire [W_SRC:0] new_src = wr_data[W_SRC:0];
 
 // Initialize
 initial begin
@@ -94,11 +90,11 @@ always @( posedge clk_in ) begin
     if ( wr_en && wr_chan_valid &&
         ( wr_addr == chan_src_sel_addr )) begin
         // Clear old mapping
-        src_chan_map[chan_src_sel_mem[wr_chan]][wr_src_chan] <= 0;
+        src_chan_map[old_src][wr_chan] <= 0;
 
         // Register new mapping if valid
-        if ( wr_src_chan < N_SRC ) begin
-            src_chan_map[wr_src_chan][wr_chan] <= 1;
+        if ( new_src < N_SRC ) begin
+            src_chan_map[new_src][wr_chan] <= 1;
         end
     end
 end

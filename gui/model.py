@@ -8,98 +8,72 @@ class Model:
 
         self.params = params
 
-        self.init_model_params(params);
-        self.init_param_map(params);
-        self.init_io_params(params);
-        self.init_data_logs(params);
-
-    '''
-    Initialize PID configuration parameters
-    '''
-    def init_model_params(self, params):
-        self.adc_os = 1;
-
-        self.chan_en = [0] * self.n_out
-        self.chan_src_sel = [params.null_src] * self.n_out
-
-        self.ovr_os = [0] * self.n_out
-
-        self.pid_setpoint = [0] * self.n_out
-        self.pid_p_coef = [0] * self.n_out
-        self.pid_i_coef = [0] * self.n_out
-        self.pid_d_coef = [0] * self.n_out
-        self.pid_inv_error = [0] * self.n_out
-
-        self.opt_min = [0] * self.n_out
-        self.opt_max = [0] * self.n_out
-        self.opt_init = [0] * self.n_out
-        self.opt_mult = [0] * self.n_out
-        self.opt_rs = [0] * self.n_out
-        self.opt_add_chan = [0] * self.n_out
-
-        self.pipe_chan = 0
+        self.init_param_map();
+        self.init_io_params();
+        self.init_data_logs();
 
     '''
     Map model parameters to HDL addresses. The mapping exactly mirrors the
     parameter mapping used in the HDL. The map indexes are identical and are
     parsed from the parameters.vh header file.
     '''
-    def init_param_map(self, params):
+    def init_param_map(self):
+        zeros = [0] * self.n_out;
+        params = self.params
         self.pmap = {
                 # ADC controller
-                params.adc_os_addr : self.adc_os,
+                params.adc_os_addr : params.adc_os_init,
                 # Instruction dispatch
-                params.chan_en_addr : self.chan_en,
-                params.chan_src_sel_addr : self.chan_src_sel,
+                params.chan_en_addr : [params.chan_en_init] * self.n_out,
+                params.chan_src_sel_addr : [params.chan_src_sel_init] * self.n_out,
                 # Oversample filter
-                params.ovr_os_addr : self.ovr_os,
+                params.ovr_os_addr : [params.ovr_os_init] * self.n_out,
                 # PID filter
-                params.pid_setpoint_addr : self.pid_setpoint,
-                params.pid_p_coef_addr : self.pid_p_coef,
-                params.pid_i_coef_addr : self.pid_i_coef,
-                params.pid_d_coef_addr : self.pid_d_coef,
-                params.pid_inv_error_addr : self.pid_inv_error,
+                params.pid_setpoint_addr : [params.pid_setpoint_init] * self.n_out,
+                params.pid_p_coef_addr : [params.pid_p_coef_init] * self.n_out,
+                params.pid_i_coef_addr : [params.pid_i_coef_init] * self.n_out,
+                params.pid_d_coef_addr : [params.pid_d_coef_init] * self.n_out,
+                params.pid_inv_error_addr : [params.pid_inv_error_init] * self.n_out,
                 # Output filter
-                params.opt_min_addr : self.opt_min,
-                params.opt_max_addr : self.opt_max,
-                params.opt_init_addr : self.opt_init,
-                params.opt_mult_addr : self.opt_mult,
-                params.opt_rs_addr : self.opt_rs,
-                params.opt_add_chan_addr : self.opt_add_chan,
-                # Data logging
-                params.pipe_chan_addr : self.pipe_chan,
+                params.opt_min_addr : [params.opt_min_init] * self.n_out,
+                params.opt_max_addr : [params.opt_max_init] * self.n_out,
+                params.opt_init_addr : [params.opt_init_init] * self.n_out,
+                params.opt_mult_addr : [params.opt_mult_init] * self.n_out,
+                params.opt_rs_addr : [params.opt_rs_init] * self.n_out,
+                params.opt_add_chan_addr : [params.opt_add_chan_init] * self.n_out
                 }
 
     '''
     Initialize input and output parameters
     '''
-    def init_io_params(self, params):
+    def init_io_params(self):
         self.adc_units = 'V'
         self.adc_range_units = [-5, 5]
-        self.adc_range_norm = self.range_from_bitwidth(params.w_ep, 'signed')
+        self.adc_range_norm = self.range_from_bitwidth(self.params.w_ep, 'signed')
         self.adc_cycle_t = 85; # TODO needs dynamic assignment
 
         self.dac_units = 'V'
         self.dac_range_units = [0, 5]
-        self.dac_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
+        self.dac_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
 
         self.freq_units = 'MHz'
         self.freq_range_units = [0, 1000]
-        self.freq_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
+        self.freq_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
 
         self.phase_units = '?'
         self.phase_range_units = [0, 100]
-        self.phase_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
+        self.phase_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
 
         self.amp_units = '?'
         self.amp_range_units = [0, 100]
-        self.amp_range_norm = self.range_from_bitwidth(params.w_ep, 'unsigned')
+        self.amp_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
 
     '''
     Initialize data logging arrays
     '''
-    def init_data_logs(self, params):
-        pipe_delta_t = (self.adc_os ** self.adc_cycle_t) * (10 ** -6) # seconds
+    def init_data_logs(self):
+        adc_os = self.get_param(self.params.adc_os_addr, 0)
+        pipe_delta_t = (adc_os ** self.adc_cycle_t) * (10 ** -6) # seconds
 
         self.data_log_single_x = [0] * self.n_out
         self.data_log_single_y = [0] * self.n_out
@@ -109,20 +83,49 @@ class Model:
         for chan in range(self.n_out):
             self.data_log_single_x[chan] = []
             self.data_log_single_y[chan] = []
-            self.data_log_block_x[chan] = [x * pipe_delta_t for x in range(params.pipe_depth)]
-            self.data_log_block_y[chan] = [0 for x in range(params.pipe_depth)]
+            self.data_log_block_x[chan] = [x * pipe_delta_t for x in range(self.params.pipe_depth)]
+            self.data_log_block_y[chan] = [0 for x in range(self.params.pipe_depth)]
 
     '''
-    Set parameter specified by address and channel The function has a twin
-    write_data() in the Opal Kelly controller class which writes data into the
-    parameter mapping on the FPGA. Boths functions have the same name and input
-    parameters.
+    Clear data logs for specified channel
+    '''
+    def clear_data_logs(self, chan):
+        self.data_log_single_x[chan] = []
+        self.data_log_single_y[chan] = []
+        self.data_log_block_y[chan] = [0 for x in range(self.params.pipe_depth)]
+
+    '''
+    Set parameter specified by address and channel. The function has a twin
+    function called write_data() in the Opal Kelly controller class which
+    writes data into the parameter mapping on the FPGA. Boths functions have
+    the same name and input parameters.
     '''
     def set_param(self, addr, chan, data):
         if isinstance(self.pmap[addr], list):
             self.pmap[addr][chan] = data
         else:
             self.pmap[addr] = data
+
+    '''
+    Set parameter map i.e. set all parameters at once
+    '''
+    def set_param_map(self, pmap):
+        self.pmap = pmap
+
+    '''
+    Return value of parameter specified by address and channel
+    '''
+    def get_param(self, addr, chan):
+        if isinstance(self.pmap[addr], list):
+            return self.pmap[addr][chan]
+        else:
+            return self.pmap[addr]
+
+    '''
+    Return parameter map
+    '''
+    def get_param_map(self):
+        return self.pmap
 
     '''
     Update single word data log for specified channel. Takes as input a single
@@ -152,10 +155,27 @@ class Model:
         return [self.data_log_block_x[chan], self.data_log_block_y[chan]]
 
     '''
+    Returns true if channel is enabled, false otherise
+    '''
+    def is_chan_enabled(self, chan):
+        return self.get_param(self.params.chan_en_addr, chan)
+
+    '''
+    Returns list of enabled channels
+    '''
+    def get_enabled_chans(self):
+        clist = []
+        for chan in range(self.n_out):
+            if self.get_param(self.params.chan_en_addr, chan):
+                clist.append(chan)
+
+        return clist
+
+    '''
     Return number of active channels
     '''
     def num_active_chans(self):
-        return sum(self.chan_en)
+        return sum(self.pmap[self.params.chan_en_addr])
 
     '''
     Return string representation for input channel number
@@ -264,7 +284,7 @@ class Model:
     '''
     def normalize_input(self, chan, value):
         [range_units, range_norm] = self.get_input_ranges(chan)
-        return self.map_value(value, range_units, range_norm)
+        return int(self.map_value(value, range_units, range_norm))
 
     '''
     Denormalize input value from unitless integer range to actual range
@@ -304,11 +324,11 @@ class Model:
     '''
     def range_from_bitwidth(self, precision, sign_type):
         if sign_type == 'signed':
-            low = -(2 ** (precision - 1))
             high = (2 ** (precision - 1)) - 1
+            low = -high
         elif sign_type == 'unsigned':
-            low = 0
             high = (2 ** precision) - 1
+            low = 0
 
         return [low, high]
 

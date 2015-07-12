@@ -39,6 +39,7 @@ module output_filter #(
     );
 
 `include "ep_map.vh"
+`include "init.vh"
 
 //--------------------------------------------------------------------
 // Constants
@@ -46,8 +47,6 @@ module output_filter #(
 localparam W_DMTRS = W_DELTA + W_MULT;
 localparam W_DSUM = W_DMTRS + 1;
 localparam W_DOUT_UC = ((W_DSUM > W_DOUT) ? W_DSUM : W_DOUT) + 1;
-
-localparam [W_CHAN:0] NULL_CHAN = {W_CHAN+1{1'b1}};
 
 //--------------------------------------------------------------------
 // Request Registers
@@ -63,7 +62,7 @@ always @( posedge clk_in ) begin
     // Handle writes
     if ( wr_en && wr_chan_valid &&
         ( wr_addr == opt_inj_rqst )) begin
-        inj_rqst[wr_chan] = wr_data[0];
+        inj_rqst[wr_chan] = 1;
     end
 
     // Zero after successful injection
@@ -99,22 +98,22 @@ end
 //--------------------------------------------------------------------
 // External Memory
 //--------------------------------------------------------------------
-reg [W_CHAN:0] add_chan_mem[0:N_CHAN-1];
-reg [W_RS-1:0] rs_mem[0:N_CHAN-1];
-reg signed [W_MULT-1:0] mult_mem[0:N_CHAN-1];
-reg signed [W_DOUT-1:0] max_mem[0:N_CHAN-1];
-reg signed [W_DOUT-1:0] min_mem[0:N_CHAN-1];
 reg signed [W_DOUT-1:0] init_mem[0:N_CHAN-1];
+reg signed [W_DOUT-1:0] min_mem[0:N_CHAN-1];
+reg signed [W_DOUT-1:0] max_mem[0:N_CHAN-1];
+reg signed [W_MULT-1:0] mult_mem[0:N_CHAN-1];
+reg [W_RS-1:0] rs_mem[0:N_CHAN-1];
+reg [W_CHAN:0] add_chan_mem[0:N_CHAN-1];
 
 // Initialize
 initial begin
     for ( i = 0; i < N_CHAN; i = i+1 ) begin
+        init_mem[i] = OPT_INIT_INIT;
+        min_mem[i] = OPT_MIN_INIT;
+        max_mem[i] = OPT_MAX_INIT;
+        mult_mem[i] = OPT_MULT_INIT;
+        rs_mem[i] = OPT_RS_INIT;
         add_chan_mem[i] = NULL_CHAN;
-        rs_mem[i] = 0;
-        mult_mem[i] = 0;
-        max_mem[i] = 0;
-        min_mem[i] = 0;
-        init_mem[i] = 0;
     end
 end
 
