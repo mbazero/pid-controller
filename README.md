@@ -28,7 +28,7 @@ controller configuration and monitoring.
 3. Select `Project -> Add Source` and:
   * Add all files in directory `pidc/`
   * Add all files in directory `pidc/ok_library`
-  * Add files `fifo_16.xco`, `fifo_19.xco` and `fifo_21.xco` from directory `pidc/ip_core`
+  * Add files `adc_fifo.xco`, `idp_fifo.xco` and `fifo_21.xco` from directory `pidc/ip_core`
 4. In the `Heirarchy` pane, right click `pid_controller.v` and click
    `Set as Top Module`
 
@@ -39,6 +39,12 @@ controller configuration and monitoring.
 3. Right click the name of the core you want to edit in the `Project IP`
    pane and click `Recustomize and Generate (Under Original Project
    Settings)`
+
+## Running the GUI
+The PC user interface requires Python 2.7, and the PyQt, PyQtGraph, and
+Numpy packages. The [Anaconda](http://continuum.io/downloads) Python
+distribution includes all of the required packages except PyQtGraph.
+PyQtGraph can be downloaded from [here](http://www.pyqtgraph.org/).
 
 ### Notes
 

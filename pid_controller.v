@@ -14,8 +14,8 @@
 
 module pid_controller (
     // Inputs <- Opal Kelly PLL
-    input wire                  sys_clk_in,
-    input wire                  adc_clk_in,
+    input wire                  clk17_in,
+    input wire                  clk50_in,
 
     // Inputs <- ADC (AD7608)
     input wire                  adc_busy_in,
@@ -73,6 +73,14 @@ assign din_db = dac_din_out;
 `include "init.vh"
 
 //--------------------------------------------------------------------
+// Clocks
+//--------------------------------------------------------------------
+wire adc_clk = clk17_in;
+wire pid_clk = clk50_in;
+wire dac_clk = clk50_in;
+wire dds_clk = clk50_in;
+
+//--------------------------------------------------------------------
 // Frontpanel Interface
 //--------------------------------------------------------------------
 wire sys_rst;
@@ -95,8 +103,8 @@ frontpanel_interface #(
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA))
 fp_intf (
-    .adc_clk_in     (adc_clk_in),
-    .sys_clk_in     (sys_clk_in),
+    .adc_clk_in     (adc_clk),
+    .pid_clk_in     (pid_clk),
     .log_dv_in      (log_dv),
     .log_chan_in    (log_chan),
     .log_data_in    (log_data),
@@ -119,26 +127,27 @@ fp_intf (
 //--------------------------------------------------------------------
 // ADC Input
 //--------------------------------------------------------------------
-wire adc_dv;
 reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
+
+always @( posedge wr_en ) begin
+    if ( wr_en && ( wr_addr == adc_os_addr )) begin
+        adc_os <= wr_data[W_ADC_OS-1:0];
+    end
+end
+
+wire adc_dv;
 wire [W_ADC_CHAN-1:0] adc_src_a;
 wire [W_ADC_CHAN-1:0] adc_src_b;
 wire [W_ADC_DATA-1:0] adc_data_a;
 wire [W_ADC_DATA-1:0] adc_data_b;
 
-wire adc_sync_dv;
-wire [W_ADC_CHAN-1:0] adc_sync_src;
-wire [W_ADC_DATA-1:0] adc_sync_data;
-
-
-// ADC controller
 adc_controller #(
     .W_OUT          (W_ADC_DATA),
     .W_CHAN         (W_ADC_CHAN),
     .N_CHAN         (N_ADC),
     .W_OS           (W_ADC_OS))
 adc_cntrl (
-    .clk_in         (adc_clk_in),
+    .clk_in         (adc_clk),
     .reset_in       (sys_rst),
     .busy_in        (adc_busy_in),
     .data_a_in      (adc_data_a_in),
@@ -157,30 +166,34 @@ adc_cntrl (
     .data_b_out     (adc_data_b)
     );
 
-// Clock synchronizer
-clk_sync #(
-    .W_DATA         (W_ADC_DATA),
-    .W_CHAN         (W_ADC_CHAN),
-    .N_ADC          (N_ADC))
-csync (
-    .sys_clk_in     (sys_clk_in),
-    .reset_in       (sys_rst),
-    .dv_in          (adc_dv),
-    .chan_a_in      (adc_src_a),
-    .chan_b_in      (adc_src_b),
-    .data_a_in      (adc_data_a),
-    .data_b_in      (adc_data_b),
-    .dv_out         (adc_sync_dv),
-    .chan_out       (adc_sync_src),
-    .data_out       (adc_sync_data)
-    );
+reg adc_dv_reg;
+reg [W_ADC_CHAN-1:0] adc_src_b_reg;
+reg [W_ADC_DATA-1:0] adc_data_b_reg;
 
-// ADC oversample mode write handling
-always @( posedge wr_en ) begin
-    if ( wr_en && ( wr_addr == adc_os_addr )) begin
-        adc_os <= wr_data[W_ADC_OS-1:0];
-    end
+always @( posedge adc_clk ) begin
+    adc_dv_reg <= adc_dv;
+    adc_src_b_reg <= adc_src_b;
+    adc_data_b_reg <= adc_data_b;
 end
+
+wire adc_ser_dv;
+wire [W_ADC_CHAN-1:0] adc_ser_chan;
+wire [W_ADC_DATA-1:0] adc_ser_data;
+
+assign adc_ser_dv = ( adc_dv || adc_dv_reg );
+assign adc_ser_src = ( adc_dv ) ? adc_src_a : adc_src_b_reg;
+assign adc_ser_data = ( adc_dv ) ? adc_data_a : adc_data_b_reg;
+
+adc_fifo adc_buf (
+    .wr_clk (adc_clk),
+    .rd_clk (pid_clk),
+    .rst    (sys_rst),
+    .din    ({adc_ser_src, adc_ser_data}),
+    .wr_en  (adc_ser_dv),
+    .rd_en  (adc_buf_dv),
+    .dout   ({adc_buf_src, adc_buf_data}),
+    .valid  (adc_dub_dv)
+    );
 
 //--------------------------------------------------------------------
 // PID Pipeline
@@ -203,11 +216,11 @@ pid_pipeline #(
     .W_WR_CHAN      (W_WR_CHAN),
     .W_WR_DATA      (W_WR_DATA))
 pid_pipe (
-    .clk_in         (sys_clk_in),
+    .clk_in         (pid_clk),
     .rst_in         (sys_rst),
-    .dv_in          (adc_sync_dv),
-    .src_in         (adc_sync_src),
-    .data_in        (adc_sync_data),
+    .dv_in          (adc_buf_dv),
+    .src_in         (adc_buf_src),
+    .data_in        (adc_buf_data),
     .wr_en          (wr_en),
     .wr_addr        (wr_addr),
     .wr_chan        (wr_chan),
@@ -229,66 +242,104 @@ pid_pipe (
 //--------------------------------------------------------------------
 // DAC Output
 //--------------------------------------------------------------------
-wire pid_dac_dv = (pid_chan < N_DAC) ? pid_dv : 0;
-wire [W_DAC_CHAN-1:0] pid_dac_chan = pid_chan[W_DAC_CHAN-1:0];
-wire [W_DAC_DATA-1:0] pid_dac_data = pid_data[W_DAC_DATA-1:0];
-
-wire diq_dv;
-wire [W_DAC_CHAN-1:0] diq_chan;
-wire [W_DAC_DATA-1:0] diq_data;
+wire pid_dac_dv, buf_dac_dv;
+wire [W_DAC_CHAN-1:0] pid_dac_chan, buf_dac_chan;
+wire [W_DAC_DATA-1:0] pid_dac_data, buf_dac_data;
 wire dac_wr_done;
 
+assign pid_dac_dv = (pid_chan < N_DAC) ? pid_dv : 0;
+assign pid_dac_chan = pid_chan[W_DAC_CHAN-1:0];
+assign pid_dac_data = pid_data[W_DAC_DATA-1:0];
+
 // DAC instruction queue
-fifo_19 dac_instr_queue (
-    .clk    (sys_clk_in),
+dac_fifo dac_buf (
+    .wr_clk (pid_clk),
+    .rd_clk (dac_clk),
     .rst    (sys_rst),
     .din    ({pid_dac_chan, pid_dac_data}),
     .wr_en  (pid_dac_dv),
     .rd_en  (dac_wr_done),
-    .dout   ({diq_chan, diq_data}),
-    .valid  (diq_dv),
-    .full   (),
-    .empty  ()
+    .dout   ({buf_dac_chan, buf_dac_data}),
+    .valid  (buf_dac_dv)
     );
 
 // DAC controller
 dac_controller dac_cntrl (
-    .clk_in         (sys_clk_in),
+    .clk_in         (dac_clk),
     .reset_in       (sys_rst),
     .ref_set_in     (dac_rset),
-    .data_in        (diq_data),
-    .chan_in        (diq_chan),
-    .dv_in          (diq_dv),
+    .data_in        (buf_dac_data),
+    .chan_in        (buf_dac_chan),
+    .dv_in          (buf_dac_dv),
     .nldac_out      (dac_nldac_out),
     .nsync_out      (dac_nsync_out),
     .sclk_out       (dac_sclk_out),
     .din_out        (dac_din_out),
     .nclr_out       (dac_nclr_out),
-    .wr_done_out    (dac_wr_done),
-    .data_out       (),
-    .chan_out       ()
+    .wr_done_out    (dac_wr_done)
     );
 
 //--------------------------------------------------------------------
 // DDS Output
 //--------------------------------------------------------------------
-wire [N_DDS-1:0] pid_freq_dv;
-wire [N_DDS-1:0] pid_phase_dv;
-wire [N_DDS-1:0] pid_amp_dv;
+wire [N_DDS-1:0] pid_freq_dv, buf_freq_dv;
+wire [N_DDS-1:0] pid_phase_dv, buf_freq_dv;
+wire [N_DDS-1:0] pid_amp_dv, buf_amp_dv;
+
+wire [W_FREQ_DATA-1:0] pid_freq_data, buf_freq_data;
+wire [W_PHASE_DATA-1:0] pid_phase_data, buf_phase_data;
+wire [W_AMP_DATA-1:0] pid_amp_data, buf_amp_data;
+
+assign pid_freq_data = pid_data[W_FREQ_DATA-1:0];
+assign pid_phase_data = pid_data[W_PHASE_DATA-1:0];
+assign pid_amp_data = pid_data[W_AMP_DATA-1:0];
 
 genvar i;
 generate
 for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
-    localparam F = FREQ0_ADDR + i;  // frequency absolute index
+    localparam F = FREQ0_ADDR + i; // frequency absolute index
     localparam P = PHASE0_ADDR + i; // phase absolute index
-    localparam A = AMP0_ADDR + i;       // amplitude absolute index
+    localparam A = AMP0_ADDR + i; // amplitude absolute index
 
-    assign pid_freq_dv[i] = (pid_chan == F) ? pid_dv : 1'b0;
-    assign pid_phase_dv[i] = (pid_chan == P) ? pid_dv : 1'b0;
-    assign pid_amp_dv[i] = (pid_chan == A) ? pid_dv : 1'b0;
+    assign pid_freq_dv[i] = (pid_chan == F) ? pid_dv : 0;
+    assign pid_phase_dv[i] = (pid_chan == P) ? pid_dv : 0;
+    assign pid_amp_dv[i] = (pid_chan == A) ? pid_dv : 0;
+
+    freq_fifo freq_buf (
+        .wr_clk     (pid_clk),
+        .rd_clk     (dds_clk),
+        .rst        (sys_rst),
+        .din        (pid_freq_data),
+        .wr_en      (pid_freq_dv),
+        .rd_en      (dds_freq_done),
+        .dout       (buf_freq_data),
+        .valid      (buf_freq_dv)
+        );
+
+    phase_fifo phase_buf (
+        .wr_clk     (pid_clk),
+        .rd_clk     (dds_clk),
+        .rst        (sys_rst),
+        .din        (pid_phase_data),
+        .wr_en      (pid_phase_dv),
+        .rd_en      (dds_phase_done),
+        .dout       (buf_phase_data),
+        .valid      (phase_buf_dv)
+        );
+
+    amp_fifo amp_buf (
+        .wr_clk     (pid_clk),
+        .rd_clk     (dds_clk),
+        .rst        (sys_rst),
+        .din        (pid_amp_data),
+        .wr_en      (pid_amp_dv),
+        .rd_en      (dds_amp_done),
+        .dout       (buf_amp_data),
+        .valid      (amp_buf_dv)
+        );
 
     dds_controller dds_cntrl (
-        .clk_in         (sys_clk_in),
+        .clk_in         (dds_clk),
         .reset_in       (sys_rst),
         .freq_in        (pid_data[W_FREQ_DATA-1:0]),
         .phase_in       (pid_data[W_PHASE_DATA-1:0]),

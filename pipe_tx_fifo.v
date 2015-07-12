@@ -11,7 +11,7 @@ module pipe_tx_fifo #(
 	)(
 	// inputs <- top level entity
 	input wire										ti_clk_in,
-	input wire										sys_clk_in,
+	input wire										pid_clk_in,
 	input wire										reset_in,
 
 	// inputs
@@ -72,9 +72,9 @@ end
 // modules
 //////////////////////////////////////////
 
-fifo_16 bulk_tx_fifo (
+pipe_fifo pipe_buf (
 		.rst			(reset_in),
-		.wr_clk		(sys_clk_in),
+		.wr_clk		(pid_clk_in),
 		.rd_clk		(ti_clk_in),
 		.din			(data_in),
 		.wr_en		(data_valid_in),

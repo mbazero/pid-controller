@@ -32,7 +32,7 @@ module frontpanel_interface #(
     )(
     // Inputs
     input wire adc_clk_in,
-    input wire sys_clk_in,
+    input wire pid_clk_in,
 
     input wire log_dv_in,
     input wire [W_LCHAN-1:0] log_chan_in,
@@ -94,7 +94,7 @@ assign dac_rset_out = gp_trig[dac_rset_offset];
 okTriggerIn sys_gp_oti (
     .ok1            (ok1),
     .ep_addr        (sys_gp_itep),
-    .ep_clk         (sys_clk_in),
+    .ep_clk         (pid_clk_in),
     .ep_trigger     (gp_trig)
     );
 
@@ -168,7 +168,7 @@ reg [W_LDATA-1:0] data_log_reg[0:N_LOG-1];
 reg [W_LCHAN:0] i;
 
 // Wire-out registers
-always @( posedge sys_clk_in ) begin
+always @( posedge pid_clk_in ) begin
     if ( sys_rst_out ) begin
         for ( i = 0; i < N_LOG; i = i + 1 ) begin
             data_log_reg[i] <= 0;
@@ -200,7 +200,7 @@ wire log_pipe_dv = ( log_chan_in == pipe_chan ) ? log_dv_in : 1'b0;
 wire log_pipe_rd;
 
 // Pipe channel write handling
-always @( posedge sys_clk_in ) begin
+always @( posedge pid_clk_in ) begin
     if ( wr_en_out && ( wr_addr_out == pipe_cset_rqst )) begin
         pipe_chan <= wr_chan_out[W_LCHAN-1:0];
     end
@@ -209,7 +209,7 @@ end
 // Pipe-out fifo
 pipe_tx_fifo log_pipe_fifo (
     .ti_clk_in      (ticlk),
-    .sys_clk_in     (sys_clk_in),
+    .pid_clk_in     (pid_clk_in),
     .reset_in       (sys_rst_out),
     .data_valid_in  (log_pipe_dv),
     .data_in        (log_data_in[W_LDATA-1 -: W_EP]),

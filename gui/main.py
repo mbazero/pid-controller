@@ -1,4 +1,4 @@
-import parser
+import hdl_parser
 import config
 import device_manager
 import model
@@ -8,11 +8,11 @@ import controller
 '''
 Parse hdl parameters
 '''
-parser = parser.HDLParser()
-params = parser.get_params()
+hdlp = hdl_parser.HDLParser()
+params = hdlp.get_params()
 
 for header in config.header_list:
-    parser.parse(header)
+    hdlp.parse(header)
 
 '''
 Instantiate FPGA device manager

@@ -107,16 +107,14 @@ wire [W_SRC-1:0] buf_src;
 wire [W_DATA-1:0] buf_data;
 wire buf_rd_en;
 
-fifo_21 input_buffer (
+idp_fifo input_buf (
    .clk     (clk_in),
    .rst     (rst_in),
    .din     ({src_in, data_in}),
    .wr_en   (dv_in),
    .rd_en   (buf_rd_en),
    .dout    ({buf_src, buf_data}),
-   .valid   (buf_dv),
-   .full    (),
-   .empty   ()
+   .valid   (buf_dv)
    );
 
 //--------------------------------------------------------------------
