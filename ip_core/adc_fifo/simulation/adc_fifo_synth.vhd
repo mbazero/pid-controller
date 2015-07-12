@@ -84,7 +84,8 @@ ENTITY adc_fifo_synth IS
 	   TB_SEED        : INTEGER := 1
 	 );
   PORT(
-	CLK        :  IN  STD_LOGIC;
+	WR_CLK     :  IN  STD_LOGIC;
+	RD_CLK     :  IN  STD_LOGIC;
         RESET      :  IN  STD_LOGIC;
         SIM_DONE   :  OUT STD_LOGIC;
         STATUS     :  OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
@@ -94,7 +95,8 @@ END ENTITY;
 ARCHITECTURE simulation_arch OF adc_fifo_synth IS
 
     -- FIFO interface signal declarations
-    SIGNAL clk_i	                  :   STD_LOGIC;
+    SIGNAL wr_clk_i                       :   STD_LOGIC;
+    SIGNAL rd_clk_i                       :   STD_LOGIC;
     SIGNAL valid                          :   STD_LOGIC;
     SIGNAL rst	                          :   STD_LOGIC;
     SIGNAL wr_en                          :   STD_LOGIC;
@@ -117,10 +119,15 @@ ARCHITECTURE simulation_arch OF adc_fifo_synth IS
     SIGNAL dout_chk_i                     :   STD_LOGIC := '0';
     SIGNAL rst_int_rd                     :   STD_LOGIC := '0';
     SIGNAL rst_int_wr                     :   STD_LOGIC := '0';
+    SIGNAL rst_s_wr1                      :   STD_LOGIC := '0';
+    SIGNAL rst_s_wr2                      :   STD_LOGIC := '0';
     SIGNAL rst_gen_rd                     :   STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
     SIGNAL rst_s_wr3                      :   STD_LOGIC := '0';
     SIGNAL rst_s_rd                       :   STD_LOGIC := '0';
     SIGNAL reset_en                       :   STD_LOGIC := '0';
+    SIGNAL rst_async_wr1                  :   STD_LOGIC := '0'; 
+    SIGNAL rst_async_wr2                  :   STD_LOGIC := '0'; 
+    SIGNAL rst_async_wr3                  :   STD_LOGIC := '0'; 
     SIGNAL rst_async_rd1                  :   STD_LOGIC := '0'; 
     SIGNAL rst_async_rd2                  :   STD_LOGIC := '0'; 
     SIGNAL rst_async_rd3                  :   STD_LOGIC := '0'; 
@@ -129,27 +136,40 @@ ARCHITECTURE simulation_arch OF adc_fifo_synth IS
  BEGIN  
 
    ---- Reset generation logic -----
-   rst_int_wr          <= rst_async_rd3 OR rst_s_rd;
+   rst_int_wr          <= rst_async_wr3 OR rst_s_wr3;
    rst_int_rd          <= rst_async_rd3 OR rst_s_rd;
 
    --Testbench reset synchronization
-   PROCESS(clk_i,RESET)
+   PROCESS(rd_clk_i,RESET)
    BEGIN
      IF(RESET = '1') THEN
        rst_async_rd1    <= '1';
        rst_async_rd2    <= '1';
        rst_async_rd3    <= '1';
-     ELSIF(clk_i'event AND clk_i='1') THEN
+     ELSIF(rd_clk_i'event AND rd_clk_i='1') THEN
        rst_async_rd1    <= RESET;
        rst_async_rd2    <= rst_async_rd1;
        rst_async_rd3    <= rst_async_rd2;
      END IF;
    END PROCESS;
 
+   PROCESS(wr_clk_i,RESET)
+   BEGIN
+     IF(RESET = '1') THEN
+       rst_async_wr1  <= '1';
+       rst_async_wr2  <= '1';
+       rst_async_wr3  <= '1';
+     ELSIF(wr_clk_i'event AND wr_clk_i='1') THEN
+       rst_async_wr1  <= RESET;
+       rst_async_wr2  <= rst_async_wr1;
+       rst_async_wr3  <= rst_async_wr2;
+     END IF;
+   END PROCESS;
+
    --Soft reset for core and testbench
-   PROCESS(clk_i)
+   PROCESS(rd_clk_i)
    BEGIN 
-     IF(clk_i'event AND clk_i='1') THEN
+     IF(rd_clk_i'event AND rd_clk_i='1') THEN
        rst_gen_rd      <= rst_gen_rd + "1";
        IF(reset_en = '1' AND AND_REDUCE(rst_gen_rd) = '1') THEN
          rst_s_rd      <= '1';
@@ -159,17 +179,29 @@ ARCHITECTURE simulation_arch OF adc_fifo_synth IS
        ELSE
          IF(AND_REDUCE(rst_gen_rd)  = '1' AND rst_s_rd = '1') THEN
            rst_s_rd    <= '0';
+         END IF;
+       END IF;
+     END IF;
+   END PROCESS;
+   
+   PROCESS(wr_clk_i)
+   BEGIN 
+       IF(wr_clk_i'event AND wr_clk_i='1') THEN
+         rst_s_wr1   <= rst_s_rd; 
+         rst_s_wr2   <= rst_s_wr1; 
+         rst_s_wr3   <= rst_s_wr2;
+         IF(rst_s_wr3 = '1' AND rst_s_wr2 = '0') THEN
            assert false
            report "Reset removed..Memory Collision checks are valid"
            severity note;
          END IF;
        END IF;
-     END IF;
    END PROCESS;
    ------------------
    
    ---- Clock buffers for testbench ----
-  clk_i <= CLK;
+  wr_clk_i <= WR_CLK;
+  rd_clk_i <= RD_CLK;
    ------------------
      
     rst                       <=   RESET OR rst_s_rd AFTER 12 ns;
@@ -189,7 +221,7 @@ ARCHITECTURE simulation_arch OF adc_fifo_synth IS
                  )
       PORT MAP (  -- Write Port
                 RESET             => rst_int_wr,
-                WR_CLK            => clk_i,
+                WR_CLK            => wr_clk_i,
 		PRC_WR_EN         => prc_we_i,
                 FULL              => full_i,
                 WR_EN             => wr_en_i,
@@ -206,7 +238,7 @@ ARCHITECTURE simulation_arch OF adc_fifo_synth IS
 	        )
      PORT MAP(
               RESET               => rst_int_rd,
-              RD_CLK              => clk_i,
+              RD_CLK              => rd_clk_i,
 	      PRC_RD_EN           => prc_re_i,
               RD_EN               => rd_en_i,
 	      EMPTY               => empty_i,
@@ -231,8 +263,8 @@ ARCHITECTURE simulation_arch OF adc_fifo_synth IS
               RESET_WR            => rst_int_wr,
               RESET_RD            => rst_int_rd,
 	      RESET_EN            => reset_en,
-              WR_CLK              => clk_i,
-              RD_CLK              => clk_i,
+              WR_CLK              => wr_clk_i,
+              RD_CLK              => rd_clk_i,
               PRC_WR_EN           => prc_we_i,
               PRC_RD_EN           => prc_re_i,
 	      FULL                => full_i,
@@ -252,7 +284,8 @@ ARCHITECTURE simulation_arch OF adc_fifo_synth IS
 
   adc_fifo_inst : adc_fifo_exdes 
     PORT MAP (
-           CLK                       => clk_i,
+           WR_CLK                    => wr_clk_i,
+           RD_CLK                    => rd_clk_i,
            VALID                     => valid,
            RST                       => rst,
            WR_EN 		     => wr_en,

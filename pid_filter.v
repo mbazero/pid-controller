@@ -76,11 +76,12 @@ end
 //--------------------------------------------------------------------
 // External Memory
 //--------------------------------------------------------------------
+reg [N_CHAN-1:0] lock_en_mem;
+reg [N_CHAN-1:0] inv_error_mem;
 reg signed [W_DIN-1:0] setpoint_mem[0:N_CHAN-1];
 reg signed [W_PID_COEFS-1:0] p_coef_mem[0:N_CHAN-1];
 reg signed [W_PID_COEFS-1:0] i_coef_mem[0:N_CHAN-1];
 reg signed [W_PID_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
-reg [N_CHAN-1:0] inv_error_mem;
 
 // Initialize
 initial begin
@@ -97,11 +98,12 @@ end
 always @( posedge clk_in ) begin
     if ( wr_en && wr_chan_valid ) begin
         case ( wr_addr )
+            pid_lock_en_addr : lock_en_mem[wr_chan] <= wr_data[0];
+            pid_inv_error_addr : inv_error_mem[wr_chan] <= wr_data[0];
             pid_setpoint_addr : setpoint_mem[wr_chan] <= wr_data[W_DIN-1:0];
             pid_p_coef_addr : p_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
             pid_i_coef_addr : i_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
             pid_d_coef_addr : d_coef_mem[wr_chan] <= wr_data[W_PID_COEFS-1:0];
-            pid_inv_error_addr : inv_error_mem[wr_chan] <= wr_data[0];
         endcase
     end
 end
@@ -134,13 +136,14 @@ end
 
 // Registers
 reg dv_p1 = 0;
+reg lock_en_p1 = 0;
+reg inv_error_p1 = 0;
 reg [W_CHAN-1:0] chan_p1 = 0;
 reg signed [W_DIN-1:0] din_p1 = 0;
 reg signed [W_DIN-1:0] setpoint_p1 = 0;
 reg signed [W_PID_COEFS-1:0] p_coef_p1 = 0;
 reg signed [W_PID_COEFS-1:0] i_coef_p1 = 0;
 reg signed [W_PID_COEFS-1:0] d_coef_p1 = 0;
-reg inv_error_p1 = 0;
 
 always @( posedge clk_in ) begin
     if ( !flush_p1 ) begin
@@ -152,11 +155,12 @@ always @( posedge clk_in ) begin
         din_p1 <= data_in;
 
         // Fetch setpoint, PID coefficients, and invert error flag
+        lock_en_p1 <= lock_en_mem[chan_in];
+        inv_error_p1 <= inv_error_mem[chan_in];
         setpoint_p1 <= setpoint_mem[chan_in];
         p_coef_p1 <= p_coef_mem[chan_in];
         i_coef_p1 <= i_coef_mem[chan_in];
         d_coef_p1 <= d_coef_mem[chan_in];
-        inv_error_p1 <= inv_error_mem[chan_in];
 
     end else begin
         dv_p1 <= 0;
@@ -171,7 +175,8 @@ reg flush_p2;
 reg signed [W_ERROR-1:0] error_int_p2 = 0;
 
 always @( * ) begin
-    flush_p2 = ( rst_in || clr_rqst[chan_p1] );
+    // Flush stage if lock is disabled
+    flush_p2 = ( rst_in || clr_rqst[chan_p1] || !lock_en_p1 );
 
     // Compute error
     error_int_p2 = setpoint_p1 - din_p1;

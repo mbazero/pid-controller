@@ -58,12 +58,13 @@
 window new WaveWindow  -name  "Waves for FIFO Generator Example Design"
 waveform  using  "Waves for FIFO Generator Example Design"
 
-waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/CLK
 waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/RST
 waveform add -label WRITE
+waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/WR_CLK
 waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/WR_EN
 waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/FULL
 waveform add -label READ
+waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/RD_CLK
 waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/RD_EN
 waveform add -signals /adc_fifo_tb/adc_fifo_synth_inst/adc_fifo_inst/EMPTY
 console submit -using simulator -wait no "run"

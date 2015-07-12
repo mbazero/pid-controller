@@ -48,7 +48,6 @@ module instr_dispatch #(
 //--------------------------------------------------------------------
 // External Memory
 //--------------------------------------------------------------------
-reg [N_CHAN-1:0] chan_en_mem;
 reg [W_SRC:0] chan_src_sel_mem[0:N_CHAN-1];
 wire wr_chan_valid = ( wr_chan < N_CHAN );
 
@@ -56,7 +55,6 @@ wire wr_chan_valid = ( wr_chan < N_CHAN );
 integer i;
 initial begin
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        chan_en_mem[i] = CHAN_EN_INIT;
         chan_src_sel_mem[i] = CHAN_SRC_SEL_INIT;
     end
 end
@@ -65,7 +63,6 @@ end
 always @( posedge clk_in ) begin
     if ( wr_en && wr_chan_valid ) begin
         case ( wr_addr )
-            chan_en_addr : chan_en_mem[wr_chan] <= wr_data[0];
             chan_src_sel_addr : chan_src_sel_mem[wr_chan] <= wr_data[W_SRC:0];
         endcase
     end
@@ -158,7 +155,7 @@ always @( posedge clk_in ) begin
         instr_sent = 0;
 
     end else begin
-        dspch_dv = chan_en_mem[dspch_chan];
+        dspch_dv = 1'b1;
         dspch_chan = dec_chan[W_CHAN-1:0];
         dspch_data = buf_data;
         instr_sent[dspch_chan] = 1;

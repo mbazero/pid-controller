@@ -73,7 +73,8 @@ use unisim.vcomponents.all;
 --------------------------------------------------------------------------------
 entity adc_fifo_exdes is
    PORT (
-           CLK                       : IN  std_logic;
+           WR_CLK                    : IN  std_logic;
+     	   RD_CLK                    : IN  std_logic;
            VALID                     : OUT std_logic;
            RST                       : IN  std_logic;
            WR_EN 		     : IN  std_logic;
@@ -89,13 +90,15 @@ end adc_fifo_exdes;
 
 architecture xilinx of adc_fifo_exdes is
 
-  signal clk_i    : std_logic;
+  signal wr_clk_i : std_logic;
+  signal rd_clk_i : std_logic;
 
 
 
   component adc_fifo is
    PORT (
-           CLK                       : IN  std_logic;
+           WR_CLK                    : IN  std_logic;
+     	   RD_CLK                    : IN  std_logic;
            VALID                     : OUT std_logic;
            RST                       : IN  std_logic;
            WR_EN 		     : IN  std_logic;
@@ -109,17 +112,24 @@ architecture xilinx of adc_fifo_exdes is
 
 
 begin
-  clk_buf: bufg
+
+  wr_clk_buf: bufg
     PORT map(
-      i => CLK,
-      o => clk_i
+      i => WR_CLK,
+      o => wr_clk_i
       );
 
+  rd_clk_buf: bufg
+    PORT map(
+      i => RD_CLK,
+      o => rd_clk_i
+      );
 
 
   exdes_inst : adc_fifo 
     PORT MAP (
-           CLK                       => clk_i,
+           WR_CLK                    => wr_clk_i,
+           RD_CLK                    => rd_clk_i,
            VALID                     => valid,
            RST                       => rst,
            WR_EN 		     => wr_en,

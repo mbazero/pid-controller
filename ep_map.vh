@@ -25,16 +25,16 @@ localparam data0_iwep            = 8'h06;
 //////////////////////////////////////////
 localparam adc_os_addr           = 16'h01;
 
-localparam chan_en_addr          = 16'h02;
-localparam chan_src_sel_addr     = 16'h03;
+localparam chan_src_sel_addr     = 16'h02;
 
-localparam ovr_os_addr           = 16'h04;
+localparam ovr_os_addr           = 16'h03;
 
-localparam pid_setpoint_addr     = 16'h05;
-localparam pid_p_coef_addr       = 16'h06;
-localparam pid_i_coef_addr       = 16'h07;
-localparam pid_d_coef_addr       = 16'h08;
-localparam pid_inv_error_addr    = 16'h09;
+localparam pid_lock_en_addr      = 16'h04;
+localparam pid_inv_error_addr    = 16'h05;
+localparam pid_setpoint_addr     = 16'h06;
+localparam pid_p_coef_addr       = 16'h07;
+localparam pid_i_coef_addr       = 16'h08;
+localparam pid_d_coef_addr       = 16'h09;
 
 localparam opt_min_addr          = 16'h0a;
 localparam opt_max_addr          = 16'h0b;

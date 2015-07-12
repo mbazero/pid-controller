@@ -41,9 +41,9 @@ module frontpanel_interface #(
     // Outputs
     output wire sys_rst_out,
     output wire adc_cstart_out,
-    output wire wr_en_out,
     output wire dac_rset_out,
 
+    output wire wr_en_out,
     output wire [W_WR_ADDR-1:0] wr_addr_out,
     output wire [W_WR_CHAN-1:0] wr_chan_out,
     output wire [W_WR_DATA-1:0] wr_data_out,
@@ -207,10 +207,10 @@ always @( posedge pid_clk_in ) begin
 end
 
 // Pipe-out fifo
-pipe_tx_fifo log_pipe_fifo (
+pipe_tx_fifo log_pipe_buf (
     .ti_clk_in      (ticlk),
     .pid_clk_in     (pid_clk_in),
-    .reset_in       (sys_rst_out),
+    .rst_in         (sys_rst_out),
     .data_valid_in  (log_pipe_dv),
     .data_in        (log_data_in[W_LDATA-1 -: W_EP]),
     .pipe_read_in   (log_pipe_rd),

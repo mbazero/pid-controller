@@ -22,8 +22,8 @@ module pid_controller_tf;
     reg [15:0] wire_out = 0;
 
     // Inputs
-    reg sys_clk_in;
-    reg adc_clk_in;
+    reg clk50_in;
+    reg clk17_in;
     reg adc_busy_in;
     wire adc_data_a_in;
     wire adc_data_b_in;
@@ -54,8 +54,8 @@ module pid_controller_tf;
 
     // Instantiate the Unit Under Test (UUT)
     pid_controller uut (
-        .sys_clk_in(sys_clk_in),
-        .adc_clk_in(adc_clk_in),
+        .clk50_in(clk50_in),
+        .clk17_in(clk17_in),
         .adc_busy_in(adc_busy_in),
         .adc_data_a_in(adc_data_a_in),
         .adc_data_b_in(adc_data_b_in),
@@ -123,10 +123,10 @@ module pid_controller_tf;
     //------------------------------------------------------------------------
 
     // generate ~17MHz clock
-    always #30 adc_clk_in = ~adc_clk_in;
+    always #30 clk17_in = ~clk17_in;
 
     // generate 50MHz clock
-    always #10 sys_clk_in = ~sys_clk_in;
+    always #10 clk50_in = ~clk50_in;
 
     // serial data channels
     assign adc_data_a_in = data_a_tx[TX_LEN-1];
@@ -240,8 +240,8 @@ module pid_controller_tf;
 
     initial begin : main
         // Initialize Inputs
-        sys_clk_in = 0;
-        adc_clk_in = 0;
+        clk50_in = 0;
+        clk17_in = 0;
         adc_busy_in = 0;
         data_a_tx = 0;
         data_b_tx = 0;
@@ -323,13 +323,12 @@ module pid_controller_tf;
         write_data(adc_os_addr, 0, adc_os);
         ActivateTriggerIn(sys_gp_itep, adc_cstart_offset);
 
-        // Inject dac write instruction and verify
+        // inject dac write instruction and verify
         for (x = 0; x < NAC; x = x+1) begin
             write_data(opt_inj_rqst, x, 0);
             opt_rcv[x] = output_init[x];
             check_dac_rcv(1);
         end
-        $stop;
 
         #200;
 
@@ -338,7 +337,7 @@ module pid_controller_tf;
             check_pid(NAC * REPS);
             check_opp(NAC * REPS);
             check_dac_rcv(nac_of_type("DAC") * REPS);
-            log_data(REPS * NAC);
+            log_data(NAC * REPS);
             check_data_log(REPS);
 
         join
@@ -355,7 +354,7 @@ module pid_controller_tf;
             for (c = 0; c < NAC; c = c+1) begin
                 // Route and activate channel
                 write_data(chan_src_sel_addr, dest[c], src[c]);
-                write_data(chan_en_addr, dest[c], 1);
+                write_data(pid_lock_en_addr, dest[c], 1);
 
                 // Set OSF ratio and activate source channel
                 write_data(ovr_os_addr, dest[c], os[c]);
@@ -405,7 +404,7 @@ module pid_controller_tf;
             repeat(reps) begin
                 // wait for convst_out to pulse and then assert busy
                 @(posedge adc_convst_out) begin
-                    @(posedge adc_clk_in) adc_busy_in = 1;
+                    @(posedge clk17_in) adc_busy_in = 1;
                 end
 
                 for ( j = 0; j < N_ADC; j = j+1 ) begin
@@ -419,7 +418,7 @@ module pid_controller_tf;
                 end
 
                 // wait one cycle before transmitting
-                @(posedge adc_clk_in);
+                @(posedge clk17_in);
 
                 $display("======================================");
                 $display("Iteration #%d", adc_count);
@@ -431,14 +430,14 @@ module pid_controller_tf;
 
                 // simulate serial data transmission
                 repeat (71) begin
-                    @(negedge adc_clk_in)
+                    @(negedge clk17_in)
                     data_a_tx = data_a_tx << 1;
                     data_b_tx = data_b_tx << 1;
                 end
 
                 // simulate conversion end
                 #2000;
-                @(posedge adc_clk_in) adc_busy_in = 0;
+                @(posedge clk17_in) adc_busy_in = 0;
 
                 adc_count = adc_count + 1;
 
@@ -452,7 +451,7 @@ module pid_controller_tf;
 
         begin
         for(pcx = 0; pcx < reps;) begin
-            @(posedge sys_clk_in) begin
+            @(posedge clk50_in) begin
                 if (pid_controller_tf.uut.pid_pipe.pid_dv) begin
                     pc_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.pid_chan);
                     pid_rcv[pc_chan] = pid_controller_tf.uut.pid_pipe.pid_data;
@@ -481,7 +480,7 @@ module pid_controller_tf;
         input [31:0] reps;
 
         for(opx = 0; opx < reps;) begin
-            @(posedge sys_clk_in) begin
+            @(posedge clk50_in) begin
                 if (pid_controller_tf.uut.pid_pipe.opt_dv) begin
                     oc_chan = out_to_chan(pid_controller_tf.uut.pid_pipe.opt_chan);
                     opt_rcv[oc_chan] = pid_controller_tf.uut.pid_pipe.opt_data;
@@ -516,11 +515,8 @@ module pid_controller_tf;
     task check_dac_rcv;
         input [31:0] reps;
         integer sim_chan;
-        integer n_active_dacs;
 
         begin
-            n_active_dacs = nac_of_type("DAC");
-
             repeat(reps) begin
                 // simulate dac receiving data
                 @(negedge dac_nsync_out) begin
@@ -543,7 +539,7 @@ module pid_controller_tf;
         input [31:0] reps;
 
         for(ldx = 0; ldx < reps;) begin
-            @(posedge sys_clk_in) begin
+            @(posedge clk50_in) begin
                 if(pid_controller_tf.uut.pid_pipe.ovr_dv) begin
                     // Log for wire outs
                     wire_out_exp[out_to_chan(pid_controller_tf.uut.pid_pipe.ovr_chan)] =
@@ -625,6 +621,7 @@ module pid_controller_tf;
         reg [15:0] num = 0;
         integer x = 0;
         begin
+            num = 0;
             for (x = 0; x < NAC; x = x+1) begin
                 if (dest_type[x] == type) begin
                     num = num + 1;

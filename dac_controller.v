@@ -8,7 +8,7 @@
 module dac_controller (
 	// inputs <- top level entity
 	input wire						clk_in,
-	input wire						reset_in,
+	input wire						rst_in,
 
 	// inptus <- frontpanel controller
 	input wire						ref_set_in,		// dac sets reference voltage when asserted
@@ -26,9 +26,7 @@ module dac_controller (
 	output wire 					nclr_out, 		// asynchronous clear
 
 	// outputs -> top level entity
-	output wire						wr_done_out,	// pulsed when dac finishes the instruction send
-	output wire	[15:0]	data_out,		// output data
-	output wire	[3:0]		chan_out		// output data valid
+	output wire						wr_done	        // pulsed when dac finishes the instruction send
 	);
 
 //////////////////////////////////////////
@@ -87,11 +85,7 @@ assign din_out = tx_data[31];
 assign ref_set_instr = {4'b0000, 4'b1001, 4'b0000, 4'b1010, 16'b0};
 
 /* loop control flow */
-assign wr_done_out = ( cur_state == ST_DAC_DONE );
-
-/* output data */
-assign data_out = data;
-assign chan_out = chan;
+assign wr_done = ( cur_state == ST_DAC_DONE );
 
 //////////////////////////////////////////
 // sequential logic
@@ -99,7 +93,7 @@ assign chan_out = chan;
 
 /* latch dac write data */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		data		<= 0;
 		chan	<= 0;
 	end else if (( cur_state == ST_IDLE ) & ( dv_in == 1)) begin
@@ -153,7 +147,7 @@ ODDR2 #(
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		cur_state <= ST_IDLE;
 	end else begin
 		cur_state <= next_state;
@@ -162,7 +156,7 @@ end
 
 /* state counter sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		counter <= 0;
 	end else if ( cur_state != next_state ) begin
 		counter <= 0;

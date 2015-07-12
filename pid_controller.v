@@ -3,14 +3,9 @@
 // ====================================================================
 // PID Controller
 // ====================================================================
-// Dope pid controller module.
-// ====================================================================
 
 // TODO polish
 // 9. convert all operators to logical ( double symbol )
-
-// TODO pipe dream
-// 1. add overflow signal to send along pipeline
 
 module pid_controller (
     // Inputs <- Opal Kelly PLL
@@ -73,7 +68,7 @@ assign din_db = dac_din_out;
 `include "init.vh"
 
 //--------------------------------------------------------------------
-// Clocks
+// Clocks and Buffers
 //--------------------------------------------------------------------
 wire adc_clk = clk17_in;
 wire pid_clk = clk50_in;
@@ -110,8 +105,8 @@ fp_intf (
     .log_data_in    (log_data),
     .sys_rst_out    (sys_rst),
     .adc_cstart_out (adc_cstart),
-    .wr_en_out      (wr_en),
     .dac_rset_out   (dac_rset),
+    .wr_en_out      (wr_en),
     .wr_addr_out    (wr_addr),
     .wr_chan_out    (wr_chan),
     .wr_data_out    (wr_data),
@@ -129,17 +124,17 @@ fp_intf (
 //--------------------------------------------------------------------
 reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
 
-always @( posedge wr_en ) begin
-    if ( wr_en && ( wr_addr == adc_os_addr )) begin
-        adc_os <= wr_data[W_ADC_OS-1:0];
-    end
-end
-
 wire adc_dv;
-wire [W_ADC_CHAN-1:0] adc_src_a;
-wire [W_ADC_CHAN-1:0] adc_src_b;
-wire [W_ADC_DATA-1:0] adc_data_a;
-wire [W_ADC_DATA-1:0] adc_data_b;
+wire [W_ADC_CHAN-1:0] adc_src_a, adc_src_b;
+wire [W_ADC_DATA-1:0] adc_data_a, adc_data_b;
+
+reg adc_dv_reg;
+reg [W_ADC_CHAN-1:0] adc_src_reg;
+reg [W_ADC_DATA-1:0] adc_data_reg;
+
+wire adc_ser_dv, adc_buf_dv;
+wire [W_ADC_CHAN-1:0] adc_ser_src, adc_buf_src;
+wire [W_ADC_DATA-1:0] adc_ser_data, adc_buf_data;
 
 adc_controller #(
     .W_OUT          (W_ADC_DATA),
@@ -148,7 +143,7 @@ adc_controller #(
     .W_OS           (W_ADC_OS))
 adc_cntrl (
     .clk_in         (adc_clk),
-    .reset_in       (sys_rst),
+    .rst_in         (sys_rst),
     .busy_in        (adc_busy_in),
     .data_a_in      (adc_data_a_in),
     .data_b_in      (adc_data_b_in),
@@ -166,23 +161,17 @@ adc_cntrl (
     .data_b_out     (adc_data_b)
     );
 
-reg adc_dv_reg;
-reg [W_ADC_CHAN-1:0] adc_src_b_reg;
-reg [W_ADC_DATA-1:0] adc_data_b_reg;
-
+// Delay ADC channel b for serialization into buffer
 always @( posedge adc_clk ) begin
     adc_dv_reg <= adc_dv;
-    adc_src_b_reg <= adc_src_b;
-    adc_data_b_reg <= adc_data_b;
+    adc_src_reg <= adc_src_b;
+    adc_data_reg <= adc_data_b;
 end
 
-wire adc_ser_dv;
-wire [W_ADC_CHAN-1:0] adc_ser_chan;
-wire [W_ADC_DATA-1:0] adc_ser_data;
-
+// Serialized buffer inputs select between channel a and b
 assign adc_ser_dv = ( adc_dv || adc_dv_reg );
-assign adc_ser_src = ( adc_dv ) ? adc_src_a : adc_src_b_reg;
-assign adc_ser_data = ( adc_dv ) ? adc_data_a : adc_data_b_reg;
+assign adc_ser_src = ( adc_dv ) ? adc_src_a : adc_src_reg;
+assign adc_ser_data = ( adc_dv ) ? adc_data_a : adc_data_reg;
 
 adc_fifo adc_buf (
     .wr_clk (adc_clk),
@@ -192,8 +181,15 @@ adc_fifo adc_buf (
     .wr_en  (adc_ser_dv),
     .rd_en  (adc_buf_dv),
     .dout   ({adc_buf_src, adc_buf_data}),
-    .valid  (adc_dub_dv)
+    .valid  (adc_buf_dv)
     );
+
+// Handle writes to adc os memory
+always @( posedge wr_en ) begin
+    if ( wr_en && ( wr_addr == adc_os_addr )) begin
+        adc_os <= wr_data[W_ADC_OS-1:0];
+    end
+end
 
 //--------------------------------------------------------------------
 // PID Pipeline
@@ -251,7 +247,6 @@ assign pid_dac_dv = (pid_chan < N_DAC) ? pid_dv : 0;
 assign pid_dac_chan = pid_chan[W_DAC_CHAN-1:0];
 assign pid_dac_data = pid_data[W_DAC_DATA-1:0];
 
-// DAC instruction queue
 dac_fifo dac_buf (
     .wr_clk (pid_clk),
     .rd_clk (dac_clk),
@@ -263,10 +258,9 @@ dac_fifo dac_buf (
     .valid  (buf_dac_dv)
     );
 
-// DAC controller
 dac_controller dac_cntrl (
     .clk_in         (dac_clk),
-    .reset_in       (sys_rst),
+    .rst_in         (sys_rst),
     .ref_set_in     (dac_rset),
     .data_in        (buf_dac_data),
     .chan_in        (buf_dac_chan),
@@ -276,30 +270,32 @@ dac_controller dac_cntrl (
     .sclk_out       (dac_sclk_out),
     .din_out        (dac_din_out),
     .nclr_out       (dac_nclr_out),
-    .wr_done_out    (dac_wr_done)
+    .wr_done        (dac_wr_done)
     );
 
 //--------------------------------------------------------------------
 // DDS Output
 //--------------------------------------------------------------------
 wire [N_DDS-1:0] pid_freq_dv, buf_freq_dv;
-wire [N_DDS-1:0] pid_phase_dv, buf_freq_dv;
+wire [N_DDS-1:0] pid_phase_dv, buf_phase_dv;
 wire [N_DDS-1:0] pid_amp_dv, buf_amp_dv;
 
 wire [W_FREQ_DATA-1:0] pid_freq_data, buf_freq_data;
 wire [W_PHASE_DATA-1:0] pid_phase_data, buf_phase_data;
 wire [W_AMP_DATA-1:0] pid_amp_data, buf_amp_data;
+wire freq_wr_done, phase_wr_done, amp_wr_done;
 
 assign pid_freq_data = pid_data[W_FREQ_DATA-1:0];
 assign pid_phase_data = pid_data[W_PHASE_DATA-1:0];
 assign pid_amp_data = pid_data[W_AMP_DATA-1:0];
+assign obuf_en_out = 1'b0;
 
 genvar i;
 generate
 for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
-    localparam F = FREQ0_ADDR + i; // frequency absolute index
-    localparam P = PHASE0_ADDR + i; // phase absolute index
-    localparam A = AMP0_ADDR + i; // amplitude absolute index
+    localparam F = FREQ0_ADDR + i; // Frequency absolute index
+    localparam P = PHASE0_ADDR + i; // Phase absolute index
+    localparam A = AMP0_ADDR + i; // Amplitude absolute index
 
     assign pid_freq_dv[i] = (pid_chan == F) ? pid_dv : 0;
     assign pid_phase_dv[i] = (pid_chan == P) ? pid_dv : 0;
@@ -311,7 +307,7 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .rst        (sys_rst),
         .din        (pid_freq_data),
         .wr_en      (pid_freq_dv),
-        .rd_en      (dds_freq_done),
+        .rd_en      (freq_wr_done),
         .dout       (buf_freq_data),
         .valid      (buf_freq_dv)
         );
@@ -322,9 +318,9 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .rst        (sys_rst),
         .din        (pid_phase_data),
         .wr_en      (pid_phase_dv),
-        .rd_en      (dds_phase_done),
+        .rd_en      (phase_wr_done),
         .dout       (buf_phase_data),
-        .valid      (phase_buf_dv)
+        .valid      (buf_phase_dv)
         );
 
     amp_fifo amp_buf (
@@ -333,14 +329,14 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .rst        (sys_rst),
         .din        (pid_amp_data),
         .wr_en      (pid_amp_dv),
-        .rd_en      (dds_amp_done),
+        .rd_en      (amp_wr_done),
         .dout       (buf_amp_data),
-        .valid      (amp_buf_dv)
+        .valid      (buf_amp_dv)
         );
 
     dds_controller dds_cntrl (
         .clk_in         (dds_clk),
-        .reset_in       (sys_rst),
+        .rst_in         (sys_rst),
         .freq_in        (pid_data[W_FREQ_DATA-1:0]),
         .phase_in       (pid_data[W_PHASE_DATA-1:0]),
         .amp_in         (pid_data[W_AMP_DATA-1:0]),
@@ -352,12 +348,11 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .csb_out        (dds_csb_out[i]),
         .sdio_out       (dds_sdio_out[i]),
         .io_update_out  (dds_io_update_out[i]),
-        .wr_done_out    ()
+        .freq_wr_done   (freq_wr_done),
+        .phase_wr_done  (phase_wr_done),
+        .amp_wr_done    (amp_wr_done)
     );
 end
 endgenerate
-
-// Activate output buffers (active low)
-assign obuf_en_out = 1'b0;
 
 endmodule

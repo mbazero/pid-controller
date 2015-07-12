@@ -12,7 +12,7 @@ module pipe_tx_fifo #(
 	// inputs <- top level entity
 	input wire										ti_clk_in,
 	input wire										pid_clk_in,
-	input wire										reset_in,
+	input wire										rst_in,
 
 	// inputs
 	input wire						 				data_valid_in,
@@ -55,7 +55,7 @@ assign fifo_rd_en = (fifo_half_full && (cur_state == ST_WAIT)) || pipe_read_in |
 
 /* count cycles that pipe_read is asserted */
 always @( posedge ti_clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		rd_count <= 0;
 	end else if ( cur_state == ST_READ ) begin
 		if ( pipe_read_in == 1 ) begin
@@ -73,7 +73,7 @@ end
 //////////////////////////////////////////
 
 pipe_fifo pipe_buf (
-		.rst			(reset_in),
+		.rst			(rst_in),
 		.wr_clk		(pid_clk_in),
 		.rd_clk		(ti_clk_in),
 		.din			(data_in),
@@ -99,7 +99,7 @@ end
 
 /* state sequential logic */
 always @( posedge ti_clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		cur_state <= ST_WAIT;
 	end else begin
 		cur_state <= next_state;

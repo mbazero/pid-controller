@@ -37,8 +37,9 @@
 `timescale 1ns/1ps
 
 module adc_fifo(
-  clk,
   rst,
+  wr_clk,
+  rd_clk,
   din,
   wr_en,
   rd_en,
@@ -48,8 +49,9 @@ module adc_fifo(
   valid
 );
 
-input clk;
 input rst;
+input wr_clk;
+input rd_clk;
 input [20 : 0] din;
 input wr_en;
 input rd_en;
@@ -84,9 +86,9 @@ output valid;
     .C_AXIS_TSTRB_WIDTH(4),
     .C_AXIS_TUSER_WIDTH(4),
     .C_AXIS_TYPE(0),
-    .C_COMMON_CLOCK(1),
+    .C_COMMON_CLOCK(0),
     .C_COUNT_TYPE(0),
-    .C_DATA_COUNT_WIDTH(5),
+    .C_DATA_COUNT_WIDTH(4),
     .C_DEFAULT_VALUE("BlankString"),
     .C_DIN_WIDTH(21),
     .C_DIN_WIDTH_AXIS(1),
@@ -107,7 +109,7 @@ output valid;
     .C_ERROR_INJECTION_TYPE_WDCH(0),
     .C_ERROR_INJECTION_TYPE_WRCH(0),
     .C_FAMILY("spartan6"),
-    .C_FULL_FLAGS_RST_VAL(0),
+    .C_FULL_FLAGS_RST_VAL(1),
     .C_HAS_ALMOST_EMPTY(0),
     .C_HAS_ALMOST_FULL(0),
     .C_HAS_AXI_ARUSER(0),
@@ -153,7 +155,7 @@ output valid;
     .C_HAS_WR_ACK(0),
     .C_HAS_WR_DATA_COUNT(0),
     .C_HAS_WR_RST(0),
-    .C_IMPLEMENTATION_TYPE(0),
+    .C_IMPLEMENTATION_TYPE(2),
     .C_IMPLEMENTATION_TYPE_AXIS(1),
     .C_IMPLEMENTATION_TYPE_RACH(1),
     .C_IMPLEMENTATION_TYPE_RDCH(1),
@@ -252,8 +254,9 @@ output valid;
     .C_WRCH_TYPE(0)
   )
   inst (
-    .CLK(clk),
     .RST(rst),
+    .WR_CLK(wr_clk),
+    .RD_CLK(rd_clk),
     .DIN(din),
     .WR_EN(wr_en),
     .RD_EN(rd_en),
@@ -263,10 +266,9 @@ output valid;
     .VALID(valid),
     .BACKUP(),
     .BACKUP_MARKER(),
+    .CLK(),
     .SRST(),
-    .WR_CLK(),
     .WR_RST(),
-    .RD_CLK(),
     .RD_RST(),
     .PROG_EMPTY_THRESH(),
     .PROG_EMPTY_THRESH_ASSERT(),

@@ -8,7 +8,7 @@
 module dds_controller(
 	// inputs <- top level entity
 	input wire				clk_in,				// system clock
-	input wire				reset_in, 			// system reset
+	input wire				rst_in, 			// system reset
 
 	// inputs <- output preprocessor
 	input wire	[47:0]	freq_in,				// frequency data
@@ -26,19 +26,26 @@ module dds_controller(
 	output wire				io_update_out,		// io update signal to dds
 
 	// outputs -> top level entity
-	output wire				wr_done_out 		// pulsed to indicate dds has finished updating
+	output wire				freq_wr_done,
+    output wire             phase_wr_done,
+    output wire             amp_wr_done
+
    );
 
 //////////////////////////////////////////
 // local parameters
 //////////////////////////////////////////
 
+/* transmission types */
+localparam FREQ_TX = 2'd1;
+localparam PHASE_TX = 2'd2;
+localparam AMP_TX = 2'd3;
+
 /* state parameters */
 localparam 	ST_IDLE			= 3'd0,			// wait for new data
 				ST_TX 			= 3'd1,			// transmit update instruction
 				ST_WAIT			= 3'd2,			// wait before pulsing io_update to satisfy setup time
-				ST_IO_UPDATE	= 3'd3,			// pulse io_update signal to initiate dds update
-				ST_DDS_DONE		= 3'd4;			// pulse dds_done signal to indicate operation completion
+				ST_IO_UPDATE	= 3'd3;			// pulse io_update signal to initiate dds update
 
 //////////////////////////////////////////
 // internal structures
@@ -61,6 +68,7 @@ wire	[31:0] 	amp_wr_instr;					// amplitude write instruction
 /* transmission registers */
 reg	[63:0] 	tx_data = 0;					// active data to be sent to dds
 reg	[6:0]		tx_len = 0;						// length of current write instruction
+reg [1:0]       tx_type = 0;
 reg				csb_reg = 1;					// chip select
 
 /* state registers */
@@ -73,13 +81,15 @@ reg	[2:0] 	next_state = ST_IDLE; 		// next state
 //////////////////////////////////////////
 
 /* dds control signals */
-assign reset_out			= reset_in;
+assign reset_out			= rst_in;
 assign csb_out				= ~( cur_state == ST_TX );
 assign sdio_out			= tx_data[63];
 assign io_update_out		= ( cur_state == ST_IO_UPDATE );
 
 /* loop flow control */
-assign wr_done_out		= ( cur_state == ST_DDS_DONE );
+assign freq_wr_done     = ( cur_state == ST_IO_UPDATE && tx_type == FREQ_TX );
+assign phase_wr_done    = ( cur_state == ST_IO_UPDATE && tx_type == PHASE_TX );
+assign amp_wr_done      = ( cur_state == ST_IO_UPDATE && tx_type == AMP_TX );
 
 /* frequency, phase, and amplitude instruction words */
 assign freq_wr_instr 	= {1'b0, 2'b11, 13'h01AB, freq};
@@ -92,7 +102,7 @@ assign amp_wr_instr		= {1'b0, 2'b01, 13'h040C, {6'd0, amp}};
 
 /* freq, phase, and amp data/dv registers */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		freq_dv	<= 0;
 		phase_dv	<= 0;
 		amp_dv	<= 0;
@@ -133,18 +143,22 @@ always @( negedge clk_in ) begin
 		ST_IDLE: begin
 			tx_data	<= 0;
 			tx_len	<= 0;
+            tx_type <= 0;
 		end
 		ST_TX: begin
 			if ( counter == 0 ) begin
 				if ( freq_dv == 1 ) begin
 					tx_data	<= freq_wr_instr;
 					tx_len	<= 64;
+                    tx_type <= FREQ_TX;
 				end else if ( phase_dv == 1 ) begin
 					tx_data	<= {phase_wr_instr, 32'b0};
 					tx_len	<= 32;
+                    tx_type <= PHASE_TX;
 				end else if ( amp_dv == 1 ) begin
 					tx_data	<= {amp_wr_instr, 32'b0};
 					tx_len	<= 32;
+                    tx_type <= AMP_TX;
 				end
 			end else begin
 				tx_data	<= tx_data << 1;
@@ -180,7 +194,7 @@ ODDR2 #(
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		cur_state <= ST_IDLE;
 	end else begin
 		cur_state <= next_state;
@@ -189,7 +203,7 @@ end
 
 /* state counter sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		counter <= 0;
 	end else if ( cur_state != next_state ) begin
 		counter <= 0;
@@ -218,9 +232,6 @@ always @( * ) begin
 			end
 		end
 		ST_IO_UPDATE: begin
-			next_state <= ST_IDLE;
-		end
-		ST_DDS_DONE: begin
 			next_state <= ST_IDLE;
 		end
 	endcase

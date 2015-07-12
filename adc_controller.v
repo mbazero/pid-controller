@@ -15,7 +15,7 @@ module adc_controller #(
 	)(
 	// inputs <- top level entity
 	input wire						clk_in,							// adc serial clock; max frequency 17mhz
-	input wire						reset_in, 						// system reset
+	input wire						rst_in, 						// system reset
 
 	// inputs <- AD7608
 	input wire						busy_in,							// conversion busy signal
@@ -81,7 +81,7 @@ reg	[2:0]					rd_next_state = RD_ST_IDLE;		// read state machine next state
 //////////////////////////////////////////
 
 /* adc control */
-assign reset_out			= reset_in;
+assign reset_out			= rst_in;
 assign os_out				= os_in;
 
 /* data valid out */
@@ -101,12 +101,12 @@ endgenerate
 
 /* adc cstart register */
 always @( posedge cstart_in ) begin
-    cstart_reg = !reset_in;
+    cstart_reg = !rst_in;
 end
 
 /* serial read shift register */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		data_a_out <= 0;
 		data_b_out <= 0;
 	end else if ( n_cs_out == 0 ) begin
@@ -166,7 +166,7 @@ end
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		cv_cur_state <= CV_ST_IDLE;
 	end else begin
 		cv_cur_state <= cv_next_state;
@@ -175,7 +175,7 @@ end
 
 /* state counter sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		cv_counter <= 0;
 	end else if ( cv_cur_state != cv_next_state ) begin
 		cv_counter <= 0;
@@ -211,7 +211,7 @@ assign convst_out = ~( cv_cur_state == CV_ST_CONVST );
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		rd_cur_state <= RD_ST_IDLE;
 	end else begin
 		rd_cur_state <= rd_next_state;
@@ -220,7 +220,7 @@ end
 
 /* state counter sequential logic */
 always @( posedge clk_in ) begin
-	if ( reset_in == 1 ) begin
+	if ( rst_in == 1 ) begin
 		rd_counter <= 0;
 	end else if ( rd_cur_state != rd_next_state ) begin
 		rd_counter <= 0;
