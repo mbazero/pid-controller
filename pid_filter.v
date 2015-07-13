@@ -86,11 +86,12 @@ reg signed [W_PID_COEFS-1:0] d_coef_mem[0:N_CHAN-1];
 // Initialize
 initial begin
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
+        lock_en_mem[i] = PID_LOCK_EN_INIT;
+        inv_error_mem[i] = PID_INV_ERROR_INIT;
         setpoint_mem[i] = PID_SETPOINT_INIT;
         p_coef_mem[i] = PID_P_COEF_INIT;
         i_coef_mem[i] = PID_I_COEF_INIT;
         d_coef_mem[i] = PID_D_COEF_INIT;
-        inv_error_mem[i] = PID_INV_ERROR_INIT;
     end
 end
 

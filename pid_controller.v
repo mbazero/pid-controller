@@ -122,19 +122,10 @@ fp_intf (
 //--------------------------------------------------------------------
 // ADC Input
 //--------------------------------------------------------------------
+wire adc_dv, adc_buf_dv;
+wire [W_ADC_CHAN-1:0] adc_src, adc_buf_src;
+wire [W_ADC_DATA-1:0] adc_data, adc_buf_data;
 reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
-
-wire adc_dv;
-wire [W_ADC_CHAN-1:0] adc_src_a, adc_src_b;
-wire [W_ADC_DATA-1:0] adc_data_a, adc_data_b;
-
-reg adc_dv_reg;
-reg [W_ADC_CHAN-1:0] adc_src_reg;
-reg [W_ADC_DATA-1:0] adc_data_reg;
-
-wire adc_ser_dv, adc_buf_dv;
-wire [W_ADC_CHAN-1:0] adc_ser_src, adc_buf_src;
-wire [W_ADC_DATA-1:0] adc_ser_data, adc_buf_data;
 
 adc_controller #(
     .W_OUT          (W_ADC_DATA),
@@ -143,7 +134,7 @@ adc_controller #(
     .W_OS           (W_ADC_OS))
 adc_cntrl (
     .clk_in         (adc_clk),
-    .rst_in         (sys_rst),
+    .reset_in       (sys_rst),
     .busy_in        (adc_busy_in),
     .data_a_in      (adc_data_a_in),
     .data_b_in      (adc_data_b_in),
@@ -155,36 +146,21 @@ adc_cntrl (
     .sclk_out       (adc_sclk_out),
     .n_cs_out       (adc_n_cs_out),
     .dv_out         (adc_dv),
-    .chan_a_out     (adc_src_a),
-    .chan_b_out     (adc_src_b),
-    .data_a_out     (adc_data_a),
-    .data_b_out     (adc_data_b)
+    .chan_out       (adc_src),
+    .data_out       (adc_data)
     );
-
-// Delay ADC channel b for serialization into buffer
-always @( posedge adc_clk ) begin
-    adc_dv_reg <= adc_dv;
-    adc_src_reg <= adc_src_b;
-    adc_data_reg <= adc_data_b;
-end
-
-// Serialized buffer inputs select between channel a and b
-assign adc_ser_dv = ( adc_dv || adc_dv_reg );
-assign adc_ser_src = ( adc_dv ) ? adc_src_a : adc_src_reg;
-assign adc_ser_data = ( adc_dv ) ? adc_data_a : adc_data_reg;
 
 adc_fifo adc_buf (
     .wr_clk (adc_clk),
     .rd_clk (pid_clk),
     .rst    (sys_rst),
-    .din    ({adc_ser_src, adc_ser_data}),
-    .wr_en  (adc_ser_dv),
+    .din    ({adc_src, adc_data}),
+    .wr_en  (adc_dv),
     .rd_en  (adc_buf_dv),
     .dout   ({adc_buf_src, adc_buf_data}),
     .valid  (adc_buf_dv)
     );
 
-// Handle writes to adc os memory
 always @( posedge wr_en ) begin
     if ( wr_en && ( wr_addr == adc_os_addr )) begin
         adc_os <= wr_data[W_ADC_OS-1:0];
@@ -243,7 +219,7 @@ wire [W_DAC_CHAN-1:0] pid_dac_chan, buf_dac_chan;
 wire [W_DAC_DATA-1:0] pid_dac_data, buf_dac_data;
 wire dac_wr_done;
 
-assign pid_dac_dv = (pid_chan < N_DAC) ? pid_dv : 0;
+assign pid_dac_dv = (pid_chan < N_DAC) ? pid_dv : 1'b0;
 assign pid_dac_chan = pid_chan[W_DAC_CHAN-1:0];
 assign pid_dac_data = pid_data[W_DAC_DATA-1:0];
 
@@ -336,7 +312,7 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
 
     dds_controller dds_cntrl (
         .clk_in         (dds_clk),
-        .rst_in         (sys_rst),
+        .reset_in       (sys_rst),
         .freq_in        (pid_data[W_FREQ_DATA-1:0]),
         .phase_in       (pid_data[W_PHASE_DATA-1:0]),
         .amp_in         (pid_data[W_AMP_DATA-1:0]),

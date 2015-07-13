@@ -71,10 +71,10 @@ class Controller():
         # Mode view handlers
         mode_view.chan_src_sel.currentIndexChanged.connect(
                 lambda: self.update_chan_src_sel(chan, mode_view.chan_src_sel.currentIndex() - 1))
-        mode_view.chan_en.toggled.connect(
-                lambda: self.update_chan_enable(chan, mode_view.chan_en.isChecked()))
         mode_view.chan_reset.toggled.connect(
                 lambda: self.request_chan_reset(chan));
+        mode_view.pid_lock_en.clicked.connect(
+                lambda: self.update_pid_lock_en(chan, mode_view.pid_lock_en.isChecked()))
 
         # Error view handlers
         error_view.ovr_os.currentIndexChanged.connect(
@@ -113,7 +113,6 @@ class Controller():
         output_view.opt_inject.clicked.connect(
                 lambda: self.request_opt_inject(chan))
 
-
     '''
     Initialize view
     '''
@@ -144,8 +143,8 @@ class Controller():
 
         mode_view.chan_src_sel.clear()
         mode_view.chan_src_sel.addItems(['None'] + self.model.get_input_list())
-        mode_view.chan_en.setChecked(model.get_param(params.chan_en_addr, chan))
         mode_view.chan_src_sel.setCurrentIndex(model.get_param(params.chan_src_sel_addr, chan) + 1)
+        mode_view.pid_lock_en.setChecked(model.get_param(params.pid_lock_en_addr, chan))
 
         error_view.ovr_os.setCurrentIndex(model.get_param(params.ovr_os_addr, chan))
         error_view.pid_setpoint.setText(str(model.denormalize_input(
@@ -183,19 +182,14 @@ class Controller():
         cPickle.dump(self.model.get_param_map(), f)
 
     '''
-    Open file chooser dialog and open and load configuration from selected file
-    '''
-    def load_config(self):
-        fname = self.view.get_open_file('Load Config')
-        self.load_config(fname)
-
-    '''
     Load configuration from path
     '''
-    def load_config(self, fname):
+    def load_config(self, fname=''):
+        if not fname:
+            fname = self.view.get_open_file('Load Config')
         f = open(fname, 'r')
         config = cPickle.load(f)
-        config[self.params.chan_en_addr] = [0] * self.params.n_pid_chan
+        config[self.params.pid_lock_en_addr] = [0] * self.params.n_pid_chan
         self.model.set_param_map(config)
         self.update_view()
 
@@ -264,7 +258,7 @@ class Controller():
     '''
     def read_fpga_data(self):
         self.fpga.update_wire_outs()
-        for chan in self.model.get_enabled_chans():
+        for chan in self.model.get_routed_chans():
             self.read_data_log_single(chan)
         self.read_data_log_block()
 
@@ -302,21 +296,12 @@ class Controller():
     '''
     Channel param update handling
     '''
-    def update_chan_enable(self, chan, enable):
-        self.update_model_and_fpga(self.params.chan_en_addr, chan, enable)
+    def update_pid_lock_en(self, chan, enable):
+        self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
 
-        # Reset chanel on FPGA and clear graph on disable
+        # Reset channel on disable
         if enable == False:
             self.request_chan_reset(chan)
-            self.model.clear_data_logs(chan)
-            self.update_view_graph()
-
-        # Wake worker thread if channel is activated. Sleep worker thread
-        # if channel is deactivated and no other active channels remain.
-        if enable == True:
-            self.worker_wake.set()
-        elif self.model.num_active_chans() == 0:
-            self.worker_wake.clear()
 
         print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
 
@@ -326,33 +311,21 @@ class Controller():
 
     def update_chan_src_sel(self, chan, src_sel):
         old_src_sel = self.model.get_param(self.params.chan_src_sel_addr, chan)
+
         if src_sel != old_src_sel:
             if self.model.is_valid_input(src_sel):
                 self.model.clear_data_logs(chan)
-                self.enable_src_buttons(chan, True)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, src_sel)
+                self.worker_wake.set() # wake worker thread to handle data logging
                 print self.model.chan_to_string(chan) + " input set to " + self.model.input_to_string(src_sel)
+
             else:
-                self.enable_src_buttons(chan, False)
-                self.update_chan_enable(chan, False)
-                self.update_model_and_fpga(self.params.chan_en_addr, chan, 0)
+                self.update_pid_lock_en(chan, False) # disable pid lock for invalid route
+                self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, 0)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, self.params.null_src)
+                if sum(self.model.get_routed_chans()) == 0: # sleep worker thread if no routed channels remain
+                    self.worker_wake.clear()
                 print self.model.chan_to_string(chan) + " input deactivated"
-
-    '''
-    Set enable state of channel buttons whose functionality depends on the
-    channel having a valid source
-    '''
-    def enable_src_buttons(self, chan, enable):
-        mode_view = self.view.chan_views[chan].mode_view;
-        pid_view = self.view.chan_views[chan].pid_view;
-
-        if self.model.is_chan_enabled(chan) and not enable:
-            mode_view.chan_en.setChecked(False)
-
-        mode_view.chan_en.setEnabled(enable)
-        mode_view.chan_reset.setEnabled(enable)
-        pid_view.pid_clear.setEnabled(enable)
 
     '''
     Oversample filter param update handling
@@ -381,8 +354,8 @@ class Controller():
         self.update_model_and_fpga(self.params.pid_d_coef_addr, chan, value)
         print self.model.chan_to_string(chan) + " D coefficient set to " + str(value)
 
-    def update_pid_inv_error(self, chan, checked):
-        self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, checked)
+    def update_pid_inv_error(self, chan, invert):
+        self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, invert)
         print self.model.chan_to_string(chan) + " error inversion " + "enabled" if checked else "disabled"
 
     '''
@@ -431,15 +404,15 @@ class Controller():
     Request handling
     '''
     def request_chan_reset(self, chan):
-        if self.model.is_chan_enabled(chan):
-            self.update_chan_enable(chan, False);
+        if self.model.is_lock_enabled(chan):
+            self.update_pid_lock_en(chan, False);
 
         self.request_ovr_clear(chan)
         self.request_pid_clear(chan)
         self.request_opt_clear(chan)
 
-        if self.model.is_chan_enabled(chan):
-            self.update_chan_enable(chan, True);
+        if self.model.is_lock_enabled(chan):
+            self.update_pid_lock_en(chan, True);
 
         print self.model.chan_to_string(chan) + " reset"
 

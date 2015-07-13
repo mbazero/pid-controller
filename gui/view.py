@@ -249,10 +249,10 @@ class ModeView(QGroupBox):
         self.form_layout.addRow('Input', self.chan_src_sel)
         self.layout.addLayout(self.form_layout)
 
-        #################### chan_en #######################
-        self.chan_en = QPushButton('Enable', self)
-        self.chan_en.setCheckable(True)
-        self.layout.addWidget(self.chan_en)
+        #################### pid_lock_en #######################
+        self.pid_lock_en = QPushButton('Enable lock', self)
+        self.pid_lock_en.setCheckable(True)
+        self.layout.addWidget(self.pid_lock_en)
 
         #################### chan_reset #######################
         self.chan_reset = QPushButton('Reset', self)
@@ -291,7 +291,6 @@ class ErrorView(QGroupBox):
         ps_validator = QDoubleValidator(-5.0, 5.0, 3)
         self.pid_setpoint.setValidator(ps_validator)
 
-        self.pid_setpoint.setPlaceholderText('-5 to 5V')
         self.form_layout.addRow('Setpoint', self.pid_setpoint)
         self.layout.addLayout(self.form_layout)
 

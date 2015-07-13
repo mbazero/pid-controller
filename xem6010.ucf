@@ -85,7 +85,7 @@ NET "dac_sclk_out"      LOC="B18"   | IOSTANDARD=LVCMOS33;
 NET "dac_din_out"       LOC="A16"   | IOSTANDARD=LVCMOS33;
 
 # specify dac max clock-to-output delay
-NET "dac_din_out" OFFSET = OUT 6 ns AFTER "dac_clk" RISING;
+NET "dac_din_out" OFFSET = OUT 6 ns AFTER "clk50_in" RISING;
 
 # DDS CONTROL #########################################################
 # maps DDS[0] and (optionally) DDS[1] to breakout board OUT1
@@ -99,8 +99,8 @@ NET "dac_din_out" OFFSET = OUT 6 ns AFTER "dac_clk" RISING;
 #NET "dds_io_update_out[1]" LOC="A11"   | IOSTANDARD=LVCMOS33;
 
 # specify dds max clock-to-output delays
-#NET "dds_sdio_out[0]" OFFSET = OUT 8 ns AFTER "dds_clk" FALLING;
-#NET "dds_sdio_out[1]" OFFSET = OUT 8 ns AFTER "dds_clk" FALLING;
+#NET "dds_sdio_out[0]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
+#NET "dds_sdio_out[1]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
 
 ## ADC ################################################################
 NET "adc_n_cs_out"      LOC="C7"    | IOSTANDARD=LVCMOS33;
@@ -117,8 +117,8 @@ NET "adc_reset_out"     LOC="C9"        | IOSTANDARD=LVCMOS33;
 NET "adc_sclk_out"      LOC="A7"        | IOSTANDARD=LVCMOS33;
 
 # specify adc setup and hold times
-NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_clk" RISING;
-NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "adc_clk" RISING;
+NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
+NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
 
 ## DEBUG
 NET "idp_dv" LOC="A13"   | IOSTANDARD=LVCMOS33;

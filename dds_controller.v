@@ -8,7 +8,7 @@
 module dds_controller(
 	// inputs <- top level entity
 	input wire				clk_in,				// system clock
-	input wire				rst_in, 			// system reset
+	input wire				reset_in, 			// system reset
 
 	// inputs <- output preprocessor
 	input wire	[47:0]	freq_in,				// frequency data
@@ -81,7 +81,7 @@ reg	[2:0] 	next_state = ST_IDLE; 		// next state
 //////////////////////////////////////////
 
 /* dds control signals */
-assign reset_out			= rst_in;
+assign reset_out			= reset_in;
 assign csb_out				= ~( cur_state == ST_TX );
 assign sdio_out			= tx_data[63];
 assign io_update_out		= ( cur_state == ST_IO_UPDATE );
@@ -102,7 +102,7 @@ assign amp_wr_instr		= {1'b0, 2'b01, 13'h040C, {6'd0, amp}};
 
 /* freq, phase, and amp data/dv registers */
 always @( posedge clk_in ) begin
-	if ( rst_in == 1 ) begin
+	if ( reset_in == 1 ) begin
 		freq_dv	<= 0;
 		phase_dv	<= 0;
 		amp_dv	<= 0;
@@ -194,7 +194,7 @@ ODDR2 #(
 
 /* state sequential logic */
 always @( posedge clk_in ) begin
-	if ( rst_in == 1 ) begin
+	if ( reset_in == 1 ) begin
 		cur_state <= ST_IDLE;
 	end else begin
 		cur_state <= next_state;
@@ -203,7 +203,7 @@ end
 
 /* state counter sequential logic */
 always @( posedge clk_in ) begin
-	if ( rst_in == 1 ) begin
+	if ( reset_in == 1 ) begin
 		counter <= 0;
 	end else if ( cur_state != next_state ) begin
 		counter <= 0;

@@ -11,5 +11,5 @@ pconfig = 'default_config.pid'
 # fpga config
 pid_bit_file = './pid_controller.bit' # path to hdl bit file
 serial = '' # opal kelly serial number; leave blank to connect to first device found
-sys_clk_freq = 50 # system clock frequency in MHz
-adc_clk_freq = 17 # adc serial frequency in MHz
+sys_clk_freq = 45 # system clock frequency in MHz
+adc_clk_freq = 10 # adc serial frequency in MHz

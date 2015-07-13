@@ -24,7 +24,7 @@ class Model:
                 # ADC controller
                 params.adc_os_addr : params.adc_os_init,
                 # Instruction dispatch
-                params.chan_en_addr : [params.chan_en_init] * self.n_out,
+                params.pid_lock_en_addr : [params.pid_lock_en_init] * self.n_out,
                 params.chan_src_sel_addr : [params.chan_src_sel_init] * self.n_out,
                 # Oversample filter
                 params.ovr_os_addr : [params.ovr_os_init] * self.n_out,
@@ -155,27 +155,28 @@ class Model:
         return [self.data_log_block_x[chan], self.data_log_block_y[chan]]
 
     '''
-    Returns true if channel is enabled, false otherise
+    Return true if PID lock is enabled for the specified channel
     '''
-    def is_chan_enabled(self, chan):
-        return self.get_param(self.params.chan_en_addr, chan)
+    def is_lock_enabled(self, chan):
+        return self.get_param(self.params.pid_lock_en_addr, chan)
 
     '''
-    Returns list of enabled channels
+    Return true if channel has a valid input mapping
     '''
-    def get_enabled_chans(self):
+    def has_valid_input(self, chan):
+        inpt = self.get_param(self.params.chan_src_sel_addr, chan)
+        return self.is_valid_input(inpt)
+
+    '''
+    Return list of channels with valid input mappings
+    '''
+    def get_routed_chans(self):
         clist = []
         for chan in range(self.n_out):
-            if self.get_param(self.params.chan_en_addr, chan):
+            if self.has_valid_input(chan):
                 clist.append(chan)
 
         return clist
-
-    '''
-    Return number of active channels
-    '''
-    def num_active_chans(self):
-        return sum(self.pmap[self.params.chan_en_addr])
 
     '''
     Return string representation for input channel number

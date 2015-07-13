@@ -99,7 +99,7 @@ okTriggerIn sys_gp_oti (
     );
 
 //--------------------------------------------------------------------
-// Memory Write Wire-outs
+// External Memory Wire-outs
 //--------------------------------------------------------------------
 wire [W_EP-1:0] wr_addr;
 wire [W_EP-1:0] wr_chan;
