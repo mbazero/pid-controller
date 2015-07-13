@@ -17,18 +17,18 @@ class Controller():
 
         self.sample_period = 0.1
         self.block_transfer = False
+        self.graph_freeze = [0] * params.n_pid_chan
         self.init_time = time.time()
         self.focused_chan = 0
 
-        self.update_adc_en(True)
+        self.trigger_adc_cstart()
         self.trigger_dac_ref_set()
 
         self.init_worker_thread()
         self.register_view_handlers()
         self.init_view()
 
-        if config:
-            self.load_config(config)
+        self.load_config(config)
 
     '''
     Register all input view handlers
@@ -67,6 +67,12 @@ class Controller():
         pid_view = chan_view.pid_view
         proc_view = chan_view.proc_view
         output_view = chan_view.output_view
+
+        # Graph handlers
+        chan_view.graph_freeze.clicked.connect(
+                lambda: self.update_graph_freeze(chan, chan_view.graph_freeze.isChecked()))
+        chan_view.graph_clear.clicked.connect(
+                lambda: self.trigger_graph_clear(chan))
 
         # Mode view handlers
         mode_view.chan_src_sel.currentIndexChanged.connect(
@@ -198,7 +204,7 @@ class Controller():
     '''
     def init_worker_thread(self):
         self.worker = WorkerThread(self)
-        self.view.connect(self.worker, SIGNAL("new_plot_data()"), self.update_view_graph)
+        self.view.connect(self.worker, SIGNAL("new_plot_data()"), self.update_graph)
         self.worker_wake = threading.Event()
         self.worker_wake.clear()
         self.worker.start()
@@ -215,13 +221,23 @@ class Controller():
     '''
     Update view graph
     '''
-    def update_view_graph(self):
+    def update_graph(self):
         if self.block_transfer:
             [data_x, data_y] = self.model.get_data_log_block(self.focused_chan)
         else:
             [data_x, data_y] = self.model.get_data_log_single(self.focused_chan)
 
-        self.view.update_graph(self.focused_chan, data_x, data_y)
+        if not self.graph_freeze[self.focused_chan]:
+            self.view.update_graph(self.focused_chan, data_x, data_y)
+
+    def update_graph_freeze(self, chan, freeze):
+        self.graph_freeze[chan] = freeze
+
+    def trigger_graph_clear(self, chan):
+        if self.block_transfer:
+            self.model.clear_data_log_block(chan)
+        else:
+            self.model.clear_data_log_single(chan)
 
     '''
     Update fpga data sampling period
@@ -233,8 +249,8 @@ class Controller():
     '''
     Update block transfer state
     '''
-    def update_block_transfer(self, enable):
-        if enable == True:
+    def update_block_transfer(self, enabled):
+        if enabled == True:
             self.block_transfer = True
             print 'Block transfer enabled'
         else:
@@ -293,13 +309,18 @@ class Controller():
         self.update_model_and_fpga(self.params.adc_os_addr, 0, value)
         print "ADC oversample mode set to " + str(value)
 
-    def update_adc_en(self, enable):
-        self.fpga.write_data(self.params.adc_en_addr, 0, enable)
-        print "ADC started"
-
     '''
     Channel param update handling
     '''
+    def update_pid_lock_en(self, chan, enable):
+        self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
+
+        # Reset channel on disable
+        if enable == False:
+            self.request_chan_reset(chan)
+
+        print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
+
     def update_focused_chan(self, chan):
         self.focused_chan = chan
         self.send_fpga_request(self.params.pipe_cset_rqst, chan);
@@ -332,19 +353,6 @@ class Controller():
     '''
     PID filter param update handling
     '''
-    def update_pid_lock_en(self, chan, enable):
-        self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
-
-        # Reset channel on disable
-        if enable == False:
-            self.request_chan_reset(chan)
-
-        print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
-
-    def update_pid_inv_error(self, chan, invert):
-        self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, invert)
-        print self.model.chan_to_string(chan) + " error inversion " + "enabled" if invert else "disabled"
-
     def update_pid_setpoint(self, chan, value):
         norm_value = self.model.normalize_input(chan, value);
         self.update_model_and_fpga(self.params.pid_setpoint_addr, chan, norm_value)
@@ -361,6 +369,10 @@ class Controller():
     def update_pid_d_coef(self, chan, value):
         self.update_model_and_fpga(self.params.pid_d_coef_addr, chan, value)
         print self.model.chan_to_string(chan) + " D coefficient set to " + str(value)
+
+    def update_pid_inv_error(self, chan, invert):
+        self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, invert)
+        print self.model.chan_to_string(chan) + " error inversion " + "enabled" if invert else "disabled"
 
     '''
     Output filter param update handling
@@ -439,6 +451,10 @@ class Controller():
     '''
     Trigger handling
     '''
+    def trigger_adc_cstart(self):
+        self.fpga.activate_sys_trigger(self.params.adc_cstart_offset)
+        print "ADC started"
+
     def trigger_dac_ref_set(self):
         self.fpga.activate_sys_trigger(self.params.dac_rset_offset)
 

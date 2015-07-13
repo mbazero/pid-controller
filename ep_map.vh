@@ -24,25 +24,24 @@ localparam data0_iwep            = 8'h06;
 // config data addresses
 //////////////////////////////////////////
 localparam adc_os_addr           = 16'h01;
-localparam adc_en_addr           = 16'h02;
 
-localparam chan_src_sel_addr     = 16'h03;
+localparam chan_src_sel_addr     = 16'h02;
 
-localparam ovr_os_addr           = 16'h04;
+localparam ovr_os_addr           = 16'h03;
 
-localparam pid_lock_en_addr      = 16'h05;
-localparam pid_inv_error_addr    = 16'h06;
-localparam pid_setpoint_addr     = 16'h07;
-localparam pid_p_coef_addr       = 16'h08;
-localparam pid_i_coef_addr       = 16'h09;
-localparam pid_d_coef_addr       = 16'h0a;
+localparam pid_lock_en_addr      = 16'h04;
+localparam pid_inv_error_addr    = 16'h05;
+localparam pid_setpoint_addr     = 16'h06;
+localparam pid_p_coef_addr       = 16'h07;
+localparam pid_i_coef_addr       = 16'h08;
+localparam pid_d_coef_addr       = 16'h09;
 
-localparam opt_min_addr          = 16'h0b;
-localparam opt_max_addr          = 16'h0c;
-localparam opt_init_addr         = 16'h0d;
-localparam opt_mult_addr         = 16'h0e;
-localparam opt_rs_addr           = 16'h0f;
-localparam opt_add_chan_addr     = 16'h10;
+localparam opt_min_addr          = 16'h0a;
+localparam opt_max_addr          = 16'h0b;
+localparam opt_init_addr         = 16'h0c;
+localparam opt_mult_addr         = 16'h0d;
+localparam opt_rs_addr           = 16'h0e;
+localparam opt_add_chan_addr     = 16'h0f;
 
 //////////////////////////////////////////
 // request register addresses
@@ -50,11 +49,11 @@ localparam opt_add_chan_addr     = 16'h10;
 //   they will clear themselves after the
 //   request has been executed
 //////////////////////////////////////////
-localparam ovr_clr_rqst          = 16'h11;
-localparam pid_clr_rqst          = 16'h12;
-localparam opt_clr_rqst          = 16'h13;
-localparam opt_inj_rqst          = 16'h14;
-localparam pipe_cset_rqst        = 16'h15;
+localparam ovr_clr_rqst          = 16'h10;
+localparam pid_clr_rqst          = 16'h11;
+localparam opt_clr_rqst          = 16'h12;
+localparam opt_inj_rqst          = 16'h13;
+localparam pipe_cset_rqst        = 16'h14;
 
 //////////////////////////////////////////
 // trigger-in endpoints
@@ -65,8 +64,9 @@ localparam sys_gp_itep           = 8'h40;
 // multipurpose trigger offsets
 //////////////////////////////////////////
 localparam sys_rst_offset        = 0;
-localparam wr_en_offset          = 1;
-localparam dac_rset_offset       = 2;
+localparam adc_cstart_offset     = 1;
+localparam wr_en_offset          = 2;
+localparam dac_rset_offset       = 3;
 
 //////////////////////////////////////////
 // wire/pipe-out endpoints

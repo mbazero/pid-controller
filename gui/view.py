@@ -167,8 +167,8 @@ class ChannelView(QWidget):
         # initialize plot widget
         self.init_graph()
 
-        # initialize plot statistics
-        self.initStats()
+        # initialize graph controls and statistics
+        self.init_graph_control()
 
         # create HBox layout; add channel control components
         self.cc_layout = QHBoxLayout()
@@ -182,7 +182,7 @@ class ChannelView(QWidget):
         self.layout = QVBoxLayout()
         self.layout.addLayout(self.cc_layout)
         self.layout.addWidget(self.plotWidget)
-        self.layout.addLayout(self.stats_layout)
+        self.layout.addLayout(self.gcontrol_layout)
 
         # set the VBox layout as the tab's primary layout
         self.setLayout(self.layout)
@@ -194,8 +194,12 @@ class ChannelView(QWidget):
         self.plotItem.setLabel('bottom', 'Time', 's')
         self.plotItem.setLabel('left', 'ADC Data', 'V')
 
-    def initStats(self):
-        self.stats_layout = QHBoxLayout()
+    def init_graph_control(self):
+        self.gcontrol_layout = QHBoxLayout()
+
+        self.graph_freeze = QPushButton('Freeze', self)
+        self.graph_freeze.setCheckable(True)
+        self.graph_clear = QPushButton('Clear', self)
 
         self.std_dev_fl = QFormLayout()
         self.std_dev = QLabel('0')
@@ -205,8 +209,10 @@ class ChannelView(QWidget):
         self.mean = QLabel('0')
         self.mean_fl.addRow('mean: ', self.mean)
 
-        self.stats_layout.addLayout(self.std_dev_fl)
-        self.stats_layout.addLayout(self.mean_fl)
+        self.gcontrol_layout.addWidget(self.graph_freeze)
+        self.gcontrol_layout.addWidget(self.graph_clear)
+        self.gcontrol_layout.addLayout(self.std_dev_fl)
+        self.gcontrol_layout.addLayout(self.mean_fl)
 
     def update_graph(self, data_x, data_y):
         self.plotItem.clear()

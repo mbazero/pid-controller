@@ -155,6 +155,19 @@ class Model:
         return [self.data_log_block_x[chan], self.data_log_block_y[chan]]
 
     '''
+    Clear single word data log
+    '''
+    def clear_data_log_single(self, chan):
+        self.data_log_single_x[chan] = []
+        self.data_log_single_y[chan] = []
+
+    '''
+    Clear block data log
+    '''
+    def clear_data_log_block(self, chan):
+        self.data_log_block_y[chan] = [0] * self.n_out
+
+    '''
     Return true if PID lock is enabled for the specified channel
     '''
     def is_lock_enabled(self, chan):

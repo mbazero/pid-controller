@@ -15,7 +15,7 @@ asI3
 (lp3
 I0
 aI9
-aI9
+aI0
 aI9
 aI9
 aI9
@@ -55,7 +55,7 @@ asI7
 (lp7
 I100
 aI0
-aI0
+aI100
 aI0
 aI0
 aI0
@@ -65,7 +65,7 @@ asI8
 (lp8
 I10
 aI0
-aI0
+aI10
 aI0
 aI0
 aI0
@@ -95,7 +95,7 @@ asI11
 (lp11
 F65535
 aF0
-aF0
+aF65535
 aF0
 aF0
 aF0
@@ -105,7 +105,7 @@ asI12
 (lp12
 F29490.75
 aF0
-aF0
+aF13107
 aF0
 aF0
 aF0
@@ -125,7 +125,7 @@ asI14
 (lp14
 I10
 aI0
-aI0
+aI10
 aI0
 aI0
 aI0

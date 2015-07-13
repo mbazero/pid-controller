@@ -51,14 +51,29 @@ module pid_controller (
     output wire                 i2c_scl,
     output wire                 hi_muxsel,
 
-    // Debug
-    output wire idp_dv,
-    output wire adc_dv_db,
-    output wire pidf_dv,
+    // Pipe debug
+    output wire idp_dv_db,
+    output wire pid_dv_db,
+    output wire opt_dv_db,
+    output wire [1:0] idp_src_db,
+    output wire [1:0] idp_chan_db,
+    output wire din_db,
+
+    // ADC controller debug
     output wire adc_clk_db,
-    output wire [1:0] idp_src,
-    output wire [1:0] idp_chan
+    output wire adc_dv_db,
+    output wire [W_ADC_CHAN-1:0] adc_src_db,
+    output wire [W_ADC_DATA-1:0] adc_data_db,
+
+    // ADC buffer debug
+    output wire adc_buf_clk_db,
+    output wire adc_buf_dv_db,
+    output wire [W_ADC_CHAN-1:0] adc_buf_src_db,
+    output wire [W_ADC_DATA-1:0] adc_buf_data_db
     );
+
+// Debug
+assign din_db = dac_din_out;
 
 `include "ep_map.vh"
 `include "parameters.vh"
@@ -76,6 +91,7 @@ wire dds_clk = clk50_in;
 // Frontpanel Interface
 //--------------------------------------------------------------------
 wire sys_rst;
+wire adc_cstart;
 wire log_dv;
 wire [W_PID_CHAN-1:0] log_chan;
 wire [W_ADC_DATA-1:0] log_data;
@@ -118,16 +134,21 @@ fp_intf (
 //--------------------------------------------------------------------
 // ADC Input
 //--------------------------------------------------------------------
-wire adc_en;
-reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
-
+wire adc_buf_empty;
 wire adc_dv, adc_buf_dv;
 wire [W_ADC_CHAN-1:0] adc_src, adc_buf_src;
 wire [W_ADC_DATA-1:0] adc_data, adc_buf_data;
+reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
 
-// Debug
-assign adc_dv_db = adc_dv;
 assign adc_clk_db = adc_clk;
+assign adc_dv_db = adc_dv;
+assign adc_src_db = adc_src[1:0];
+assign adc_data_db = adc_data[3:0];
+
+assign adc_buf_clk_db = pid_clk;
+assign adc_buf_dv_db = adc_buf_dv;
+assign adc_buf_src_db = adc_buf_src[1:0];
+assign adc_buf_data_db = adc_buf_data[3:0];
 
 adc_controller #(
     .W_OUT          (W_ADC_DATA),
@@ -141,7 +162,7 @@ adc_cntrl (
     .data_a_in      (adc_data_a_in),
     .data_b_in      (adc_data_b_in),
     .os_in          (adc_os),
-    .en_in          (adc_en),
+    .cstart_in      (adc_cstart),
     .os_out         (adc_os_out),
     .convst_out     (adc_convst_out),
     .reset_out      (adc_reset_out),
@@ -158,17 +179,15 @@ adc_fifo adc_buf (
     .rst    (sys_rst),
     .din    ({adc_src, adc_data}),
     .wr_en  (adc_dv),
-    .rd_en  (adc_buf_dv),
+    .rd_en  (!adc_buf_empty),
     .dout   ({adc_buf_src, adc_buf_data}),
+    .empty  (adc_buf_empty),
     .valid  (adc_buf_dv)
     );
 
 always @( posedge wr_en ) begin
-    if ( wr_en ) begin
-        case ( wr_addr ) begin
-            adc_os_addr : adc_os <= wr_data[W_ADC_OS-1:0];
-            adc_en_addr : adc_en <= wr_data[0];
-        endcase
+    if ( wr_en && ( wr_addr == adc_os_addr )) begin
+        adc_os <= wr_data[W_ADC_OS-1:0];
     end
 end
 
@@ -209,11 +228,11 @@ pid_pipe (
     .chan_out       (pid_chan),
     .data_out       (pid_data),
     // DEBUG
-    .idp_dv_db (idp_dv),
-    .pid_dv_db (pidf_dv),
-    .opt_dv_db (optf_dv),
-    .idp_src_db (idp_src),
-    .idp_chan_db (idp_chan)
+    .idp_dv_db (idp_dv_db),
+    .pid_dv_db (pid_dv_db),
+    .opt_dv_db (opt_dv_db),
+    .idp_src_db (idp_src_db),
+    .idp_chan_db (idp_chan_db)
 );
 
 //--------------------------------------------------------------------

@@ -12,18 +12,19 @@ class DeviceManager:
         self.clk2_freq = clk2_freq
         self.params = params
 
-        self.pll_freq = clk1_freq * clk2_freq # MHz
+        self.clk_div = 3
+        self.clk_ref = 48
 
         self.xem_lock = threading.Lock()
 
     def init_device(self):
-        # connect to opal kelly
+        # Connect to opal kelly
         self.xem = ok.okCFrontPanel()
         if (self.xem.NoError != self.xem.OpenBySerial(self.serial)):
             print ("A device could not be opened.  Is one connected?")
             return(False)
 
-        # get device information
+        # Get device information
         self.devInfo = ok.okTDeviceInfo()
         if (self.xem.NoError != self.xem.GetDeviceInfo(self.devInfo)):
             print ("Unable to retrieve device information.")
@@ -34,35 +35,40 @@ class DeviceManager:
         print("   Serial Number: %s" % self.devInfo.serialNumber)
         print("       Device ID: %s" % self.devInfo.deviceID)
 
-        # configure system clocks
-        self.pll = ok.PLL22393() # create PLL object
-        self.pll.SetReference(48.0) # set reference clock to 48MHz
-        self.pll.SetPLLParameters(0, self.pll_freq, 48, True) # set PLL[0] frequency
-        self.pll.SetOutputSource(0, ok.PLL22393.ClkSrc_PLL0_0) # map SYSCLK1 to PLL[0]
-        self.pll.SetOutputSource(1, ok.PLL22393.ClkSrc_PLL0_0) # map SYSCLK2 to PLL[0]
-        self.pll.SetOutputDivider(0, self.pll_freq / self.clk1_freq) # set SYSCLK1 frequency
-        self.pll.SetOutputDivider(1, self.pll_freq / self.clk2_freq) # set SYSCLK2 frequency
-        self.pll.SetOutputEnable(0, True) # enable SYSCLK1
-        self.pll.SetOutputEnable(1, True) # enable SYSCLK2
+        # Create PLL object and set reference clock
+        self.pll = ok.PLL22393()
+        self.pll.SetReference(self.clk_ref)
 
-        # save new PLL configuration to EEPROM
+        # Configure clock 1
+        self.pll.SetPLLParameters(0, self.clk1_freq * self.clk_div, self.clk_ref, True)
+        self.pll.SetOutputSource(0, ok.PLL22393.ClkSrc_PLL0_0)
+        self.pll.SetOutputDivider(0, self.clk_div)
+        self.pll.SetOutputEnable(0, True)
+
+        # Configure clock 2
+        self.pll.SetPLLParameters(1, self.clk2_freq * self.clk_div, self.clk_ref, True)
+        self.pll.SetOutputSource(1, ok.PLL22393.ClkSrc_PLL1_0)
+        self.pll.SetOutputDivider(1, self.clk_div)
+        self.pll.SetOutputEnable(1, True)
+
+        # Download PLL configuration to FPGA
         if(self.xem.NoError != self.xem.SetEepromPLL22393Configuration(self.pll)):
             print("PLL configuration error.")
             return(False)
 
-        # load EEPROM PLL configuration
+        # Load EEPROM PLL configuration
         self.xem.LoadDefaultPLLConfiguration()
 
-        # print new PLL configuration
-        print("SYSCLK1: " + format(self.pll.GetOutputFrequency(0), '.2f') + " MHz")
-        print("SYSCLK2: " + format(self.pll.GetOutputFrequency(1), '.2f') + " MHz")
+        # Print new PLL configuration
+        print("CLK1: " + format(self.pll.GetOutputFrequency(0), '.2f') + " MHz")
+        print("CLK2: " + format(self.pll.GetOutputFrequency(1), '.2f') + " MHz")
 
-        # download PID controller configuration file
+        # Download PID controller configuration file
         if (self.xem.NoError != self.xem.ConfigureFPGA(self.bit_file)):
             print ("FPGA configuration failed.")
             return(False)
 
-        # check for frontpanel support in fpga configuration
+        # Check for frontpanel support in fpga configuration
         if (False == self.xem.IsFrontPanelEnabled()):
             print ("FrontPanel support is not available.")
             return(False)
