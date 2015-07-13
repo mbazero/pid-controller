@@ -20,7 +20,7 @@ class Controller():
         self.init_time = time.time()
         self.focused_chan = 0
 
-        self.trigger_adc_cstart()
+        self.update_adc_en(True)
         self.trigger_dac_ref_set()
 
         self.init_worker_thread()
@@ -233,8 +233,8 @@ class Controller():
     '''
     Update block transfer state
     '''
-    def update_block_transfer(self, enabled):
-        if enabled == True:
+    def update_block_transfer(self, enable):
+        if enable == True:
             self.block_transfer = True
             print 'Block transfer enabled'
         else:
@@ -293,18 +293,13 @@ class Controller():
         self.update_model_and_fpga(self.params.adc_os_addr, 0, value)
         print "ADC oversample mode set to " + str(value)
 
+    def update_adc_en(self, enable):
+        self.fpga.write_data(self.params.adc_en_addr, 0, enable)
+        print "ADC started"
+
     '''
     Channel param update handling
     '''
-    def update_pid_lock_en(self, chan, enable):
-        self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
-
-        # Reset channel on disable
-        if enable == False:
-            self.request_chan_reset(chan)
-
-        print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
-
     def update_focused_chan(self, chan):
         self.focused_chan = chan
         self.send_fpga_request(self.params.pipe_cset_rqst, chan);
@@ -337,6 +332,19 @@ class Controller():
     '''
     PID filter param update handling
     '''
+    def update_pid_lock_en(self, chan, enable):
+        self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
+
+        # Reset channel on disable
+        if enable == False:
+            self.request_chan_reset(chan)
+
+        print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
+
+    def update_pid_inv_error(self, chan, invert):
+        self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, invert)
+        print self.model.chan_to_string(chan) + " error inversion " + "enabled" if invert else "disabled"
+
     def update_pid_setpoint(self, chan, value):
         norm_value = self.model.normalize_input(chan, value);
         self.update_model_and_fpga(self.params.pid_setpoint_addr, chan, norm_value)
@@ -353,10 +361,6 @@ class Controller():
     def update_pid_d_coef(self, chan, value):
         self.update_model_and_fpga(self.params.pid_d_coef_addr, chan, value)
         print self.model.chan_to_string(chan) + " D coefficient set to " + str(value)
-
-    def update_pid_inv_error(self, chan, invert):
-        self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, invert)
-        print self.model.chan_to_string(chan) + " error inversion " + "enabled" if checked else "disabled"
 
     '''
     Output filter param update handling
@@ -435,10 +439,6 @@ class Controller():
     '''
     Trigger handling
     '''
-    def trigger_adc_cstart(self):
-        self.fpga.activate_sys_trigger(self.params.adc_cstart_offset)
-        print "ADC started"
-
     def trigger_dac_ref_set(self):
         self.fpga.activate_sys_trigger(self.params.dac_rset_offset)
 

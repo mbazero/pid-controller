@@ -23,7 +23,7 @@ module adc_controller #(
 
     // inputs <- frontpanel controller
     input wire [W_OS-1:0] os_in, // sets adc oversampling mode
-    input wire cstart_in, // pulse starts continuous adc conversion cycle
+    input wire en_in, // enable continuous conversion
 
     // outputs -> AD7608
     output wire [W_OS-1:0] os_out, // oversampling signal to adc
@@ -57,9 +57,6 @@ localparam  RD_ST_IDLE = 3'd0,               // wait for busy signal to begin re
 //////////////////////////////////////////
 // internal structures
 //////////////////////////////////////////
-
-/* adc cstart register */
-reg cstart_reg;
 
 /* transmission structures */
 wire [N_CHAN/2-1:0] dv_tx;
@@ -99,11 +96,6 @@ endgenerate
 //////////////////////////////////////////
 // sequential logic
 //////////////////////////////////////////
-
-/* adc cstart register */
-always @( posedge cstart_in ) begin
-    cstart_reg = !reset_in;
-end
 
 /* serial read shift register */
 always @( posedge clk_in ) begin
@@ -204,7 +196,7 @@ always @( * ) begin
     cv_next_state <= cv_cur_state; // default assignment if no case and condition is satisfied
     case ( cv_cur_state )
         CV_ST_IDLE: begin
-            if ( cstart_reg == 1 )
+            if ( en_in == 1 )
                 cv_next_state <= CV_ST_CONVST;
         end
         CV_ST_CONVST: begin
@@ -212,7 +204,7 @@ always @( * ) begin
         end
         CV_ST_CONV: begin
             if (( cv_counter >= MIN_T_CYCLE ) & ( busy_in == 0 ))
-                cv_next_state <= CV_ST_CONVST;
+                cv_next_state <= CV_ST_IDLE;
         end
     endcase
 end

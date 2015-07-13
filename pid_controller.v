@@ -53,15 +53,12 @@ module pid_controller (
 
     // Debug
     output wire idp_dv,
-    output wire din_db,
+    output wire adc_dv_db,
     output wire pidf_dv,
-    output wire optf_dv,
+    output wire adc_clk_db,
     output wire [1:0] idp_src,
     output wire [1:0] idp_chan
     );
-
-// Debug
-assign din_db = dac_din_out;
 
 `include "ep_map.vh"
 `include "parameters.vh"
@@ -79,7 +76,6 @@ wire dds_clk = clk50_in;
 // Frontpanel Interface
 //--------------------------------------------------------------------
 wire sys_rst;
-wire adc_cstart;
 wire log_dv;
 wire [W_PID_CHAN-1:0] log_chan;
 wire [W_ADC_DATA-1:0] log_data;
@@ -122,10 +118,16 @@ fp_intf (
 //--------------------------------------------------------------------
 // ADC Input
 //--------------------------------------------------------------------
+wire adc_en;
+reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
+
 wire adc_dv, adc_buf_dv;
 wire [W_ADC_CHAN-1:0] adc_src, adc_buf_src;
 wire [W_ADC_DATA-1:0] adc_data, adc_buf_data;
-reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
+
+// Debug
+assign adc_dv_db = adc_dv;
+assign adc_clk_db = adc_clk;
 
 adc_controller #(
     .W_OUT          (W_ADC_DATA),
@@ -139,7 +141,7 @@ adc_cntrl (
     .data_a_in      (adc_data_a_in),
     .data_b_in      (adc_data_b_in),
     .os_in          (adc_os),
-    .cstart_in      (adc_cstart),
+    .en_in          (adc_en),
     .os_out         (adc_os_out),
     .convst_out     (adc_convst_out),
     .reset_out      (adc_reset_out),
@@ -162,8 +164,11 @@ adc_fifo adc_buf (
     );
 
 always @( posedge wr_en ) begin
-    if ( wr_en && ( wr_addr == adc_os_addr )) begin
-        adc_os <= wr_data[W_ADC_OS-1:0];
+    if ( wr_en ) begin
+        case ( wr_addr ) begin
+            adc_os_addr : adc_os <= wr_data[W_ADC_OS-1:0];
+            adc_en_addr : adc_en <= wr_data[0];
+        endcase
     end
 end
 

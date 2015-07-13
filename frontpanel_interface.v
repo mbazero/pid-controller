@@ -40,7 +40,6 @@ module frontpanel_interface #(
 
     // Outputs
     output wire sys_rst_out,
-    output wire adc_cstart_out,
     output wire dac_rset_out,
 
     output wire wr_en_out,
@@ -86,7 +85,6 @@ okHost hostIf (
 //--------------------------------------------------------------------
 wire [W_EP-1:0] gp_trig;
 assign sys_rst_out = gp_trig[sys_rst_offset];
-assign adc_cstart_out = gp_trig[adc_cstart_offset];
 assign wr_en_out = gp_trig[wr_en_offset];
 assign dac_rset_out = gp_trig[dac_rset_offset];
 
