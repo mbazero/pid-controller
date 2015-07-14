@@ -22,7 +22,7 @@ class Controller():
         self.focused_chan = 0
 
         self.trigger_adc_cstart()
-        self.trigger_dac_ref_set()
+        self.trigger_dac_rset()
 
         self.init_worker_thread()
         self.register_view_handlers()
@@ -77,7 +77,7 @@ class Controller():
         # Mode view handlers
         mode_view.chan_src_sel.currentIndexChanged.connect(
                 lambda: self.update_chan_src_sel(chan, mode_view.chan_src_sel.currentIndex() - 1))
-        mode_view.chan_reset.toggled.connect(
+        mode_view.chan_reset.clicked.connect(
                 lambda: self.request_chan_reset(chan));
         mode_view.pid_lock_en.clicked.connect(
                 lambda: self.update_pid_lock_en(chan, mode_view.pid_lock_en.isChecked()))
@@ -334,8 +334,8 @@ class Controller():
         old_src_sel = self.model.get_param(self.params.chan_src_sel_addr, chan)
 
         if src_sel != old_src_sel:
+            self.model.clear_data_logs(chan)
             if self.model.is_valid_input(src_sel):
-                self.model.clear_data_logs(chan)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, src_sel)
                 self.worker_wake.set() # wake worker thread to handle data logging
                 print self.model.chan_to_string(chan) + " input set to " + self.model.input_to_string(src_sel)
@@ -437,8 +437,6 @@ class Controller():
         if toggle_reset:
             self.update_pid_lock_en(chan, True, False);
 
-        print self.model.chan_to_string(chan) + " reset"
-
     def request_ovr_clear(self, chan):
         self.send_fpga_request(self.params.ovr_clr_rqst, chan);
         print self.model.chan_to_string(chan) + " oversample memory cleared"
@@ -462,11 +460,13 @@ class Controller():
         self.fpga.activate_sys_trigger(self.params.adc_cstart_offset)
         print "ADC started"
 
-    def trigger_dac_ref_set(self):
+    def trigger_dac_rset(self):
         self.fpga.activate_sys_trigger(self.params.dac_rset_offset)
 
     def trigger_sys_reset(self):
         self.fpga.activate_sys_trigger(self.params.sys_rst_offset)
+        self.trigger_adc_cstart()
+        self.trigger_dac_rset()
 
     '''
     Helper function to convert from unsigned 16-bit number to signed

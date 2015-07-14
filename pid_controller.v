@@ -185,7 +185,7 @@ adc_fifo adc_buf (
     .valid  (adc_buf_dv)
     );
 
-always @( posedge wr_en ) begin
+always @( posedge clk50_in ) begin
     if ( wr_en && ( wr_addr == adc_os_addr )) begin
         adc_os <= wr_data[W_ADC_OS-1:0];
     end

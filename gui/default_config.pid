@@ -9,7 +9,7 @@ aI-1
 aI-1
 aI-1
 aI-1
-aI0
+aI-1
 aI-1
 asI3
 (lp3
@@ -59,7 +59,7 @@ aI100
 aI0
 aI0
 aI0
-aI0
+aI100
 aI0
 asI8
 (lp8
@@ -69,7 +69,7 @@ aI10
 aI0
 aI0
 aI0
-aI0
+aI10
 aI0
 asI9
 (lp9
@@ -99,7 +99,7 @@ aF65535
 aF0
 aF0
 aF0
-aF0
+aF65535
 aF0
 asI12
 (lp12
@@ -109,7 +109,7 @@ aF13107
 aF0
 aF0
 aF0
-aF0
+aF39321
 aF0
 asI13
 (lp13
@@ -129,7 +129,7 @@ aI10
 aI0
 aI0
 aI0
-aI0
+aI10
 aI0
 asI15
 (lp15

@@ -87,14 +87,6 @@ class Model:
             self.data_log_block_y[chan] = [0 for x in range(self.params.pipe_depth)]
 
     '''
-    Clear data logs for specified channel
-    '''
-    def clear_data_logs(self, chan):
-        self.data_log_single_x[chan] = []
-        self.data_log_single_y[chan] = []
-        self.data_log_block_y[chan] = [0 for x in range(self.params.pipe_depth)]
-
-    '''
     Set parameter specified by address and channel. The function has a twin
     function called write_data() in the Opal Kelly controller class which
     writes data into the parameter mapping on the FPGA. Boths functions have
@@ -153,6 +145,13 @@ class Model:
     '''
     def get_data_log_block(self, chan):
         return [self.data_log_block_x[chan], self.data_log_block_y[chan]]
+
+    '''
+    Clear all data logs for specified channel
+    '''
+    def clear_data_logs(self, chan):
+        self.clear_data_log_single(chan)
+        self.clear_data_log_block(chan)
 
     '''
     Clear single word data log

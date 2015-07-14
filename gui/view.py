@@ -261,7 +261,7 @@ class ModeView(QGroupBox):
         self.layout.addWidget(self.pid_lock_en)
 
         #################### chan_reset #######################
-        self.chan_reset = QPushButton('Reset', self)
+        self.chan_reset = QPushButton('Channel reset', self)
         self.layout.addWidget(self.chan_reset)
 
         # set vbox as widget's main layout
