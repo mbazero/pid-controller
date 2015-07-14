@@ -49,7 +49,7 @@ module pid_controller (
 
     output wire                 i2c_sda,
     output wire                 i2c_scl,
-    output wire                 hi_muxsel,
+    output wire                 hi_muxsel
     );
 
 `include "ep_map.vh"
@@ -241,10 +241,10 @@ wire [N_DDS-1:0] pid_freq_dv, buf_freq_dv;
 wire [N_DDS-1:0] pid_phase_dv, buf_phase_dv;
 wire [N_DDS-1:0] pid_amp_dv, buf_amp_dv;
 
-wire [W_FREQ_DATA-1:0] pid_freq_data, buf_freq_data;
-wire [W_PHASE_DATA-1:0] pid_phase_data, buf_phase_data;
-wire [W_AMP_DATA-1:0] pid_amp_data, buf_amp_data;
-wire freq_wr_done, phase_wr_done, amp_wr_done;
+wire [W_FREQ_DATA-1:0] pid_freq_data, buf_freq_data[N_DDS-1:0];
+wire [W_PHASE_DATA-1:0] pid_phase_data, buf_phase_data[N_DDS-1:0];
+wire [W_AMP_DATA-1:0] pid_amp_data, buf_amp_data[N_DDS-1:0];
+wire [N_DDS-1:0] freq_wr_done, phase_wr_done, amp_wr_done;
 
 assign pid_freq_data = pid_data[W_FREQ_DATA-1:0];
 assign pid_phase_data = pid_data[W_PHASE_DATA-1:0];
@@ -267,10 +267,10 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .rd_clk     (dds_clk),
         .rst        (sys_rst),
         .din        (pid_freq_data),
-        .wr_en      (pid_freq_dv),
-        .rd_en      (freq_wr_done),
-        .dout       (buf_freq_data),
-        .valid      (buf_freq_dv)
+        .wr_en      (pid_freq_dv[i]),
+        .rd_en      (freq_wr_done[i]),
+        .dout       (buf_freq_data[i]),
+        .valid      (buf_freq_dv[i])
         );
 
     phase_fifo phase_buf (
@@ -278,10 +278,10 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .rd_clk     (dds_clk),
         .rst        (sys_rst),
         .din        (pid_phase_data),
-        .wr_en      (pid_phase_dv),
-        .rd_en      (phase_wr_done),
-        .dout       (buf_phase_data),
-        .valid      (buf_phase_dv)
+        .wr_en      (pid_phase_dv[i]),
+        .rd_en      (phase_wr_done[i]),
+        .dout       (buf_phase_data[i]),
+        .valid      (buf_phase_dv[i])
         );
 
     amp_fifo amp_buf (
@@ -289,29 +289,29 @@ for ( i = 0; i < N_DDS; i = i + 1 ) begin : dds_array
         .rd_clk     (dds_clk),
         .rst        (sys_rst),
         .din        (pid_amp_data),
-        .wr_en      (pid_amp_dv),
-        .rd_en      (amp_wr_done),
-        .dout       (buf_amp_data),
-        .valid      (buf_amp_dv)
+        .wr_en      (pid_amp_dv[i]),
+        .rd_en      (amp_wr_done[i]),
+        .dout       (buf_amp_data[i]),
+        .valid      (buf_amp_dv[i])
         );
 
     dds_controller dds_cntrl (
         .clk_in         (dds_clk),
         .reset_in       (sys_rst),
-        .freq_in        (pid_data[W_FREQ_DATA-1:0]),
-        .phase_in       (pid_data[W_PHASE_DATA-1:0]),
-        .amp_in         (pid_data[W_AMP_DATA-1:0]),
-        .freq_dv_in     (pid_freq_dv),
-        .phase_dv_in    (pid_phase_dv),
-        .amp_dv_in      (pid_amp_dv),
+        .freq_in        (buf_freq_data[i]),
+        .phase_in       (buf_phase_data[i]),
+        .amp_in         (buf_amp_data[i]),
+        .freq_dv_in     (pid_freq_dv[i]),
+        .phase_dv_in    (pid_phase_dv[i]),
+        .amp_dv_in      (pid_amp_dv[i]),
         .sclk_out       (dds_sclk_out[i]),
         .reset_out      (dds_reset_out[i]),
         .csb_out        (dds_csb_out[i]),
         .sdio_out       (dds_sdio_out[i]),
         .io_update_out  (dds_io_update_out[i]),
-        .freq_wr_done   (freq_wr_done),
-        .phase_wr_done  (phase_wr_done),
-        .amp_wr_done    (amp_wr_done)
+        .freq_wr_done   (freq_wr_done[i]),
+        .phase_wr_done  (phase_wr_done[i]),
+        .amp_wr_done    (amp_wr_done[i])
     );
 end
 endgenerate
