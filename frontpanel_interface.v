@@ -209,14 +209,14 @@ always @( posedge pid_clk_in ) begin
 end
 
 // Pipe-out fifo
-dual_fifo log_pipe_buf (
+pipe_tx_fifo log_pipe_buf (
     .rd_clk     (ticlk),
     .wr_clk     (pid_clk_in),
     .rst        (sys_rst_out),
-    .rd_en      (log_pipe_rd),
     .wr_en      (log_pipe_dv),
     .din        (log_data_in[W_LDATA-1 -: W_EP]),
-    .rd_rdy     (log_pipe_rdy),
+    .rd_en      (log_pipe_rd),
+    .rd_ready   (log_pipe_rdy),
     .dout       (log_pipe_data)
     );
 

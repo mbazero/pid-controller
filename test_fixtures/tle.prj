@@ -7,7 +7,7 @@ verilog work "../ok_sim/okHost.v"
 verilog work "../ok_sim/glbl.v"
 
 verilog work "../frontpanel_interface.v"
-verilog work "../dual_fifo.v"
+verilog work "../pipe_tx_fifo.v"
 verilog work "../adc_controller.v"
 verilog work "../clk_sync.v"
 verilog work "../dac_controller.v"

@@ -137,13 +137,13 @@ module pid_controller_tf;
     //////////////////////////////////////////
 
     // simulation reps
-    localparam REPS = 2500;
+    localparam REPS = 100;
 
     // adc params
     reg [15:0] adc_os = 0;
 
     // channel params
-    localparam NAC = 1; // number of active channels
+    localparam NAC = 4; // number of active channels
     reg [15:0] chan_focus;
 
     // routing params
@@ -223,13 +223,12 @@ module pid_controller_tf;
     reg signed [15:0] wire_out_rcv;
     integer cwo_chan;
     integer wc = 0;
-    reg wcheck = 0;
 
     // pipe verification
     reg signed [15:0] pipeOutWord;
     reg signed [15:0] pipe_expected[REPS-1:0];
+    integer rep_count = 0;
     integer ppc = 0;
-    reg pcheck = 0;
 
     // adc channel assignments
     //assign adc_val[src] = r_data - target;
@@ -339,8 +338,7 @@ module pid_controller_tf;
             check_opp(NAC * REPS);
             check_dac_rcv(nac_of_type("DAC") * REPS);
             log_data(NAC * REPS);
-            check_wire_log(REPS);
-            check_pipe_log(REPS);
+            check_data_log(REPS);
 
         join
 
@@ -432,7 +430,7 @@ module pid_controller_tf;
                 end
 
                 for ( j = 0; j < N_ADC; j = j+1 ) begin
-                    adc_val[j] = $random % 1000;
+                    adc_val[j] = 5555;
                 end
 
                 // simulate serial transmission from adc to fpga
@@ -571,7 +569,8 @@ module pid_controller_tf;
 
                     // Log for pipe
                     if(pid_controller_tf.uut.pid_pipe.ovr_chan == dest[chan_focus]) begin
-                        pipe_expected[ldx] = pid_controller_tf.uut.pid_pipe.ovr_data[17 -: 16];
+                        pipe_expected[rep_count] = pid_controller_tf.uut.pid_pipe.ovr_data[17 -: 16];
+                        rep_count = rep_count + 1;
                     end
 
                     ldx = ldx + 1;
@@ -581,46 +580,28 @@ module pid_controller_tf;
     endtask
 
     /* Verify wire-out and pipe values */
-    task check_wire_log;
+    task check_data_log;
         input [31:0] reps;
 
-        repeat(reps) begin
-            @(negedge adc_busy_in) begin
-                if(pcheck != 1) begin
+        begin
+            // check wires
+            repeat(reps) begin
+                @(negedge adc_busy_in) begin
                     UpdateWireOuts;
                     for(cdx = 0; cdx < NAC; cdx = cdx + 1) begin
                         wire_out_rcv = GetWireOutValue(data_log0_owep + dest[cdx]);
                         assert_equals(wire_out_exp[cdx], wire_out_rcv, "Wire-out", cdx);
                     end
-
-                    @(posedge clk50_in) wcheck = 1;
-                    @(posedge clk50_in) wcheck = 0;
                 end
             end
-        end
-    endtask
 
-    task check_pipe_log;
-        input [31:0] reps;
-        integer pcount = 0;
-
-        while(pcount < reps/PIPE_DEPTH) begin
-            @(posedge wcheck) begin
-                pcheck = 1;
-                if(GetWireOutValue(data_log_status_owep) == 1) begin
-                    ReadFromPipeOut(data_log_opep, pipeOutSize);
-                    for(ppc = 0; ppc < PIPE_DEPTH; ppc = ppc + 1) begin
-                        pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
-                        #1;
-                        $write("#%d: ", ppc);
-                        assert_equals(pipe_expected[ppc + pcount*PIPE_DEPTH], pipeOutWord, "Pipe", chan_focus);
-                    end
-                    $display("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-                    $display("Pipe check %d finished successfully", pcheck);
-                    $display("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-                    pcount = pcount + 1;
-                end
-                pcheck = 0;
+            // check pipe
+            ReadFromPipeOut(data_log_opep, pipeOutSize);
+            for(ppc = 0; ppc < REPS; ppc = ppc + 1) begin
+                pipeOutWord = {pipeOut[ppc*2+1], pipeOut[ppc*2]};
+                #1;
+                $write("#%d: ", ppc);
+                assert_equals(pipe_expected[ppc], pipeOutWord, "Pipe", chan_focus);
             end
         end
     endtask
