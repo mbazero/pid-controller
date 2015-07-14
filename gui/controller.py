@@ -274,9 +274,14 @@ class Controller():
     '''
     def read_fpga_data(self):
         self.fpga.update_wire_outs()
+
+        # Read log wire-outs for each channel
         for chan in self.model.get_routed_chans():
             self.read_data_log_single(chan)
-        self.read_data_log_block()
+
+        # Read log pipe-out for focused channel if it is ready
+        if self.fpga.get_wire_out_value(self.params.data_log_status_owep):
+            self.read_data_log_block()
 
     '''
     Read single word logged data for specified channel

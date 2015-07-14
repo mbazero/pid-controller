@@ -37,7 +37,7 @@ localparam AMP0_ADDR			= N_DAC + 2 * N_DDS;	// Amplitude channel 0 output addres
 // ----------------------------------------------------------------------------
 localparam W_COMP			= 128; 	// width of computation registers
 localparam W_EP				= 16; 	// width of opal kelly endpoint
-localparam PIPE_DEPTH		= 1024;	// depth of pipe out fifo specified in during core gen
+localparam PIPE_DEPTH		= 1023;	// depth of pipe out fifo specified in during core gen
 
 // ---------------------------- derived params --------------------------------
 // - don't change these

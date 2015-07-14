@@ -97,9 +97,7 @@ ARCHITECTURE simulation_arch OF pipe_fifo_synth IS
     -- FIFO interface signal declarations
     SIGNAL wr_clk_i                       :   STD_LOGIC;
     SIGNAL rd_clk_i                       :   STD_LOGIC;
-    SIGNAL almost_full                    :   STD_LOGIC;
     SIGNAL rst	                          :   STD_LOGIC;
-    SIGNAL prog_full                      :   STD_LOGIC;
     SIGNAL wr_en                          :   STD_LOGIC;
     SIGNAL rd_en                          :   STD_LOGIC;
     SIGNAL din                            :   STD_LOGIC_VECTOR(16-1 DOWNTO 0);
@@ -212,7 +210,6 @@ ARCHITECTURE simulation_arch OF pipe_fifo_synth IS
     rd_en                     <=   rd_en_i;
     full_i                    <=   full;
     empty_i                   <=   empty;
-    almost_full_i             <=   almost_full;
 
     fg_dg_nv: pipe_fifo_dgen
       GENERIC MAP (
@@ -254,8 +251,8 @@ ARCHITECTURE simulation_arch OF pipe_fifo_synth IS
               C_APPLICATION_TYPE  => 0,
 	      C_DOUT_WIDTH        => 16,
 	      C_DIN_WIDTH         => 16,
-	      C_WR_PNTR_WIDTH     => 11,
-    	      C_RD_PNTR_WIDTH     => 11,
+	      C_WR_PNTR_WIDTH     => 10,
+    	      C_RD_PNTR_WIDTH     => 10,
  	      C_CH_TYPE           => 0,
               FREEZEON_ERROR      => FREEZEON_ERROR,
 	      TB_SEED             => TB_SEED, 
@@ -288,9 +285,7 @@ ARCHITECTURE simulation_arch OF pipe_fifo_synth IS
     PORT MAP (
            WR_CLK                    => wr_clk_i,
            RD_CLK                    => rd_clk_i,
-           ALMOST_FULL               => almost_full,
            RST                       => rst,
-           PROG_FULL                 => prog_full,
            WR_EN 		     => wr_en,
            RD_EN                     => rd_en,
            DIN                       => din,

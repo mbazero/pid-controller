@@ -152,17 +152,18 @@ okWireIn data0_owi (
 //--------------------------------------------------------------------
 // Data Logging Wire-or
 //--------------------------------------------------------------------
-wire [(N_LOG+1)*17-1:0] ok2x;
+localparam N_WO = N_LOG + 2;
+wire [N_WO*17-1:0] ok2x;
 
 okWireOR #(
-    .N                  (N_LOG+1))
+    .N              (N_WO))
 wireOR (
-    .ok2                (ok2),
-    .ok2s               (ok2x)
+    .ok2            (ok2),
+    .ok2s           (ok2x)
     );
 
 //--------------------------------------------------------------------
-// Data Logging Wire-outs
+// Wire-out Datalogging
 //--------------------------------------------------------------------
 reg [W_LDATA-1:0] data_log_reg[0:N_LOG-1];
 reg [W_LCHAN:0] i;
@@ -187,17 +188,18 @@ for ( j = 0; j < N_LOG; j = j + 1 ) begin : log_owo_arr
         .ok2        (ok2x[j*17 +: 17]),
         .ep_addr    (data_log0_owep + j[W_LCHAN-1:0]),
         .ep_datain  (data_log_reg[j][W_LDATA-1 -: W_EP])
-    );
+        );
 end
 endgenerate
 
 //--------------------------------------------------------------------
-// Data Logging Pipe-out
+// Pipe Datalogging
 //--------------------------------------------------------------------
 reg [W_LCHAN-1:0] pipe_chan;
 wire [W_EP-1:0] log_pipe_data;
 wire log_pipe_dv = ( log_chan_in == pipe_chan ) ? log_dv_in : 1'b0;
 wire log_pipe_rd;
+wire log_pipe_rdy;
 
 // Pipe channel write handling
 always @( posedge pid_clk_in ) begin
@@ -207,23 +209,32 @@ always @( posedge pid_clk_in ) begin
 end
 
 // Pipe-out fifo
-pipe_tx_fifo log_pipe_buf (
-    .ti_clk_in      (ticlk),
-    .pid_clk_in     (pid_clk_in),
-    .rst_in         (sys_rst_out),
-    .data_valid_in  (log_pipe_dv),
-    .data_in        (log_data_in[W_LDATA-1 -: W_EP]),
-    .pipe_read_in   (log_pipe_rd),
-    .data_out       (log_pipe_data)
+dual_fifo log_pipe_buf (
+    .rd_clk     (ticlk),
+    .wr_clk     (pid_clk_in),
+    .rst        (sys_rst_out),
+    .rd_en      (log_pipe_rd),
+    .wr_en      (log_pipe_dv),
+    .din        (log_data_in[W_LDATA-1 -: W_EP]),
+    .rd_rdy     (log_pipe_rdy),
+    .dout       (log_pipe_data)
     );
 
 // Pipe-out
 okPipeOut log_pipe (
-    .ok1            (ok1),
-    .ok2            (ok2x[N_LOG*17 +: 17]),
-    .ep_addr        (data_log_opep),
-    .ep_datain      (log_pipe_data),
-    .ep_read        (log_pipe_rd)
+    .ok1        (ok1),
+    .ok2        (ok2x[N_LOG*17 +: 17]),
+    .ep_addr    (data_log_opep),
+    .ep_datain  (log_pipe_data),
+    .ep_read    (log_pipe_rd)
+    );
+
+// Data log status register
+okWireOut log_owo (
+    .ok1        (ok1),
+    .ok2        (ok2x[(N_LOG+1)*17 +: 17]),
+    .ep_addr    (data_log_status_owep),
+    .ep_datain  ({15'b0, log_pipe_rdy})
     );
 
 endmodule

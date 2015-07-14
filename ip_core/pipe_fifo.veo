@@ -66,9 +66,7 @@ pipe_fifo your_instance_name (
   .rd_en(rd_en), // input rd_en
   .dout(dout), // output [15 : 0] dout
   .full(full), // output full
-  .almost_full(almost_full), // output almost_full
-  .empty(empty), // output empty
-  .prog_full(prog_full) // output prog_full
+  .empty(empty) // output empty
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 

@@ -130,10 +130,6 @@ ARCHITECTURE fg_pc_arch OF pipe_fifo_pctrl IS
  SIGNAL stop_on_err      : STD_LOGIC := '0';
  SIGNAL sim_stop_cntr    : STD_LOGIC_VECTOR(7 DOWNTO 0):= conv_std_logic_vector(if_then_else(C_CH_TYPE=2,64,TB_STOP_CNT),8);
  SIGNAL sim_done_i       : STD_LOGIC := '0';
- SIGNAL reset_ex1        : STD_LOGIC := '0';
- SIGNAL reset_ex2        : STD_LOGIC := '0';
- SIGNAL reset_ex3        : STD_LOGIC := '0';
- SIGNAL af_chk_i         : STD_LOGIC := if_then_else(C_CH_TYPE /= 2,'1','0');
  SIGNAL rdw_gt_wrw       : STD_LOGIC_VECTOR(D_WIDTH_DIFF-1 DOWNTO 0) := (OTHERS => '1');
  SIGNAL wrw_gt_rdw       : STD_LOGIC_VECTOR(D_WIDTH_DIFF-1 DOWNTO 0) := (OTHERS => '1');
  SIGNAL rd_activ_cont    : STD_LOGIC_VECTOR(25 downto 0):= (OTHERS => '0');
@@ -167,13 +163,10 @@ ARCHITECTURE fg_pc_arch OF pipe_fifo_pctrl IS
  SIGNAL data_chk_wr_d1   : STD_LOGIC := '0';
  SIGNAL data_chk_rd1     : STD_LOGIC := '0';
  SIGNAL data_chk_rd2     : STD_LOGIC := '0';
- SIGNAL af_chk_d1        : STD_LOGIC := '0';
- SIGNAL af_chk_rd1       : STD_LOGIC := '0';
- SIGNAL af_chk_rd2       : STD_LOGIC := '0';
  SIGNAL post_rst_dly_wr  : STD_LOGIC_VECTOR(4 DOWNTO 0) := (OTHERS => '1');
  SIGNAL post_rst_dly_rd  : STD_LOGIC_VECTOR(4 DOWNTO 0) := (OTHERS => '1');
 BEGIN
- status_i  <= data_chk_i & full_chk_rd2 & empty_chk_i & af_chk_rd2 & '0';
+ status_i  <= data_chk_i & full_chk_rd2 & empty_chk_i & '0' & '0';
  STATUS    <= status_d1_i & '0' & '0' & rd_activ_cont(rd_activ_cont'high);
 
  prc_we_i <= wr_en_i  WHEN sim_done_wr2 = '0' ELSE '0';
@@ -245,20 +238,6 @@ END PROCESS;
   -- CHECKS FOR FIFO
   -----------------------------------------------------
 
-  -- Reset pulse extension require for FULL flags checks
-  -- FULL flag may stay high for 3 clocks after reset is removed.
-  PROCESS(WR_CLK,RESET_WR) 
-  BEGIN
-    IF(RESET_WR = '1') THEN
-      reset_ex1 <= '1';
-      reset_ex2 <= '1';
-      reset_ex3 <= '1';
-    ELSIF (WR_CLK'event AND WR_CLK='1') THEN
-      reset_ex1 <= '0';
-      reset_ex2 <= reset_ex1;
-      reset_ex3 <= reset_ex2;
-    END IF;
-  END PROCESS;
 
   PROCESS(RD_CLK,RESET_RD)
   BEGIN
@@ -343,24 +322,10 @@ END PROCESS;
   END PROCESS;
 
   fifo_d_chk:IF(C_CH_TYPE /= 2) GENERATE
-    PRC_WR_EN  <= prc_we_i  AFTER 50 ns;
-    PRC_RD_EN  <= prc_re_i  AFTER 100 ns;
+    PRC_WR_EN  <= prc_we_i  AFTER 100 ns;
+    PRC_RD_EN  <= prc_re_i  AFTER 50 ns;
     data_chk_i <= dout_chk;
   END GENERATE fifo_d_chk;
-
-  -- Almost full flag checks
-   PROCESS(WR_CLK,reset_ex3)
-   BEGIN
-     IF(reset_ex3 = '1') THEN
-         af_chk_i <= '0';
-     ELSIF (WR_CLK'event AND WR_CLK='1') THEN
-       IF((FULL = '1' AND ALMOST_FULL = '0') OR (empty_wr_dom2 = '1' AND ALMOST_FULL = '1' AND C_WR_PNTR_WIDTH > 4)) THEN
-         af_chk_i <= '1';
-       ELSE
-         af_chk_i <= '0';
-       END IF;
-     END IF;
-   END PROCESS;
   -----------------------------------------------------
  
 
@@ -377,7 +342,6 @@ END PROCESS;
        rd_en_wr1      <= '0';
        rd_en_wr2      <= '0';
        full_chk_d1    <= '0';
-       af_chk_d1      <= '0';
        reset_en_d1    <= '0';
        sim_done_wr1   <= '0';
        sim_done_wr2   <= '0';
@@ -392,7 +356,6 @@ END PROCESS;
        rd_en_wr1      <= rd_en_d1;
        rd_en_wr2      <= rd_en_wr1;
        full_chk_d1    <= full_chk_i;
-       af_chk_d1      <= af_chk_i;
      END IF;
    END PROCESS;
 
@@ -408,8 +371,6 @@ END PROCESS;
          rd_en_d1       <= '0';
          full_chk_rd1   <= '0';
          full_chk_rd2   <= '0';
-	 af_chk_rd1     <= '0';
-	 af_chk_rd2     <= '0';
          reset_en_rd1   <= '0';
          reset_en_rd2   <= '0';
          sim_done_d1    <= '0';
@@ -426,8 +387,6 @@ END PROCESS;
          wr_en_rd2      <= wr_en_rd1;
          full_chk_rd1   <= full_chk_d1;
          full_chk_rd2   <= full_chk_rd1;
-	 af_chk_rd1     <= af_chk_d1;
-	 af_chk_rd2     <= af_chk_rd1;
      END IF;
    END PROCESS;
    

@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="33" />
+   <WVObjectSize size="49" />
    <wvobject fp_name="/pid_controller_tf/adc_os_out" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">adc_os_out[2:0]</obj_property>
       <obj_property name="ObjectShortName">adc_os_out[2:0]</obj_property>
@@ -162,9 +162,76 @@
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/data_log_reg" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">data_log_reg[0:7,17:0]</obj_property>
-      <obj_property name="ObjectShortName">data_log_reg[0:7,17:0]</obj_property>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/rd_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_clk</obj_property>
+      <obj_property name="ObjectShortName">rd_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/wr_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_clk</obj_property>
+      <obj_property name="ObjectShortName">wr_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/din" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">din[15:0]</obj_property>
+      <obj_property name="ObjectShortName">din[15:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/rd_rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_rdy</obj_property>
+      <obj_property name="ObjectShortName">rd_rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/dout" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dout[15:0]</obj_property>
+      <obj_property name="ObjectShortName">dout[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/rd_buf" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_buf</obj_property>
+      <obj_property name="ObjectShortName">rd_buf</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf0_wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">buf0_wr_en</obj_property>
+      <obj_property name="ObjectShortName">buf0_wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf1_wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">buf1_wr_en</obj_property>
+      <obj_property name="ObjectShortName">buf1_wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf0_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">buf0_rd_en</obj_property>
+      <obj_property name="ObjectShortName">buf0_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf1_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">buf1_rd_en</obj_property>
+      <obj_property name="ObjectShortName">buf1_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf0_dout" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">buf0_dout[15:0]</obj_property>
+      <obj_property name="ObjectShortName">buf0_dout[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf1_dout" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">buf1_dout[15:0]</obj_property>
+      <obj_property name="ObjectShortName">buf1_dout[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf0_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">buf0_full</obj_property>
+      <obj_property name="ObjectShortName">buf0_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/buf1_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">buf1_full</obj_property>
+      <obj_property name="ObjectShortName">buf1_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/wr_buf" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_buf</obj_property>
+      <obj_property name="ObjectShortName">wr_buf</obj_property>
    </wvobject>
 </wave_config>
