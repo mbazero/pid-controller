@@ -125,8 +125,8 @@ NET "adc_os_out[0]"     LOC="A12"   | IOSTANDARD=LVCMOS33;
 NET "adc_os_out[1]"     LOC="B12"   | IOSTANDARD=LVCMOS33;
 NET "adc_os_out[2]"     LOC="B16"   | IOSTANDARD=LVCMOS33;
 
-NET "adc_reset_out"     LOC="C9"        | IOSTANDARD=LVCMOS33;
-NET "adc_sclk_out"      LOC="A7"        | IOSTANDARD=LVCMOS33;
+NET "adc_reset_out"     LOC="C9"    | IOSTANDARD=LVCMOS33;
+NET "adc_sclk_out"      LOC="A7"    | IOSTANDARD=LVCMOS33;
 
 # specify adc setup and hold times
 NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
