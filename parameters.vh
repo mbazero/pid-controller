@@ -7,7 +7,7 @@
 // ----------------------------------------------------------------------------
 localparam N_ADC			= 8;		// number of adc channels to generate
 localparam N_DAC			= 8;		// number of dac channels to generate
-localparam N_DDS			= 0;		// number of dds channels to generate
+localparam N_DDS			= 4;		// number of dds channels to generate
 localparam W_ADC_DATA		= 18; 	// width of adc data word
 localparam W_ADC_CHAN    = 3;     // width of adc channel select
 localparam W_ADC_OS      = 3;     // width of adc oversample mode signal

@@ -50,30 +50,7 @@ module pid_controller (
     output wire                 i2c_sda,
     output wire                 i2c_scl,
     output wire                 hi_muxsel,
-
-    // Pipe debug
-    output wire idp_dv_db,
-    output wire pid_dv_db,
-    output wire opt_dv_db,
-    output wire [1:0] idp_src_db,
-    output wire [1:0] idp_chan_db,
-    output wire din_db,
-
-    // ADC controller debug
-    output wire adc_clk_db,
-    output wire adc_dv_db,
-    output wire [W_ADC_CHAN-1:0] adc_src_db,
-    output wire [W_ADC_DATA-1:0] adc_data_db,
-
-    // ADC buffer debug
-    output wire adc_buf_clk_db,
-    output wire adc_buf_dv_db,
-    output wire [W_ADC_CHAN-1:0] adc_buf_src_db,
-    output wire [W_ADC_DATA-1:0] adc_buf_data_db
     );
-
-// Debug
-assign din_db = dac_din_out;
 
 `include "ep_map.vh"
 `include "parameters.vh"
@@ -139,16 +116,6 @@ wire adc_dv, adc_buf_dv;
 wire [W_ADC_CHAN-1:0] adc_src, adc_buf_src;
 wire [W_ADC_DATA-1:0] adc_data, adc_buf_data;
 reg [W_ADC_OS-1:0] adc_os = ADC_OS_INIT;
-
-assign adc_clk_db = adc_clk;
-assign adc_dv_db = adc_dv;
-assign adc_src_db = adc_src[1:0];
-assign adc_data_db = adc_data[3:0];
-
-assign adc_buf_clk_db = pid_clk;
-assign adc_buf_dv_db = adc_buf_dv;
-assign adc_buf_src_db = adc_buf_src[1:0];
-assign adc_buf_data_db = adc_buf_data[3:0];
 
 adc_controller #(
     .W_OUT          (W_ADC_DATA),
@@ -226,13 +193,7 @@ pid_pipe (
     .ovr_data       (log_data),
     .dv_out         (pid_dv),
     .chan_out       (pid_chan),
-    .data_out       (pid_data),
-    // DEBUG
-    .idp_dv_db (idp_dv_db),
-    .pid_dv_db (pid_dv_db),
-    .opt_dv_db (opt_dv_db),
-    .idp_src_db (idp_src_db),
-    .idp_chan_db (idp_chan_db)
+    .data_out       (pid_data)
 );
 
 //--------------------------------------------------------------------

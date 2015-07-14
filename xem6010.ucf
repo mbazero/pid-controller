@@ -65,7 +65,7 @@ NET "hi_in<7>" OFFSET = IN 13.33 ns VALID 20.83 ns BEFORE "hi_in<0>" RISING;
 ############################################################################
 NET "clk17_in"        LOC="AB13"  | IOSTANDARD="LVCMOS33";
 NET "clk50_in"        LOC="Y11"   | IOSTANDARD="LVCMOS33";
-#NET "clk3"              LOC="AB11"  | IOSTANDARD="LVCMOS33";
+#NET "clk3"           LOC="AB11"  | IOSTANDARD="LVCMOS33";
 
 NET "clk17_in"        TNM_NET = "clk17_in";
 NET "clk50_in"        TNM_NET = "clk50_in";
@@ -84,23 +84,35 @@ NET "dac_nsync_out"     LOC="A14"   | IOSTANDARD=LVCMOS33;
 NET "dac_sclk_out"      LOC="B18"   | IOSTANDARD=LVCMOS33;
 NET "dac_din_out"       LOC="A16"   | IOSTANDARD=LVCMOS33;
 
-# specify dac max clock-to-output delay
+# Specify dac max clock-to-output delay
 NET "dac_din_out" OFFSET = OUT 6 ns AFTER "clk50_in" RISING;
 
 # DDS CONTROL #########################################################
-# maps DDS[0] and (optionally) DDS[1] to breakout board OUT1
-#NET "dds_io_update_out[0]" LOC="A13"   | IOSTANDARD=LVCMOS33;
-#NET "dds_sdio_out[0]"      LOC="C15"   | IOSTANDARD=LVCMOS33;
-#NET "dds_csb_out[0]"           LOC="A15"   | IOSTANDARD=LVCMOS33;
-#NET "dds_reset_out[0]"     LOC="C17"   | IOSTANDARD=LVCMOS33;
-#NET "dds_sclk_out[0]"      LOC="A17"   | IOSTANDARD=LVCMOS33;
-#NET "dds_csb_out[1]"           LOC="A18"   | IOSTANDARD=LVCMOS33;
-#NET "dds_sdio_out[1]"      LOC="C11"   | IOSTANDARD=LVCMOS33;
-#NET "dds_io_update_out[1]" LOC="A11"   | IOSTANDARD=LVCMOS33;
+# Maps dds[0] and dds[1] to breakout board out1
+net "dds_io_update_out[0]" loc="a13"   | iostandard=lvcmos33;
+net "dds_sdio_out[0]"      loc="c15"   | iostandard=lvcmos33;
+net "dds_csb_out[0]"       loc="a15"   | iostandard=lvcmos33;
+net "dds_reset_out[0]"     loc="c17"   | iostandard=lvcmos33;
+net "dds_sclk_out[0]"      loc="a17"   | iostandard=lvcmos33;
+net "dds_csb_out[1]"       loc="a18"   | iostandard=lvcmos33;
+net "dds_sdio_out[1]"      loc="c11"   | iostandard=lvcmos33;
+net "dds_io_update_out[1]" loc="a11"   | iostandard=lvcmos33;
 
-# specify dds max clock-to-output delays
-#NET "dds_sdio_out[0]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
-#NET "dds_sdio_out[1]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
+# Maps dds[2] and dds[3] to breakout board out2
+net "dds_io_update_out[2]" loc="C6"   | iostandard=lvcmos33;
+net "dds_sdio_out[2]"      loc="A3"   | iostandard=lvcmos33;
+net "dds_csb_out[2]"       loc="A4"   | iostandard=lvcmos33;
+net "dds_reset_out[2]"     loc="B8"   | iostandard=lvcmos33;
+net "dds_sclk_out[2]"      loc="A8"   | iostandard=lvcmos33;
+net "dds_csb_out[3]"       loc="B10"  | iostandard=lvcmos33;
+net "dds_sdio_out[3]"      loc="A10"  | iostandard=lvcmos33;
+net "dds_io_update_out[3]" loc="C13"  | iostandard=lvcmos33;
+
+# Specify dds max clock-to-output delays
+NET "dds_sdio_out[0]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
+NET "dds_sdio_out[1]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
+NET "dds_sdio_out[2]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
+NET "dds_sdio_out[3]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;
 
 ## ADC ################################################################
 NET "adc_n_cs_out"      LOC="C7"    | IOSTANDARD=LVCMOS33;
@@ -119,33 +131,3 @@ NET "adc_sclk_out"      LOC="A7"        | IOSTANDARD=LVCMOS33;
 # specify adc setup and hold times
 NET "adc_data_a_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
 NET "adc_data_b_in" OFFSET = IN 7 ns VALID 14 ns BEFORE "clk17_in" RISING;
-
-## PIPE DEBUG
-NET "idp_dv_db" LOC="A13"   | IOSTANDARD=LVCMOS33;
-NET "pid_dv_db" LOC="C15"   | IOSTANDARD=LVCMOS33;
-NET "opt_dv_db" LOC="A15"   | IOSTANDARD=LVCMOS33;
-NET "idp_src_db[0]" LOC="C17"   | IOSTANDARD=LVCMOS33;
-NET "idp_src_db[1]" LOC="A17"   | IOSTANDARD=LVCMOS33;
-NET "idp_chan_db[0]" LOC="A18"   | IOSTANDARD=LVCMOS33;
-NET "idp_chan_db[1]" LOC="C11"   | IOSTANDARD=LVCMOS33;
-NET "din_db" LOC="A11"   | IOSTANDARD=LVCMOS33;
-
-## ADC CONTROLLER DEBUG
-NET "adc_clk_db" LOC="C6"   | IOSTANDARD=LVCMOS33;
-NET "adc_dv_db" LOC="A3"   | IOSTANDARD=LVCMOS33;
-NET "adc_src_db[0]" LOC="A4"   | IOSTANDARD=LVCMOS33;
-NET "adc_src_db[1]" LOC="B8"   | IOSTANDARD=LVCMOS33;
-NET "adc_data_db[0]" LOC="A8"   | IOSTANDARD=LVCMOS33;
-NET "adc_data_db[1]" LOC="B10"   | IOSTANDARD=LVCMOS33;
-NET "adc_data_db[2]" LOC="A10"   | IOSTANDARD=LVCMOS33;
-NET "adc_data_db[3]" LOC="C13"   | IOSTANDARD=LVCMOS33;
-
-## ADC BUFFER DEBUG
-NET "adc_buf_clk_db" LOC="D10"   | IOSTANDARD=LVCMOS33;
-NET "adc_buf_dv_db" LOC="D8"   | IOSTANDARD=LVCMOS33;
-NET "adc_buf_src_db[0]" LOC="C10"   | IOSTANDARD=LVCMOS33;
-NET "adc_buf_src_db[1]" LOC="L17"   | IOSTANDARD=LVCMOS33;
-NET "adc_buf_data_db[0]" LOC="D11"   | IOSTANDARD=LVCMOS33;
-NET "adc_buf_data_db[1]" LOC="K18"   | IOSTANDARD=LVCMOS33;
-NET "adc_buf_data_db[2]" LOC="C12"   | IOSTANDARD=LVCMOS33;
-NET "adc_buf_data_db[3]" LOC="D6"   | IOSTANDARD=LVCMOS33;
