@@ -79,7 +79,7 @@ wire [W_WR_CHAN-1:0] wr_chan;
 wire [W_WR_DATA-1:0] wr_data;
 
 frontpanel_interface #(
-    .N_LOG          (N_ADC),
+    .N_LOG          (N_PID_CHAN),
     .W_LCHAN        (W_PID_CHAN),
     .W_LDATA        (W_ADC_DATA),
     .W_EP           (W_EP),

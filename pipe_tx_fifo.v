@@ -44,8 +44,8 @@ localparam  ST_WAIT     = 3'd0,
 // combinational logic
 //////////////////////////////////////////
 
-assign rd_ready = fifo_half_full && ( cur_state == ST_WAIT );
-assign fifo_rd_en = rd_ready || rd_en || fifo_almost_full;
+assign rd_ready = fifo_half_full;
+assign fifo_rd_en = ( fifo_half_full && ( cur_state == ST_WAIT )) || rd_en || fifo_almost_full;
 
 //////////////////////////////////////////
 // sequential logic

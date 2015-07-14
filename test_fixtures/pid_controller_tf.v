@@ -39,11 +39,11 @@ module pid_controller_tf;
     wire dac_sclk_out;
     wire dac_din_out;
     wire dac_nclr_out;
-    wire [1:0] dds_sclk_out;
-    wire [1:0] dds_reset_out;
-    wire [1:0] dds_csb_out;
-    wire [1:0] dds_sdio_out;
-    wire [1:0] dds_io_update_out;
+    wire [N_DDS-1:0] dds_sclk_out;
+    wire [N_DDS-1:0] dds_reset_out;
+    wire [N_DDS-1:0] dds_csb_out;
+    wire [N_DDS-1:0] dds_sdio_out;
+    wire [N_DDS-1:0] dds_io_update_out;
     wire obuf_en_out;
 
     // Frontpanel
@@ -137,13 +137,13 @@ module pid_controller_tf;
     //////////////////////////////////////////
 
     // simulation reps
-    localparam REPS = 100;
+    localparam REPS = 10;
 
     // adc params
     reg [15:0] adc_os = 0;
 
     // channel params
-    localparam NAC = 4; // number of active channels
+    localparam NAC = 1; // number of active channels
     reg [15:0] chan_focus;
 
     // routing params
@@ -167,7 +167,6 @@ module pid_controller_tf;
     reg signed [15:0] multiplier[0:NAC-1];
     reg [15:0] right_shift[0:NAC-1];
     reg [15:0] add_chan[0:NAC-1];
-    reg [5*8-1:0] dest_type[0:NAC-1];
 
     //////////////////////////////////////////
     // Verification Params
@@ -253,7 +252,8 @@ module pid_controller_tf;
         for ( x = 0; x < NAC; x = x + 1 ) begin
             // Routing
             src[x] = $unsigned($random) % N_ADC;
-            dest[x] = x;
+            // dest[x] = x;
+            dest[x] = 10;
 
             // Oversample
             os[x] = 0;
@@ -266,20 +266,20 @@ module pid_controller_tf;
             inv_error[x] = 0;
 
             // OPT
-            output_init[x] = 30000;
+            output_init[x] = 332;
             output_min[x] = 0;
-            output_max[x] = 65535;
+            output_max[x] = 512;
 
             multiplier[x] = $random % 1000;
             right_shift[x] = 0;
 
             add_chan[x] = N_CHAN + 1;
-            dest_type[x] = "DAC";
 
             $display("--------------------------------------");
             $display("Chan %d config:", x);
             $display("--------------------------------------");
             $display("src = %d", src[x]);
+            $display("dst = %d", dest[x]);
             $display("os = %d", os[x]);
             $display("");
             $display("setpoint = %d", setpoint[x]);
@@ -310,8 +310,8 @@ module pid_controller_tf;
         configure_chans();
 
         // Set focus
-        chan_focus = dest[$unsigned($random) % NAC];
-        write_data(pipe_cset_rqst, chan_focus, 0);
+        chan_focus = $unsigned($random) % NAC;
+        write_data(pipe_cset_rqst, dest[chan_focus], 0);
 
         // Reset system
         ActivateTriggerIn(sys_gp_itep, sys_rst_offset);
@@ -323,11 +323,21 @@ module pid_controller_tf;
         write_data(adc_os_addr, 0, adc_os);
         ActivateTriggerIn(sys_gp_itep, adc_cstart_offset);
 
-        // inject dac write instruction and verify
+        // inject write instruction and verify
         for (x = 0; x < NAC; x = x+1) begin
-            write_data(opt_inj_rqst, x, 0);
+            write_data(opt_inj_rqst, dest[x], 0);
             opt_rcv[x] = output_init[x];
-            check_dac_rcv(1);
+
+            $display("type: %s", get_dest_type(x));
+            if (get_dest_type(x) == "DAC") begin
+                check_dac_rcv(1);
+            end else if (get_dest_type(x) == "FREQ") begin
+                check_freq_rcv(x, 1);
+            end else if (get_dest_type(x) == "PHASE") begin
+                check_phase_rcv(x, 1);
+            end else begin
+                check_amp_rcv(x, 1);
+            end
         end
 
         #200;
@@ -337,31 +347,31 @@ module pid_controller_tf;
             check_pid(NAC * REPS);
             check_opp(NAC * REPS);
             check_dac_rcv(nac_of_type("DAC") * REPS);
+            check_amp_rcv(0, REPS);
             log_data(NAC * REPS);
             check_data_log(REPS);
-
         join
 
         // Clear oversample memory and verify
         for (x = 0; x < NAC; x=x+1) begin
-            write_data(ovr_clr_rqst, x, 0);
-            assert_equals(0, pid_controller_tf.uut.pid_pipe.ovr.sum_mem[x], "OVR Clear: sum_mem", x);
-            assert_equals(0, pid_controller_tf.uut.pid_pipe.ovr.count_mem[x], "OVR Clear: count_mem", x);
+            write_data(ovr_clr_rqst, dest[x], 0);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.ovr.sum_mem[dest[x]], "OVR Clear: sum_mem", x);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.ovr.count_mem[dest[x]], "OVR Clear: count_mem", x);
         end
 
         // Clear pid memory and verify
         for (x = 0; x < NAC; x=x+1) begin
-            write_data(pid_clr_rqst, x, 0);
-            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.error_prev1_mem[x], "PID Clear: error_prev1", x);
-            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.error_prev2_mem[x], "PID Clear: error_prev2", x);
-            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.dout_prev_mem[x], "PID Clear: dout_prev", x);
+            write_data(pid_clr_rqst, dest[x], 0);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.error_prev1_mem[dest[x]], "PID Clear: error_prev1", x);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.error_prev2_mem[dest[x]], "PID Clear: error_prev2", x);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.dout_prev_mem[dest[x]], "PID Clear: dout_prev", x);
         end
 
         // Clear output memory and verify
         for (x = 0; x < NAC; x=x+1) begin
-            write_data(opt_clr_rqst, x, 0);
-            assert_equals(0, pid_controller_tf.uut.pid_pipe.opt.dmtrs_prev_mem[x], "OVR Clear: dmtrs_prev", x);
-            assert_equals(output_init[x], pid_controller_tf.uut.pid_pipe.opt.dout_prev_mem[x], "OVR Clear: dout_prev", x);
+            write_data(opt_clr_rqst, dest[x], 0);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.opt.dmtrs_prev_mem[dest[x]], "OVR Clear: dmtrs_prev", x);
+            assert_equals(output_init[x], pid_controller_tf.uut.pid_pipe.opt.dout_prev_mem[dest[x]], "OVR Clear: dout_prev", x);
         end
 
         $display("SIMULATION SUCCESSFUL.");
@@ -533,28 +543,93 @@ module pid_controller_tf;
         end
     endtask
 
-    /* Verify received data */
+    /* Verify dac received data */
     task check_dac_rcv;
         input [31:0] reps;
         integer sim_chan;
 
-        begin
-            repeat(reps) begin
-                // simulate dac receiving data
-                @(negedge dac_nsync_out) begin
-                    repeat(32) begin
-                        @(negedge dac_sclk_out) begin
-                            r_instr = {r_instr[30:0], dac_din_out}; // shift data in
-                        end
+        repeat(reps) begin
+            // simulate dac receiving data
+            @(negedge dac_nsync_out) begin
+                repeat(32) begin
+                    @(negedge dac_sclk_out) begin
+                        r_instr = {r_instr[30:0], dac_din_out}; // shift data in
                     end
                 end
-
-                // check recevied data
-                #1 sim_chan = out_to_chan(r_address);
-                #1 assert_equals(opt_rcv[sim_chan], r_data, "RCV", sim_chan);
             end
+
+            // check recevied data
+            #1 sim_chan = out_to_chan(r_address);
+            #1 assert_equals(opt_rcv[sim_chan], r_data, "RCV", sim_chan);
         end
     endtask
+
+    /* Verify dds frequency received data */
+    task check_freq_rcv;
+        input [15:0] chan;
+        input [31:0] reps;
+        reg [63:0] freq_instr;
+        reg [47:0] freq_data;
+        integer dds_chan;
+
+        repeat(reps) begin
+            dds_chan = (dest[chan] - N_DAC) / 3;
+            @(negedge dds_csb_out[dds_chan]) begin
+                repeat(64) begin
+                    @(posedge dds_sclk_out[dds_chan]) begin
+                        freq_instr = {freq_instr[62:0], dds_sdio_out[dds_chan]};
+                    end
+                end
+            end
+            #1 freq_data = freq_instr[47:0];
+            #1 assert_equals(opt_rcv[chan], freq_data, "FREQ RCV", chan);
+        end
+    endtask
+
+    /* Verify dds phase received data */
+    task check_phase_rcv;
+        input [15:0] chan;
+        input [31:0] reps;
+        reg [31:0] phase_instr;
+        reg [13:0] phase_data;
+        integer dds_chan;
+
+        repeat(reps) begin
+            dds_chan = (dest[chan] - N_DAC) / 3;
+            @(negedge dds_csb_out[dds_chan]) begin
+                repeat(32) begin
+                    @(posedge dds_sclk_out[dds_chan]) begin
+                        phase_instr = {phase_instr[30:0], dds_sdio_out[dds_chan]};
+                    end
+                end
+            end
+            #1 phase_data = phase_instr[13:0];
+            #1 assert_equals(opt_rcv[chan], phase_data, "PHASE RCV", chan);
+        end
+    endtask
+
+    /* Verify dds amp received data */
+    task check_amp_rcv;
+        input [15:0] chan;
+        input [31:0] reps;
+        reg [31:0] amp_instr;
+        reg [9:0] amp_data;
+        integer dds_chan;
+
+        repeat(reps) begin
+            dds_chan = (dest[chan] - N_DAC) / 3;
+            @(negedge dds_csb_out[dds_chan]) begin
+                repeat(32) begin
+                    @(posedge dds_sclk_out[dds_chan]) begin
+                        amp_instr = {amp_instr[30:0], dds_sdio_out[dds_chan]};
+                    end
+                end
+            end
+            #1 amp_data = amp_instr[9:0];
+            #1 assert_equals(opt_rcv[chan], amp_data, "PHASE RCV", chan);
+        end
+    endtask
+
 
     /* Simulation data logging */
     task log_data;
@@ -638,6 +713,26 @@ module pid_controller_tf;
         end
     endfunction
 
+    function [5*8-1:0] get_dest_type;
+        input [15:0] chan;
+        reg [15:0] dst;
+        reg [5*8-1:0] temp;
+        begin
+            dst = dest[chan];
+            if (dst < FREQ0_ADDR) begin
+                temp = "DAC";
+            end else if (dst < PHASE0_ADDR) begin
+                temp = "FREQ";
+            end else if (dst < AMP0_ADDR) begin
+                temp = "PHASE";
+            end else begin
+                temp = "AMP";
+            end
+            get_dest_type = temp;
+        end
+    endfunction
+
+
     function [15:0] nac_of_type;
         input [5*8-1:0] type;
         reg [15:0] num = 0;
@@ -645,7 +740,7 @@ module pid_controller_tf;
         begin
             num = 0;
             for (x = 0; x < NAC; x = x+1) begin
-                if (dest_type[x] == type) begin
+                if (get_dest_type(x) == type) begin
                     num = num + 1;
                 end
             end

@@ -6,30 +6,6 @@ import pyqtgraph as pg
 import numpy as np
 from PyQt4.Qt import *
 
-
-'''
-TODO
-- automatic interal reference setting
-- change plot x-axis so current time 0 is on right
-- implement algorithm to determine the focused channel in the tab layout
-- add lock that restricts access to FPGA to one thread
-    >> NO...you only want one thread accessing the FPGA b/c all wires are updated at once
-- still need to figure out threading issue (sometimes you still get segmentation fault, other times you get bus error)
-- create new lock channel class which stores all variables and defines all handler methods
-    > an instance of this class is passed (instead of okc) to all GUI vals
-- overhaul update enable system
-    > ideally, replace it altogether witch the signle endpoint system with a bunch of triggers to all modules
-    > however, if you keep the current system, you must implement a function which converts a decimal channel number to one-hot encoded update enable signal
-- enable float inputs for setpoint and OPP min/max/init
-- implement conversion of voltage values to digital for sending to FPGA
-    > PID Setpoint
-    > OPP init/min/max
-        = for this one you must also add algorithmic support for writing two all three endpoints if need be. right now you only write to one for simplicity
-- figure out way to allow channels to not have a source
-- conversely, figure out a way to have one source drive multiple outputs
-- change signals to new style
-- resolve workerthread segmentation fault issue
-'''
 qt_app = QApplication(sys.argv)
 
 class View(QWidget):
@@ -39,22 +15,20 @@ class View(QWidget):
 
         # create channel views
         n_chan = params.n_dac + params.n_dds
-        self.dac_views = [ChannelView(chan_no) for chan_no in range(0, params.n_dac)]
-        self.dds_views = [ChannelView(chan_no) for chan_no in range(0, params.n_dds)]
-        self.chan_views = self.dac_views + self.dds_views
+        self.chan_views = [ChannelView(chan_no) for chan_no in range(params.n_dac)]
+        for x in range(params.n_dds):
+            self.chan_views += [ChannelView(chan_no) for chan_no in range(3)]
 
         # initalize global params view
-        self.gp_view = GlobalParamsView(params.n_dac, params.n_dds)
+        self.gp_view = GlobalParamsView(params)
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.gp_view)
 
-        # create tabs and add channel views
-        self.tab_widget = QTabWidget()
-        for j in range(params.n_dac):
-            self.tab_widget.addTab(self.dac_views[j], "DAC " + str(j))
-        for k in range(params.n_dds):
-            self.tab_widget.addTab(self.dds_views[k], "DDS " + str(k))
-        self.layout.addWidget(self.tab_widget)
+        # create channel stack
+        self.chan_stack = QStackedWidget()
+        for x in range(params.n_pid_chan):
+            self.chan_stack.addWidget(self.chan_views[x])
+        self.layout.addWidget(self.chan_stack)
 
         self.setLayout(self.layout)
 
@@ -75,7 +49,7 @@ class View(QWidget):
         sys.exit(qt_app.exec_())
 
 class GlobalParamsView(QGroupBox):
-    def __init__(self, n_dac, n_dds):
+    def __init__(self, params):
         QWidget.__init__(self)
         self.setTitle('Global Parameters')
 
@@ -116,24 +90,36 @@ class GlobalParamsView(QGroupBox):
         self.layout.addWidget(self.block_transfer)
 
         #################### lock status array #######################
-        self.dac_status_layout = QVBoxLayout()
-        #self.dac_status_layout.setTitle('DAC Status')
-        self.dds_status_layout = QVBoxLayout()
-        #self.dds_status_layout.setTitle('DDS Status')
-        self.dac_status_arr = [QPushButton('DAC Channel ' + str(count), self) for count in range(n_dac)]
-        self.dds_status_arr = [QPushButton('DDS Channel ' + str(count), self) for count in range(n_dds)]
+        self.chan_sel_arr = []
+        for x in range(params.n_pid_chan):
+            if x < params.freq0_addr:
+                title = 'Channel ' +  str(x)
+            elif x < params.phase0_addr:
+                title = 'Frequency'
+            elif x < params.amp0_addr:
+                title = 'Phase'
+            else:
+                title = 'Amplitude'
+            cs_button = QPushButton(title, self)
+            cs_button.setFlat(True)
+            cs_button.setCheckable(True)
+            self.chan_sel_arr.append(cs_button)
 
-        for i in range(n_dac) :
-            self.dac_status_arr[i].setStyleSheet('background-color: grey')
-            self.dac_status_layout.addWidget(self.dac_status_arr[i])
+        dac_group = QGroupBox('DAC')
+        dac_layout = QVBoxLayout()
+        for i in range(params.n_dac):
+            dac_layout.addWidget(self.chan_sel_arr[params.dac0_addr + i])
+        dac_group.setLayout(dac_layout)
+        self.layout.addWidget(dac_group)
 
-        for j in range(n_dds) :
-            self.dds_status_arr[j].setStyleSheet('background-color: grey')
-            self.dds_status_layout.addWidget(self.dds_status_arr[j])
-
-        self.layout.addLayout(self.dac_status_layout)
-        self.layout.addLayout(self.dds_status_layout)
-        self.layout.addStretch(1)
+        for j in range(params.n_dds):
+            dds_group = QGroupBox('DDS ' + str(j))
+            dds_layout = QVBoxLayout()
+            dds_layout.addWidget(self.chan_sel_arr[params.freq0_addr + j])
+            dds_layout.addWidget(self.chan_sel_arr[params.phase0_addr + j])
+            dds_layout.addWidget(self.chan_sel_arr[params.amp0_addr + j])
+            dds_group.setLayout(dds_layout)
+            self.layout.addWidget(dds_group)
 
         #################### save_config #######################
         self.save_config = QPushButton('Save Config', self)
@@ -280,22 +266,11 @@ class ErrorView(QGroupBox):
         self.form_layout = QFormLayout()
 
         #################### ovr_os #######################
-        self.ovr_os_ops = ['Off'] + [str(2**x) for x in range(1, 10)]
-
-        # create and fill oversampling combo box
         self.ovr_os = QComboBox(self)
-        self.ovr_os.addItems(self.ovr_os_ops)
-
-        # add oversampling combo box to form with label
         self.form_layout.addRow('Oversample', self.ovr_os)
 
         #################### pid_setpoint #######################
         self.pid_setpoint = QLineEdit(self)
-
-        # create and add apply input validator
-        ps_validator = QDoubleValidator(-5.0, 5.0, 3)
-        self.pid_setpoint.setValidator(ps_validator)
-
         self.form_layout.addRow('Setpoint', self.pid_setpoint)
         self.layout.addLayout(self.form_layout)
 
@@ -323,18 +298,15 @@ class PIDView(QGroupBox):
         self.pid_p_coef = QSpinBox(self)
         self.pid_p_coef.setMinimumWidth(100)
         self.form_layout.addRow('P coef', self.pid_p_coef)
-        self.pid_p_coef.setMaximum(1000)
 
         #################### pid_i_coef #######################
         self.pid_i_coef = QSpinBox(self)
         self.pid_i_coef.setMinimumWidth(100)
         self.form_layout.addRow('I coef', self.pid_i_coef)
-        self.pid_i_coef.setMaximum(1000)
 
         #################### pid_d_coef #######################
         self.pid_d_coef = QSpinBox(self)
         self.pid_d_coef.setMinimumWidth(100)
-        self.pid_d_coef.setMaximum(1000)
         self.form_layout.addRow('D coef', self.pid_d_coef)
 
         # add form layout to main layout
@@ -408,34 +380,16 @@ class OutputView(QGroupBox):
         #################### opt_init #######################
         self.opt_init = QLineEdit(self)
         self.opt_init.setMinimumWidth(100)
-
-        # create and apply input validator
-        init_validator = QDoubleValidator(0.0, 5.0, 2)
-        self.opt_init.setValidator(init_validator)
-
-        self.opt_init.setPlaceholderText('0 to 5V')
         self.form_layout.addRow('Initial', self.opt_init)
 
         #################### opt_max #######################
         self.opt_max = QLineEdit(self)
         self.opt_max.setMinimumWidth(100)
-
-        # create and apply input validator
-        max_validator = QDoubleValidator(0.0, 5.0, 2)
-        self.opt_max.setValidator(max_validator)
-
-        self.opt_max.setPlaceholderText('0 to 5V')
         self.form_layout.addRow('Max', self.opt_max)
 
         #################### opt_min #######################
         self.opt_min = QLineEdit(self)
         self.opt_min.setMinimumWidth(100)
-
-        # create and apply input validator
-        min_validator = QDoubleValidator(0.0, 5.0, 2)
-        self.opt_min.setValidator(min_validator)
-
-        self.opt_min.setPlaceholderText('0 to 5V')
         self.form_layout.addRow('Min', self.opt_min)
 
         # add form layout to main layout

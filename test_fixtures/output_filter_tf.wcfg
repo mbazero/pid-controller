@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="47" />
+   <WVObjectSize size="57" />
    <wvobject fp_name="divider298" type="divider">
       <obj_property name="label">INPUTS</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -30,13 +30,63 @@
       <obj_property name="ObjectShortName">dv_in</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/chan_in" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">chan_in[3:0]</obj_property>
-      <obj_property name="ObjectShortName">chan_in[3:0]</obj_property>
+      <obj_property name="ElementShortName">chan_in[4:0]</obj_property>
+      <obj_property name="ObjectShortName">chan_in[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/delta_in" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">delta_in[63:0]</obj_property>
-      <obj_property name="ObjectShortName">delta_in[63:0]</obj_property>
+      <obj_property name="ElementShortName">delta_in[127:0]</obj_property>
+      <obj_property name="ObjectShortName">delta_in[127:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider91" type="divider">
+      <obj_property name="label">REQUESTS</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/inj_rqst" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">inj_rqst[10:0]</obj_property>
+      <obj_property name="ObjectShortName">inj_rqst[10:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/clr_rqst" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">clr_rqst[10:0]</obj_property>
+      <obj_property name="ObjectShortName">clr_rqst[10:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider101" type="divider">
+      <obj_property name="label">WRITE</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/wr_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_addr[15:0]</obj_property>
+      <obj_property name="ObjectShortName">wr_addr[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/wr_chan" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_chan[4:0]</obj_property>
+      <obj_property name="ObjectShortName">wr_chan[4:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/wr_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_data[48:0]</obj_property>
+      <obj_property name="ObjectShortName">wr_data[48:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider95" type="divider">
+      <obj_property name="label">INTERNAL MEMORY</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/dout_prev_mem" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dout_prev_mem[0:10,48:0]</obj_property>
+      <obj_property name="ObjectShortName">dout_prev_mem[0:10,48:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider304" type="divider">
@@ -50,8 +100,8 @@
       <obj_property name="ObjectShortName">inj_in</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/inj_chan_in" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">inj_chan_in[3:0]</obj_property>
-      <obj_property name="ObjectShortName">inj_chan_in[3:0]</obj_property>
+      <obj_property name="ElementShortName">inj_chan_in[4:0]</obj_property>
+      <obj_property name="ObjectShortName">inj_chan_in[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider315" type="divider">
@@ -73,13 +123,13 @@
       <obj_property name="ObjectShortName">dv_p1</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/chan_p1" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">chan_p1[3:0]</obj_property>
-      <obj_property name="ObjectShortName">chan_p1[3:0]</obj_property>
+      <obj_property name="ElementShortName">chan_p1[4:0]</obj_property>
+      <obj_property name="ObjectShortName">chan_p1[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/delta_p1" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">delta_p1[63:0]</obj_property>
-      <obj_property name="ObjectShortName">delta_p1[63:0]</obj_property>
+      <obj_property name="ElementShortName">delta_p1[127:0]</obj_property>
+      <obj_property name="ObjectShortName">delta_p1[127:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/mult_p1" type="array" db_ref_id="1">
@@ -93,8 +143,8 @@
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/add_chan_p1" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">add_chan_p1[4:0]</obj_property>
-      <obj_property name="ObjectShortName">add_chan_p1[4:0]</obj_property>
+      <obj_property name="ElementShortName">add_chan_p1[5:0]</obj_property>
+      <obj_property name="ObjectShortName">add_chan_p1[5:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider315" type="divider">
@@ -116,18 +166,18 @@
       <obj_property name="ObjectShortName">dv_p2</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/chan_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">chan_p2[3:0]</obj_property>
-      <obj_property name="ObjectShortName">chan_p2[3:0]</obj_property>
+      <obj_property name="ElementShortName">chan_p2[4:0]</obj_property>
+      <obj_property name="ObjectShortName">chan_p2[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/dmtrs_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">dmtrs_p2[79:0]</obj_property>
-      <obj_property name="ObjectShortName">dmtrs_p2[79:0]</obj_property>
+      <obj_property name="ElementShortName">dmtrs_p2[143:0]</obj_property>
+      <obj_property name="ObjectShortName">dmtrs_p2[143:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/add_dmtrs_p2" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">add_dmtrs_p2[79:0]</obj_property>
-      <obj_property name="ObjectShortName">add_dmtrs_p2[79:0]</obj_property>
+      <obj_property name="ElementShortName">add_dmtrs_p2[143:0]</obj_property>
+      <obj_property name="ObjectShortName">add_dmtrs_p2[143:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider315" type="divider">
@@ -149,13 +199,13 @@
       <obj_property name="ObjectShortName">dv_p3</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/chan_p3" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">chan_p3[3:0]</obj_property>
-      <obj_property name="ObjectShortName">chan_p3[3:0]</obj_property>
+      <obj_property name="ElementShortName">chan_p3[4:0]</obj_property>
+      <obj_property name="ObjectShortName">chan_p3[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/dsum_p3" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">dsum_p3[80:0]</obj_property>
-      <obj_property name="ObjectShortName">dsum_p3[80:0]</obj_property>
+      <obj_property name="ElementShortName">dsum_p3[144:0]</obj_property>
+      <obj_property name="ObjectShortName">dsum_p3[144:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/dout_prev_p3" type="array" db_ref_id="1">
@@ -186,8 +236,8 @@
       <obj_property name="ObjectShortName">flush_p4</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/dout_int_p4" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">dout_int_p4[81:0]</obj_property>
-      <obj_property name="ObjectShortName">dout_int_p4[81:0]</obj_property>
+      <obj_property name="ElementShortName">dout_int_p4[145:0]</obj_property>
+      <obj_property name="ObjectShortName">dout_int_p4[145:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/inj_p4" type="logic" db_ref_id="1">
@@ -199,8 +249,8 @@
       <obj_property name="ObjectShortName">dv_p4</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/chan_p4" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">chan_p4[3:0]</obj_property>
-      <obj_property name="ObjectShortName">chan_p4[3:0]</obj_property>
+      <obj_property name="ElementShortName">chan_p4[4:0]</obj_property>
+      <obj_property name="ObjectShortName">chan_p4[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/dout_p4" type="array" db_ref_id="1">
@@ -228,8 +278,8 @@
       <obj_property name="ObjectShortName">dv_p5</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/chan_p5" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">chan_p5[3:0]</obj_property>
-      <obj_property name="ObjectShortName">chan_p5[3:0]</obj_property>
+      <obj_property name="ElementShortName">chan_p5[4:0]</obj_property>
+      <obj_property name="ObjectShortName">chan_p5[4:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/dout_p5" type="array" db_ref_id="1">

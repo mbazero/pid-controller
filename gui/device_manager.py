@@ -86,6 +86,17 @@ class DeviceManager:
         data1 = (int(data) >> 16) & 0xffff
         data0 = int(data) & 0xffff
 
+        print "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+        print "addr = " + format(addr, '#04x')
+        print "chan = " + str(chan)
+        print "data = " + str(data)
+        print "data = " + format(int(data), '#04x')
+        print "data3 = " + format(data3, '#04x')
+        print "data2 = " + format(data2, '#04x')
+        print "data1 = " + format(data1, '#04x')
+        print "data0 = " + format(data0, '#04x')
+        print "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+
         # send data to opal kelly
         self.set_wire_in(self.params.data3_iwep, data3)
         self.set_wire_in(self.params.data2_iwep, data2)

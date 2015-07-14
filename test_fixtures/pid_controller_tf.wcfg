@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="33" />
+   <WVObjectSize size="44" />
    <wvobject fp_name="/pid_controller_tf/adc_os_out" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">adc_os_out[2:0]</obj_property>
       <obj_property name="ObjectShortName">adc_os_out[2:0]</obj_property>
@@ -124,8 +124,8 @@
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/pid/clr_rqst" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">clr_rqst[7:0]</obj_property>
-      <obj_property name="ObjectShortName">clr_rqst[7:0]</obj_property>
+      <obj_property name="ElementShortName">clr_rqst[10:0]</obj_property>
+      <obj_property name="ObjectShortName">clr_rqst[10:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider71" type="divider">
       <obj_property name="label">DAC OUTPUT</obj_property>
@@ -156,6 +156,44 @@
       <obj_property name="ObjectShortName">r_data[15:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="divider84" type="divider">
+      <obj_property name="label">DDS0 OUTPUT</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /sclk_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sclk_out</obj_property>
+      <obj_property name="ObjectShortName">sclk_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /reset_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset_out</obj_property>
+      <obj_property name="ObjectShortName">reset_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /csb_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">csb_out</obj_property>
+      <obj_property name="ObjectShortName">csb_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /sdio_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdio_out</obj_property>
+      <obj_property name="ObjectShortName">sdio_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /io_update_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">io_update_out</obj_property>
+      <obj_property name="ObjectShortName">io_update_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /freq_wr_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">freq_wr_done</obj_property>
+      <obj_property name="ObjectShortName">freq_wr_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /phase_wr_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">phase_wr_done</obj_property>
+      <obj_property name="ObjectShortName">phase_wr_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/\dds_array[0].dds_cntrl /amp_wr_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">amp_wr_done</obj_property>
+      <obj_property name="ObjectShortName">amp_wr_done</obj_property>
+   </wvobject>
    <wvobject fp_name="divider56" type="divider">
       <obj_property name="label">DATA LOGGING</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -163,8 +201,16 @@
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
    <wvobject fp_name="/pid_controller_tf/uut/fp_intf/data_log_reg" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">data_log_reg[0:7,17:0]</obj_property>
-      <obj_property name="ObjectShortName">data_log_reg[0:7,17:0]</obj_property>
+      <obj_property name="ElementShortName">data_log_reg[0:10,17:0]</obj_property>
+      <obj_property name="ObjectShortName">data_log_reg[0:10,17:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/clr_rqst" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">clr_rqst[10:0]</obj_property>
+      <obj_property name="ObjectShortName">clr_rqst[10:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/inj_rqst" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">inj_rqst[10:0]</obj_property>
+      <obj_property name="ObjectShortName">inj_rqst[10:0]</obj_property>
    </wvobject>
 </wave_config>

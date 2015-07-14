@@ -7,7 +7,7 @@
 // ----------------------------------------------------------------------------
 localparam N_ADC			= 8;		// number of adc channels to generate
 localparam N_DAC			= 8;		// number of dac channels to generate
-localparam N_DDS			= 4;		// number of dds channels to generate
+localparam N_DDS			= 1;		// number of dds channels to generate
 localparam W_ADC_DATA		= 18; 	// width of adc data word
 localparam W_ADC_CHAN    = 3;     // width of adc channel select
 localparam W_ADC_OS      = 3;     // width of adc oversample mode signal
@@ -37,7 +37,7 @@ localparam AMP0_ADDR			= N_DAC + 2 * N_DDS;	// Amplitude channel 0 output addres
 // ----------------------------------------------------------------------------
 localparam W_COMP			= 128; 	// width of computation registers
 localparam W_EP				= 16; 	// width of opal kelly endpoint
-localparam PIPE_DEPTH		= 1023;	// depth of pipe out fifo specified in during core gen
+localparam PIPE_DEPTH		= 1024;	// depth of pipe out fifo specified in during core gen
 
 // ---------------------------- derived params --------------------------------
 // - don't change these

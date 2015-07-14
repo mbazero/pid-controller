@@ -177,7 +177,7 @@ ODDR2 #(
 	.DDR_ALIGNMENT	("NONE"),
 	.INIT				(1'b1),
 	.SRTYPE			("SYNC")
-) dac_clk_fwd (
+) dds_clk_fwd (
 	.Q					(sclk_out),
 	.C0				(clk_in),
 	.C1				(~clk_in),

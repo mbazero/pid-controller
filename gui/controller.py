@@ -20,23 +20,20 @@ class Controller():
         self.graph_freeze = [0] * params.n_pid_chan
         self.init_time = time.time()
         self.focused_chan = 0
+        view.gp_view.chan_sel_arr[self.focused_chan].setChecked(True)
 
         self.trigger_adc_cstart()
         self.trigger_dac_rset()
 
         self.init_worker_thread()
         self.register_view_handlers()
-        self.init_view()
-
+        self.set_view_validators()
         self.load_config(config)
 
     '''
     Register all input view handlers
     '''
     def register_view_handlers(self):
-        # Tab handlers
-        self.view.tab_widget.currentChanged.connect(
-                lambda: self.update_focused_chan(self.view.tab_widget.currentIndex()))
 
         # Global params view handlers
         gp_view = self.view.gp_view
@@ -61,12 +58,17 @@ class Controller():
     Register view handlers for the specified channel
     '''
     def register_chan_view_handlers(self, chan):
+        gp_view = self.view.gp_view
         chan_view = self.view.chan_views[chan]
         mode_view = chan_view.mode_view
         error_view = chan_view.error_view
         pid_view = chan_view.pid_view
         proc_view = chan_view.proc_view
         output_view = chan_view.output_view
+
+        # Tab handler
+        gp_view.chan_sel_arr[chan].clicked.connect(
+                lambda: self.update_focused_chan(chan))
 
         # Graph handlers
         chan_view.graph_freeze.clicked.connect(
@@ -120,16 +122,46 @@ class Controller():
                 lambda: self.request_opt_inject(chan))
 
     '''
-    Initialize view
+    Set view validators
     '''
-    def init_view(self):
-        self.view.gp_view.sample_period.setText(str(self.sample_period))
-        self.update_view()
+    def set_view_validators(self):
+        for chan in range(self.params.n_pid_chan):
+            chan_view = self.view.chan_views[chan]
+            error_view = chan_view.error_view
+            pid_view = chan_view.pid_view
+            proc_view = chan_view.proc_view
+            output_view = chan_view.output_view
+
+            # Error view validators
+            error_view.ovr_os.addItems(
+                    [str(2**x) for x in range(2**self.params.w_pid_os)])
+            inpt_validator = QDoubleValidator(
+                    *(self.model.get_input_ranges(chan)[0] + [3]))
+            error_view.pid_setpoint.setValidator(inpt_validator)
+
+            # PID view handlers
+            pid_view.pid_p_coef.setMaximum(2**self.params.w_pid_oprnds)
+            pid_view.pid_i_coef.setMaximum(2**self.params.w_pid_oprnds)
+            pid_view.pid_d_coef.setMaximum(2**self.params.w_pid_oprnds)
+
+            # Processing view handlers
+            proc_view.opt_mult.setMaximum(2**self.params.w_pid_oprnds)
+            proc_view.opt_rs.setMaximum(2**self.params.w_pid_oprnds)
+
+            # Output view handlers
+            opt_validator = QDoubleValidator(
+                    *(self.model.get_output_ranges(chan)[0] + [3]))
+            print "output range: " + str(self.model.get_output_ranges(chan)[0])
+            output_view.opt_init.setValidator(QDoubleValidator(0.0, 5.0, 2))
+            output_view.opt_max.setValidator(opt_validator)
+            output_view.opt_min.setValidator(opt_validator)
+
 
     '''
     Update view with model data
     '''
     def update_view(self):
+        self.view.gp_view.sample_period.setText(str(self.sample_period))
         self.view.gp_view.adc_os.setCurrentIndex(self.model.get_param(self.params.adc_os_addr, 0) - 1)
         for chan in range(self.params.n_pid_chan):
             self.update_chan_view(chan)
@@ -280,7 +312,7 @@ class Controller():
             self.read_data_log_single(chan)
 
         # Read log pipe-out for focused channel if it is ready
-        if self.fpga.get_wire_out_value(self.params.data_log_status_owep):
+        # if self.fpga.get_wire_out_value(self.params.data_log_status_owep):
             self.read_data_log_block()
 
     '''
@@ -327,8 +359,13 @@ class Controller():
         print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
 
     def update_focused_chan(self, chan):
-        self.focused_chan = chan
-        self.send_fpga_request(self.params.pipe_cset_rqst, chan);
+        if chan == self.focused_chan:
+            self.view.gp_view.chan_sel_arr[self.focused_chan].setChecked(True)
+        else:
+            self.view.gp_view.chan_sel_arr[self.focused_chan].setChecked(False)
+            self.focused_chan = chan
+            self.view.chan_stack.setCurrentIndex(chan)
+            self.send_fpga_request(self.params.pipe_cset_rqst, chan);
 
     def update_chan_src_sel(self, chan, src_sel):
         old_src_sel = self.model.get_param(self.params.chan_src_sel_addr, chan)
@@ -336,6 +373,8 @@ class Controller():
         if src_sel != old_src_sel:
             self.model.clear_data_logs(chan)
             if self.model.is_valid_input(src_sel):
+                print "CHAN = " + str(chan)
+                print "SRC_SEL = " + str(src_sel)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, src_sel)
                 self.worker_wake.set() # wake worker thread to handle data logging
                 print self.model.chan_to_string(chan) + " input set to " + self.model.input_to_string(src_sel)

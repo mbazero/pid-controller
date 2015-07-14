@@ -48,25 +48,28 @@ class Model:
     '''
     def init_io_params(self):
         self.adc_units = 'V'
-        self.adc_range_units = [-5, 5]
-        self.adc_range_norm = self.range_from_bitwidth(self.params.w_ep, 'signed')
+        self.adc_range_units = [-5.0, 5.0]
+        self.adc_range_norm = self.range_from_bitwidth(self.params.w_adc_data, 'signed')
         self.adc_cycle_t = 85; # TODO needs dynamic assignment
 
         self.dac_units = 'V'
-        self.dac_range_units = [0, 5]
-        self.dac_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
+        self.dac_range_units = [0.0, 5.0]
+        self.dac_range_norm = self.range_from_bitwidth(self.params.w_dac_data, 'unsigned')
 
         self.freq_units = 'MHz'
-        self.freq_range_units = [0, 1000]
-        self.freq_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
+        self.freq_range_units = [0.0, 1000.0]
+        self.freq_range_norm = self.range_from_bitwidth(self.params.w_freq_data, 'unsigned')
+        print self.freq_range_norm
 
         self.phase_units = '?'
-        self.phase_range_units = [0, 100]
-        self.phase_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
+        self.phase_range_norm = self.range_from_bitwidth(self.params.w_phase_data, 'unsigned')
+        self.phase_range_units = self.phase_range_norm
+        print self.phase_range_norm
 
         self.amp_units = '?'
-        self.amp_range_units = [0, 100]
-        self.amp_range_norm = self.range_from_bitwidth(self.params.w_ep, 'unsigned')
+        self.amp_range_norm = self.range_from_bitwidth(self.params.w_amp_data, 'unsigned')
+        self.amp_range_units = self.amp_range_norm
+        print self.amp_range_norm
 
     '''
     Initialize data logging arrays
@@ -208,11 +211,11 @@ class Model:
 
         if not self.is_valid_output(output):
             return 'Invalid output'
-        elif output < n_dac:
+        elif output < self.params.freq0_addr:
             return 'DAC ' + str(output)
-        elif output < n_dac + n_dds:
+        elif output < self.params.phase0_addr:
             return 'DDS FREQ ' + str(output - n_dac)
-        elif output < n_dac + 2 * n_dds:
+        elif output < self.params.amp0_addr:
             return 'DDS PHASE ' + str(output - n_dac - n_dds)
         else:
             return 'DDS AMP ' + str(output - n_dac - 2*n_dds)
@@ -261,13 +264,16 @@ class Model:
     specified channel
     '''
     def get_input_ranges(self, chan):
-        input_string = self.input_to_string(chan)
-
-        if 'ADC' in input_string:
-            range_units = self.adc_range_units
-            range_norm = self.adc_range_norm
+        range_units = self.adc_range_units
+        range_norm = self.adc_range_norm
 
         return [range_units, range_norm]
+
+    '''
+    Return inputs denormalized units
+    '''
+    def get_input_units(self, chan):
+        return self.adc_units
 
     '''
     Return output range with units and normalized output range for
@@ -292,12 +298,33 @@ class Model:
         return [range_units, range_norm]
 
     '''
+    Return output denormalized units
+    '''
+    def get_output_units(self, chan):
+        output_string = self.output_to_string(chan)
+
+        if 'DAC' in output_string:
+            return self.dac_units
+        elif 'FREQ' in output_string:
+            return self.freq_units
+        elif 'PHASE' in output_string:
+            return self.phase_units
+        elif 'AMP' in output_string:
+            return self.amp_units
+        else:
+            return '?'
+
+    '''
     Normalize input value from actual input range with units to unitless
     integer range
     '''
     def normalize_input(self, chan, value):
-        [range_units, range_norm] = self.get_input_ranges(chan)
-        return int(self.map_value(value, range_units, range_norm))
+        inpt = self.get_param(self.params.chan_src_sel_addr, chan)
+        [range_units, range_norm] = self.get_input_ranges(inpt)
+        if range_units and range_norm:
+            return int(self.map_value(value, range_units, range_norm))
+        else:
+            return value
 
     '''
     Denormalize input value from unitless integer range to actual range
