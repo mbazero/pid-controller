@@ -55,42 +55,28 @@ reg inj_in;
 reg [W_CHAN-1:0] inj_chan_in;
 reg [N_CHAN-1:0] inj_rqst = 0;
 reg [N_CHAN-1:0] clr_rqst = 0;
-wire wr_chan_valid = ( wr_chan < N_CHAN );
 
-// Manage injection register
+// Handle clear requests
+integer i;
 always @( posedge clk_in ) begin
-    // Handle writes
-    if ( wr_en && wr_chan_valid &&
-        ( wr_addr == opt_inj_rqst )) begin
-        inj_rqst[wr_chan] = 1;
-    end
-
-    // Zero after successful injection
-    if ( inj_in ) begin
-        inj_rqst[inj_chan_in] = 0;
-    end
-
-    // Zero on reset or clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_rqst[i] ) begin
-            inj_rqst[i] = 0;
+        if ( !rst_in && wr_en && ( wr_chan == i ) &&
+            ( wr_addr == opt_clr_rqst )) begin
+            clr_rqst[i] <= 1;
+        end else begin
+            clr_rqst[i] <= 0;
         end
     end
 end
 
-// Manage clear register
-integer i;
+// Handle injection requests
 always @( posedge clk_in ) begin
-    // Handle writes
-    if ( wr_en && wr_chan_valid &&
-        ( wr_addr == opt_clr_rqst )) begin
-        clr_rqst[wr_chan] = wr_data[0];
-    end
-
-    // Zero on reset or clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_rqst[i] ) begin
-            clr_rqst[i] = 0;
+        if ( !rst_in && wr_en && ( wr_chan == i ) &&
+            ( wr_addr == opt_inj_rqst )) begin
+            inj_rqst[i] <= 1;
+        end else begin
+            inj_rqst[i] <= 0;
         end
     end
 end
@@ -119,7 +105,7 @@ end
 
 // Handle writes
 always @( posedge clk_in ) begin
-    if ( wr_en && wr_chan_valid ) begin
+    if ( wr_en && wr_chan < N_CHAN ) begin
         case ( wr_addr )
             opt_min_addr : min_mem[wr_chan] <= wr_data[W_DOUT-1:0];
             opt_max_addr : max_mem[wr_chan] <= wr_data[W_DOUT-1:0];

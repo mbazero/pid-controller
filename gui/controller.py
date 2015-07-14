@@ -312,11 +312,11 @@ class Controller():
     '''
     Channel param update handling
     '''
-    def update_pid_lock_en(self, chan, enable):
+    def update_pid_lock_en(self, chan, enable, reset=True):
         self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
 
         # Reset channel on disable
-        if enable == False:
+        if reset and not enable:
             self.request_chan_reset(chan)
 
         print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
@@ -420,15 +420,17 @@ class Controller():
     Request handling
     '''
     def request_chan_reset(self, chan):
+        toggle_reset = False
         if self.model.is_lock_enabled(chan):
-            self.update_pid_lock_en(chan, False);
+            toggle_reset = True
+            self.update_pid_lock_en(chan, False, False)
 
         self.request_ovr_clear(chan)
         self.request_pid_clear(chan)
         self.request_opt_clear(chan)
 
-        if self.model.is_lock_enabled(chan):
-            self.update_pid_lock_en(chan, True);
+        if toggle_reset:
+            self.update_pid_lock_en(chan, True, False);
 
         print self.model.chan_to_string(chan) + " reset"
 

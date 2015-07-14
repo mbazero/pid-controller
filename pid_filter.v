@@ -54,21 +54,16 @@ localparam signed [W_DOUT-1:0] MIN_DOUT = ~MAX_DOUT;
 // Request Registers
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] clr_rqst;
-wire wr_chan_valid = ( wr_chan < N_CHAN );
 
-// Manage clear register
+// Handle clear requests
 integer i;
 always @( posedge clk_in ) begin
-    // Handle writes
-    if ( wr_en && wr_chan_valid &&
-        ( wr_addr == pid_clr_rqst )) begin
-        clr_rqst[wr_chan] = wr_data[0];
-    end
-
-    // Zero on reset or clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_rqst[i] ) begin
-            clr_rqst[i] = 0;
+        if ( !rst_in && wr_en && ( wr_chan == i ) &&
+            ( wr_addr == pid_clr_rqst )) begin
+            clr_rqst[i] <= 1;
+        end else begin
+            clr_rqst[i] <= 0;
         end
     end
 end
@@ -97,7 +92,7 @@ end
 
 // Handle writes
 always @( posedge clk_in ) begin
-    if ( wr_en && wr_chan_valid ) begin
+    if ( wr_en && wr_chan < N_CHAN ) begin
         case ( wr_addr )
             pid_lock_en_addr : lock_en_mem[wr_chan] <= wr_data[0];
             pid_inv_error_addr : inv_error_mem[wr_chan] <= wr_data[0];

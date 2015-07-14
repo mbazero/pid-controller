@@ -137,7 +137,7 @@ module pid_controller_tf;
     //////////////////////////////////////////
 
     // simulation reps
-    localparam REPS = 100;
+    localparam REPS = 10;
 
     // adc params
     reg [15:0] adc_os = 0;
@@ -342,6 +342,28 @@ module pid_controller_tf;
 
         join
 
+        // Clear oversample memory and verify
+        for (x = 0; x < NAC; x=x+1) begin
+            write_data(ovr_clr_rqst, x, 0);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.ovr.sum_mem[x], "OVR Clear: sum_mem", x);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.ovr.count_mem[x], "OVR Clear: count_mem", x);
+        end
+
+        // Clear pid memory and verify
+        for (x = 0; x < NAC; x=x+1) begin
+            write_data(pid_clr_rqst, x, 0);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.error_prev1_mem[x], "PID Clear: error_prev1", x);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.error_prev2_mem[x], "PID Clear: error_prev2", x);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.pid.dout_prev_mem[x], "PID Clear: dout_prev", x);
+        end
+
+        // Clear output memory and verify
+        for (x = 0; x < NAC; x=x+1) begin
+            write_data(opt_clr_rqst, x, 0);
+            assert_equals(0, pid_controller_tf.uut.pid_pipe.opt.dmtrs_prev_mem[x], "OVR Clear: dmtrs_prev", x);
+            assert_equals(output_init[x], pid_controller_tf.uut.pid_pipe.opt.dout_prev_mem[x], "OVR Clear: dout_prev", x);
+        end
+
         $display("SIMULATION SUCCESSFUL.");
         $stop;
 
@@ -408,7 +430,7 @@ module pid_controller_tf;
                 end
 
                 for ( j = 0; j < N_ADC; j = j+1 ) begin
-                    adc_val[j] = $random % 1000;
+                    adc_val[j] = 5555;
                 end
 
                 // simulate serial transmission from adc to fpga

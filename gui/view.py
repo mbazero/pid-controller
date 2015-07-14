@@ -288,7 +288,6 @@ class ErrorView(QGroupBox):
 
         # add oversampling combo box to form with label
         self.form_layout.addRow('Oversample', self.ovr_os)
-        self.layout.addLayout(self.form_layout)
 
         #################### pid_setpoint #######################
         self.pid_setpoint = QLineEdit(self)

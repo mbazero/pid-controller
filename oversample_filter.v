@@ -52,21 +52,16 @@ localparam signed [W_SUM-1:0] MIN_SUM = ~MAX_SUM;
 // Request Registers
 //--------------------------------------------------------------------
 reg [N_CHAN-1:0] clr_rqst = 0;
-wire wr_chan_valid = ( wr_chan < N_CHAN );
 
-// Manage clear register
+// Handle clear requests
 integer i;
 always @( posedge clk_in ) begin
-    // Handle writes
-    if ( wr_en && wr_chan_valid &&
-        ( wr_addr == ovr_clr_rqst )) begin
-        clr_rqst[wr_chan] = wr_data[0];
-    end
-
-    // Zero on reset or clear
     for ( i = 0; i < N_CHAN; i = i + 1 ) begin
-        if ( rst_in || clr_rqst[i] ) begin
-            clr_rqst[i] = 0;
+        if ( !rst_in && wr_en && ( wr_chan == i ) &&
+            ( wr_addr == ovr_clr_rqst )) begin
+            clr_rqst[i] <= 1;
+        end else begin
+            clr_rqst[i] <= 0;
         end
     end
 end
@@ -85,7 +80,7 @@ end
 
 // Handle writes
 always @( posedge clk_in ) begin
-    if ( wr_en && wr_chan_valid ) begin
+    if ( wr_en && wr_chan < N_CHAN ) begin
         case ( wr_addr )
             ovr_os_addr : os_mem[wr_chan] <= wr_data[W_OS-1:0];
         endcase
