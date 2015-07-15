@@ -18,7 +18,6 @@ class Controller():
         self.sample_period = 0.1
         self.block_transfer = False
         self.graph_freeze = [0] * params.n_pid_chan
-        self.init_time = time.time()
         self.focused_chan = 0
         view.gp_view.chan_sel_arr[self.focused_chan].setChecked(True)
 
@@ -378,7 +377,11 @@ class Controller():
             data_log_owep = self.params.data_log0_owep + chan
             data = self.fpga.get_wire_out_value(data_log_owep)
             data = self.uint16_to_int32(data)
-            data = self.model.denormalize_input(chan, data*4)
+            data = self.adjust_logged_data(data, 'ADC')
+            data = self.model.denormalize_input(chan, data)
+            print "****************************************************"
+            print time.time()
+            print "****************************************************"
             self.model.update_data_log_single(chan, time.time(), data)
         else:
             self.model.clear_data_log_single(chan)
@@ -391,14 +394,30 @@ class Controller():
             buf = bytearray(self.params.pipe_depth * 2)
             self.fpga.read_from_pipe_out(self.params.data_log_opep, buf)
 
-            # unpack byte array as array of signed shorts
+            # Unpack byte array as array of signed shorts
             fmt_str = '<' + str(self.params.pipe_depth) + 'h'
             data = struct.unpack(fmt_str, buf)
 
-            data = [self.model.denormalize_input(self.focused_chan, word*4) for word in data]
-            self.model.update_data_log_block(self.focused_chan, data)
+            # Adjust and denormalize data
+            dout = []
+            for dword in data:
+                adj_dword = self.adjust_logged_data(dword, 'ADC')
+                dout.append(self.model.denormalize_input(self.focused_chan, adj_dword))
+            self.model.update_data_log_block(self.focused_chan, dout)
+
         else:
             self.model.clear_data_log_block(self.focused_chan)
+
+    '''
+    Adjust logged data to scale of internal signal
+    '''
+    def adjust_logged_data(self, data, source):
+        if source == 'ADC':
+            w_delta = self.params.w_adc_data - self.params.w_ep
+            if w_delta > 0:
+                return data << w_delta
+            else:
+                return data
 
     '''
     ADC param update handling

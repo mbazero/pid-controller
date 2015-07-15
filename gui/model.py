@@ -9,6 +9,8 @@ class Model:
         self.io_config = io_config
         self.params = params
         self.os_changed = 1
+        self.slog_window_size = 1000
+        self.slog_start_t = [0] * self.n_out
 
         self.init_param_map();
         self.init_data_logs();
@@ -96,9 +98,22 @@ class Model:
     Update single word data log for specified channel. Takes as input a single
     data word and a timestamp
     '''
-    def update_data_log_single(self, chan, data_x, data_y):
-        self.data_log_single_x[chan].append(data_x)
-        self.data_log_single_y[chan].append(data_y)
+    def update_data_log_single(self, chan, dword_x, dword_y):
+        data_x = self.data_log_single_x[chan]
+        data_y = self.data_log_single_y[chan]
+
+        # Set start time if this is the first data entry
+        if len(data_x) == 0:
+            self.slog_start_t[chan] = dword_x
+
+        # Update logs
+        dword_x -= self.slog_start_t[chan]
+        if len(data_x) < self.slog_window_size:
+            data_x.append(dword_x)
+            data_y.append(dword_y)
+        else:
+            data_x = data_x[1:] + [dword_x]
+            data_y = data_y[1:] + [dword_y]
 
     '''
     Update block data log for specified channel. Takes as input an array of
@@ -115,9 +130,6 @@ class Model:
             ovr_os = self.get_param(self.params.ovr_os_addr, chan)
             adc_base_t = self.io_config.adc_base_t
             adc_cycle_t = 2**adc_os * adc_base_t
-            print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-            print "adc_cycle_t = " + str(adc_cycle_t * 1e6) + " us"
-            print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
             pipe_delta_t = 2**ovr_os * adc_cycle_t
             self.data_log_block_x[chan] = \
                 [x * pipe_delta_t for x in range(self.params.pipe_depth)]
