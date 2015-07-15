@@ -75,19 +75,10 @@ class Model:
     Initialize data logging arrays
     '''
     def init_data_logs(self):
-        adc_os = self.get_param(self.params.adc_os_addr, 0)
-        pipe_delta_t = (adc_os ** self.adc_cycle_t) * (10 ** -6) # seconds
-
-        self.data_log_single_x = [0] * self.n_out
-        self.data_log_single_y = [0] * self.n_out
-        self.data_log_block_x = [0] * self.n_out
-        self.data_log_block_y = [0] * self.n_out
-
-        for chan in range(self.n_out):
-            self.data_log_single_x[chan] = []
-            self.data_log_single_y[chan] = []
-            self.data_log_block_x[chan] = [x * pipe_delta_t for x in range(self.params.pipe_depth)]
-            self.data_log_block_y[chan] = [0 for x in range(self.params.pipe_depth)]
+        self.data_log_single_x = [[]] * self.n_out
+        self.data_log_single_y = [[]] * self.n_out
+        self.data_log_block_x = [[]] * self.n_out
+        self.data_log_block_y = [[]] * self.n_out
 
     '''
     Set parameter specified by address and channel. The function has a twin
@@ -137,6 +128,11 @@ class Model:
     '''
     def update_data_log_block(self, chan, data_y):
         self.data_log_block_y[chan] = data_y
+        if not self.data_log_block_x[chan]:
+            adc_os = self.get_param(self.params.adc_os_addr, 0)
+            pipe_delta_t = (adc_os ** self.adc_cycle_t) * (10 ** -6) # seconds
+            self.data_log_block_x[chan] = \
+                [x * pipe_delta_t for x in range(self.params.pipe_depth)]
 
     '''
     Return single word data log for specified channel
@@ -167,7 +163,8 @@ class Model:
     Clear block data log
     '''
     def clear_data_log_block(self, chan):
-        self.data_log_block_y[chan] = [0] * self.n_out
+        self.data_log_block_x[chan] = []
+        self.data_log_block_y[chan] = []
 
     '''
     Return true if PID lock is enabled for the specified channel

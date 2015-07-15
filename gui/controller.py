@@ -6,7 +6,7 @@ import cPickle
 from PyQt4.Qt import *
 
 '''
-Handles state synchronization between model and view
+Handle state synchronization between model and view
 '''
 class Controller():
     def __init__(self, view, model, fpga, params, config):
