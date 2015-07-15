@@ -211,11 +211,11 @@ class Model:
         elif output < self.params.freq0_addr:
             return 'DAC ' + str(output)
         elif output < self.params.phase0_addr:
-            return 'DDS FREQ ' + str(output - n_dac)
+            return 'FREQ ' + str(output - n_dac)
         elif output < self.params.amp0_addr:
-            return 'DDS PHASE ' + str(output - n_dac - n_dds)
+            return 'PHASE ' + str(output - n_dac - n_dds)
         else:
-            return 'DDS AMP ' + str(output - n_dac - 2*n_dds)
+            return 'AMP ' + str(output - n_dac - 2*n_dds)
 
     '''
     Return string representation for channel number. Channels are defined by

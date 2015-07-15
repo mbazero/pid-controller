@@ -4,9 +4,6 @@
 // PID Controller
 // ====================================================================
 
-// TODO polish
-// 9. convert all operators to logical ( double symbol )
-
 module pid_controller (
     // Inputs <- Opal Kelly PLL
     input wire                  clk17_in,

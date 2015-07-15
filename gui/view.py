@@ -24,11 +24,34 @@ class View(QWidget):
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.gp_view)
 
-        # create channel stack
-        self.chan_stack = QStackedWidget()
-        for x in range(params.n_pid_chan):
-            self.chan_stack.addWidget(self.chan_views[x])
-        self.layout.addWidget(self.chan_stack)
+        # create output tabs
+        opt_tabs = QTabWidget()
+
+        # create dac tab layout
+        dac_tabs = QTabWidget()
+        for x in range(params.n_dac):
+            dac_tabs.addTab(self.chan_views[x], 'OUT' + str(x+1))
+        opt_tabs.addTab(dac_tabs, 'DAC')
+
+        # create dds tab layout
+        dds_tabs = QTabWidget()
+        for x in range(params.n_dds):
+            dds_tabs = QTabWidget()
+            fidx = params.freq0_addr + x
+            pidx = params.phase0_addr + x
+            aidx = params.amp0_addr + x
+            dds_tabs.addTab(self.chan_views[fidx], 'FREQ')
+            dds_tabs.addTab(self.chan_views[pidx], 'PHASE')
+            dds_tabs.addTab(self.chan_views[aidx], 'AMP')
+            opt_tabs.addTab(dds_tabs, 'DDS' + str(x))
+
+        self.layout.addWidget(opt_tabs)
+
+        ## create channel stack
+        #self.chan_stack = QStackedWidget()
+        #for x in range(params.n_pid_chan):
+            #self.chan_stack.addWidget(self.chan_views[x])
+        #self.layout.addWidget(self.chan_stack)
 
         self.setLayout(self.layout)
 
@@ -93,42 +116,50 @@ class GlobalParamsView(QGroupBox):
         self.chan_sel_arr = []
         for x in range(params.n_pid_chan):
             if x < params.freq0_addr:
-                title = 'Channel ' +  str(x)
+                title = 'OUT' + str(x)
             elif x < params.phase0_addr:
-                title = 'Frequency'
+                title = 'FREQ'
             elif x < params.amp0_addr:
-                title = 'Phase'
+                title = 'PHASE'
             else:
-                title = 'Amplitude'
+                title = 'AMP'
             cs_button = QPushButton(title, self)
             cs_button.setFlat(True)
             cs_button.setCheckable(True)
             self.chan_sel_arr.append(cs_button)
 
-        dac_group = QGroupBox('DAC')
+        chan_sel_tb = QToolBox()
+        active_group = QGroupBox()
+        chan_sel_tb.addItem(active_group, "Active")
+
+        dac_group = QGroupBox()
         dac_layout = QVBoxLayout()
         for i in range(params.n_dac):
             dac_layout.addWidget(self.chan_sel_arr[params.dac0_addr + i])
+        dac_layout.addStretch(1)
         dac_group.setLayout(dac_layout)
-        self.layout.addWidget(dac_group)
+        chan_sel_tb.addItem(dac_group, 'DAC')
 
         for j in range(params.n_dds):
-            dds_group = QGroupBox('DDS ' + str(j))
+            dds_group = QGroupBox()
             dds_layout = QVBoxLayout()
             dds_layout.addWidget(self.chan_sel_arr[params.freq0_addr + j])
             dds_layout.addWidget(self.chan_sel_arr[params.phase0_addr + j])
             dds_layout.addWidget(self.chan_sel_arr[params.amp0_addr + j])
+            dds_layout.addStretch(1)
             dds_group.setLayout(dds_layout)
-            self.layout.addWidget(dds_group)
+            chan_sel_tb.addItem(dds_group, 'DDS' + str(j))
+
+        self.layout.addWidget(chan_sel_tb)
 
         #################### save_config #######################
         self.save_config = QPushButton('Save Config', self)
         self.layout.addWidget(self.save_config)
 
-        #################### load_config #######################
-        self.load_config = QPushButton('Load Config', self)
-        # self.load_config.setStyleSheet('background-color: red')
-        self.layout.addWidget(self.load_config)
+        #################### load_model #######################
+        self.load_model = QPushButton('Load Config', self)
+        # self.load_model.setStyleSheet('background-color: red')
+        self.layout.addWidget(self.load_model)
 
         #################### sys_reset #######################
         self.sys_reset = QPushButton('System Reset', self)

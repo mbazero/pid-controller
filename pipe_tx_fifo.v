@@ -32,14 +32,14 @@ wire fifo_half_empty;
 wire [15:0] fifo_dout;
 
 /* read counter */
-reg [11:0]  rd_count;
+reg [11:0] rd_count;
 
 /* state registers */
-reg [2:0]   cur_state;
-reg [2:0]   next_state;
+reg [2:0] cur_state;
+reg [2:0] next_state;
 
 /* state parameters */
-localparam  ST_WAIT     = 3'd0,
+localparam  ST_WAIT = 3'd0,
             ST_READ = 3'd1;
 
 //////////////////////////////////////////
@@ -93,9 +93,9 @@ pipe_fifo pipe_buf (
 
 /* initial assignments */
 initial begin
-    rd_count    = 0;
-    cur_state   = ST_WAIT;
-    next_state  = ST_WAIT;
+    rd_count = 0;
+    cur_state = ST_WAIT;
+    next_state = ST_WAIT;
 end
 
 /* state sequential logic */
@@ -109,13 +109,13 @@ end
 
 /* next state combinational logic */
 always @( * ) begin
-    next_state <= cur_state; // default assignment if no case and condition is satisfied
+    next_state <= cur_state; // default assignment
     case ( cur_state )
         ST_WAIT: begin
-            if ( rd_en == 1 )        next_state <= ST_READ;
+            if ( rd_en == 1 ) next_state <= ST_READ;
         end
         ST_READ: begin
-            if ( rd_count == READ_LEN-1 )   next_state <= ST_WAIT;
+            if ( rd_count == READ_LEN-1 ) next_state <= ST_WAIT;
         end
     endcase
 end

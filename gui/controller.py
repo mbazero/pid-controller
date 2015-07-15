@@ -28,7 +28,10 @@ class Controller():
         self.init_worker_thread()
         self.register_view_handlers()
         self.set_view_validators()
-        self.load_config(config)
+        if config:
+            self.load_model(config)
+        else:
+            self.update_view()
 
     '''
     Register all input view handlers
@@ -37,7 +40,7 @@ class Controller():
 
         # Global params view handlers
         gp_view = self.view.gp_view
-        gp_view.adc_os.currentIndexChanged.connect(
+        gp_view.adc_os.activated.connect(
                 lambda: self.update_adc_os(gp_view.adc_os.currentIndex() + 1))
         gp_view.sample_period.editingFinished.connect(
                 lambda: self.update_sampling_period(float(gp_view.sample_period.text())))
@@ -45,8 +48,8 @@ class Controller():
                 lambda: self.update_block_transfer(gp_view.block_transfer.isChecked()))
         gp_view.save_config.clicked.connect(
                 lambda: self.save_config())
-        gp_view.load_config.clicked.connect(
-                lambda: self.load_config())
+        gp_view.load_model.clicked.connect(
+                lambda: self.load_model())
         gp_view.sys_reset.clicked.connect(
                 lambda: self.trigger_sys_reset())
 
@@ -55,7 +58,7 @@ class Controller():
             self.register_chan_view_handlers(chan)
 
     '''
-    Register view handlers for the specified channel
+    Register channel view handlers
     '''
     def register_chan_view_handlers(self, chan):
         gp_view = self.view.gp_view
@@ -77,7 +80,7 @@ class Controller():
                 lambda: self.trigger_graph_clear(chan))
 
         # Mode view handlers
-        mode_view.chan_src_sel.currentIndexChanged.connect(
+        mode_view.chan_src_sel.activated.connect(
                 lambda: self.update_chan_src_sel(chan, mode_view.chan_src_sel.currentIndex() - 1))
         mode_view.chan_reset.clicked.connect(
                 lambda: self.request_chan_reset(chan));
@@ -85,9 +88,9 @@ class Controller():
                 lambda: self.update_pid_lock_en(chan, mode_view.pid_lock_en.isChecked()))
 
         # Error view handlers
-        error_view.ovr_os.currentIndexChanged.connect(
+        error_view.ovr_os.activated.connect(
                 lambda: self.update_ovr_os(chan, error_view.ovr_os.currentIndex()))
-        error_view.pid_setpoint.textChanged.connect(
+        error_view.pid_setpoint.textEdited.connect(
                 lambda: self.update_pid_setpoint(chan, float(error_view.pid_setpoint.text())))
         error_view.pid_inv_error.stateChanged.connect(
                 lambda: self.update_pid_inv_error(chan, error_view.pid_inv_error.isChecked()))
@@ -107,16 +110,16 @@ class Controller():
                 lambda: self.update_opt_mult(chan, int(proc_view.opt_mult.text())))
         proc_view.opt_rs.valueChanged.connect(
                 lambda: self.update_opt_rs(chan, int(proc_view.opt_rs.text())))
-        proc_view.opt_add_chan.currentIndexChanged.connect(
+        proc_view.opt_add_chan.activated.connect(
                 lambda: self.update_opt_add_chan(chan, proc_view.opt_add_chan.currentIndex() - 1))
 
 
         # Output view handlers
-        output_view.opt_init.textChanged.connect(
+        output_view.opt_init.textEdited.connect(
                 lambda: self.update_opt_init(chan, float(output_view.opt_init.text())))
-        output_view.opt_max.textChanged.connect(
+        output_view.opt_max.textEdited.connect(
                 lambda: self.update_opt_max(chan, float(output_view.opt_max.text())))
-        output_view.opt_min.textChanged.connect(
+        output_view.opt_min.textEdited.connect(
                 lambda: self.update_opt_min(chan, float(output_view.opt_min.text())))
         output_view.opt_inject.clicked.connect(
                 lambda: self.request_opt_inject(chan))
@@ -160,16 +163,26 @@ class Controller():
     '''
     Update view with model data
     '''
-    def update_view(self):
+    def update_view(self, model=0):
+        if not model:
+            model = self.model
+
+        # Sample period
         self.view.gp_view.sample_period.setText(str(self.sample_period))
-        self.view.gp_view.adc_os.setCurrentIndex(self.model.get_param(self.params.adc_os_addr, 0) - 1)
+
+        # ADC oversample mode
+        adc_os = model.get_param(self.params.adc_os_addr, 0)
+        self.view.gp_view.adc_os.setCurrentIndex(adc_os - 1)
+        self.update_adc_os(adc_os)
+
+        # Channel params
         for chan in range(self.params.n_pid_chan):
-            self.update_chan_view(chan)
+            self.update_chan_view(chan, model)
 
     '''
     Update channel view with model data
     '''
-    def update_chan_view(self, chan):
+    def update_chan_view(self, chan, model):
         chan_view = self.view.chan_views[chan]
         mode_view = chan_view.mode_view
         error_view = chan_view.error_view
@@ -177,39 +190,84 @@ class Controller():
         proc_view = chan_view.proc_view
         output_view = chan_view.output_view
         params = self.params
-        model = self.model
 
+        # Channel source select
         mode_view.chan_src_sel.clear()
-        mode_view.chan_src_sel.addItems(['None'] + self.model.get_input_list())
-        mode_view.chan_src_sel.setCurrentIndex(model.get_param(params.chan_src_sel_addr, chan) + 1)
-        mode_view.pid_lock_en.setChecked(model.get_param(params.pid_lock_en_addr, chan))
+        mode_view.chan_src_sel.addItems(['None'] + model.get_input_list())
+        chan_src_sel = model.get_param(params.chan_src_sel_addr, chan)
+        mode_view.chan_src_sel.setCurrentIndex(chan_src_sel + 1)
+        self.update_chan_src_sel(chan, chan_src_sel)
 
-        error_view.ovr_os.setCurrentIndex(model.get_param(params.ovr_os_addr, chan))
-        error_view.pid_setpoint.setText(str(model.denormalize_input(
-            chan, model.get_param(params.pid_setpoint_addr, chan))))
-        error_view.pid_inv_error.setChecked(model.get_param(params.pid_inv_error_addr, chan))
+        # Lock enable
+        pid_lock_en = model.get_param(params.pid_lock_en_addr, chan)
+        mode_view.pid_lock_en.setChecked(pid_lock_en)
+        self.update_pid_lock_en(chan, pid_lock_en)
 
-        pid_view.pid_p_coef.setValue(model.get_param(params.pid_p_coef_addr, chan))
-        pid_view.pid_i_coef.setValue(model.get_param(params.pid_i_coef_addr, chan))
-        pid_view.pid_d_coef.setValue(model.get_param(params.pid_d_coef_addr, chan))
+        # Oversample mode
+        ovr_os = model.get_param(params.ovr_os_addr, chan)
+        error_view.ovr_os.setCurrentIndex(ovr_os)
+        self.update_ovr_os(chan, ovr_os)
 
+        # Setpoint
+        pid_setpoint = model.get_param(params.pid_setpoint_addr, chan)
+        pid_setpoint_denorm = model.denormalize_input(chan, pid_setpoint)
+        error_view.pid_setpoint.setText(str(pid_setpoint_denorm))
+        self.update_pid_setpoint(chan, pid_setpoint_denorm)
+
+        # Invert error
+        pid_inv_error = model.get_param(params.pid_inv_error_addr, chan)
+        error_view.pid_inv_error.setChecked(pid_inv_error)
+        self.update_pid_inv_error(chan, pid_inv_error)
+
+        # P coefficient
+        pid_p_coef = model.get_param(params.pid_p_coef_addr, chan)
+        pid_view.pid_p_coef.setValue(pid_p_coef)
+        self.update_pid_p_coef(chan, pid_p_coef)
+
+        # I coefficient
+        pid_i_coef = model.get_param(params.pid_i_coef_addr, chan)
+        pid_view.pid_i_coef.setValue(pid_i_coef)
+        self.update_pid_i_coef(chan, pid_i_coef)
+
+        # D coefficient
+        pid_d_coef = model.get_param(params.pid_d_coef_addr, chan)
+        pid_view.pid_d_coef.setValue(pid_d_coef)
+        self.update_pid_d_coef(chan, pid_d_coef)
+
+        # Add channel
         proc_view.opt_add_chan.clear()
         proc_view.opt_add_chan.addItems(['None'] + self.model.get_chan_list())
-        proc_view.opt_mult.setValue(model.get_param(params.opt_mult_addr, chan))
-        proc_view.opt_rs.setValue(model.get_param(params.opt_rs_addr, chan))
-        proc_view.opt_add_chan.setCurrentIndex(model.get_param(params.opt_add_chan_addr, chan) + 1)
-        self.update_scale_factor(chan)
+        opt_add_chan = model.get_param(params.opt_add_chan_addr, chan)
+        proc_view.opt_add_chan.setCurrentIndex(opt_add_chan + 1)
+        self.update_opt_add_chan(chan, opt_add_chan)
 
-        output_view.opt_min.setText(str(model.denormalize_output(
-            chan, model.get_param(params.opt_min_addr, chan))))
-        output_view.opt_max.setText(str(model.denormalize_output(
-            chan, model.get_param(params.opt_max_addr, chan))))
-        output_view.opt_init.setText(str(model.denormalize_output(
-            chan, model.get_param(params.opt_init_addr, chan))))
+        # Multiplier
+        opt_mult = model.get_param(params.opt_mult_addr, chan)
+        proc_view.opt_mult.setValue(opt_mult)
+        self.update_opt_mult(chan, opt_mult)
 
-    def update_chan_fpga(self, chan):
-        fgpa = self.fpga
+        # Right shift
+        opt_rs = model.get_param(params.opt_rs_addr, chan)
+        proc_view.opt_rs.setValue(opt_rs)
+        self.update_opt_rs(chan, opt_rs)
 
+        # Output initial
+        opt_init = model.get_param(params.opt_init_addr, chan)
+        opt_init_denorm = model.denormalize_output(chan, opt_init)
+        output_view.opt_init.setText(str(opt_init_denorm))
+        self.update_opt_init(chan, opt_init_denorm)
+
+        # Output max
+        opt_max = model.get_param(params.opt_max_addr, chan)
+        opt_max_denorm = model.denormalize_output(chan, opt_max)
+        output_view.opt_max.setText(str(opt_max_denorm))
+        self.update_opt_max(chan, opt_max_denorm)
+
+        # Output min
+        opt_min = model.get_param(params.opt_min_addr, chan)
+        opt_min_denorm = model.denormalize_output(chan, opt_min)
+        output_view.opt_max.setText(str(opt_min_denorm))
+        self.update_opt_min(chan, opt_min_denorm)
 
     '''
     Save locking configuration to file
@@ -217,19 +275,17 @@ class Controller():
     def save_config(self):
         fname = self.view.get_save_file('Save Config')
         f = open(fname, 'w')
-        cPickle.dump(self.model.get_param_map(), f)
+        cPickle.dump(self.model, f)
 
     '''
     Load configuration from path
     '''
-    def load_config(self, fname=''):
+    def load_model(self, fname=''):
         if not fname:
             fname = self.view.get_open_file('Load Config')
         f = open(fname, 'r')
-        config = cPickle.load(f)
-        config[self.params.pid_lock_en_addr] = [0] * self.params.n_pid_chan
-        self.model.set_param_map(config)
-        self.update_view()
+        model = cPickle.load(f)
+        self.update_view(model)
 
     '''
     Initialize worker thread for graph updating
@@ -361,7 +417,7 @@ class Controller():
         if reset and not enable:
             self.request_chan_reset(chan)
 
-        print self.model.chan_to_string(chan) + " activated" if enable else " deactivated"
+        print self.model.chan_to_string(chan) + (" activated" if enable else " deactivated")
 
     def update_focused_chan(self, chan):
         if chan == self.focused_chan:
@@ -416,7 +472,7 @@ class Controller():
 
     def update_pid_inv_error(self, chan, invert):
         self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, invert)
-        print self.model.chan_to_string(chan) + " error inversion " + "enabled" if invert else "disabled"
+        print self.model.chan_to_string(chan) + " error inversion " + ("enabled" if invert else "disabled")
 
     '''
     Output filter param update handling

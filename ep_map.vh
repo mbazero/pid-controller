@@ -1,17 +1,20 @@
-//---------------------------------------------------
-// Opal Kelly Enpoint Mappings
-//---------------------------------------------------
+//--------------------------------------------------------------------
+// Opal Kelly Endpoint Map
+//--------------------------------------------------------------------
 // Wire-in      :   [ 0x00 - 0x1F ]
 // Wire-out     :   [ 0x20 - 0x3F ]
 // Trigger-in   :   [ 0x40 - 0x5F ]
 // Trigger-out  :   [ 0x60 - 0x7F ]
 // Pipe-In      :   [ 0x80 - 0x9F ]
 // Pipe-Out     :   [ 0xA0 - 0xBf ]
-//---------------------------------------------------
+//--------------------------------------------------------------------
 
-//////////////////////////////////////////
-// wire-in endpoints
-//////////////////////////////////////////
+//--------------------------------------------------------------------
+// Memory Wire-outs Endpoints
+//--------------------------------------------------------------------
+// Endpoint addresses for the wire-outs involved in writing to PID
+// controller memory.
+//--------------------------------------------------------------------
 localparam addr_iwep            = 8'h01;
 localparam chan_iwep            = 8'h02;
 
@@ -20,9 +23,11 @@ localparam data2_iwep           = 8'h04;
 localparam data1_iwep           = 8'h05;
 localparam data0_iwep           = 8'h06;
 
-//////////////////////////////////////////
-// config data addresses
-//////////////////////////////////////////
+//--------------------------------------------------------------------
+// Memory Data Addresses
+//--------------------------------------------------------------------
+// Address specifiers for memory blocks in the PID controller.
+//--------------------------------------------------------------------
 localparam adc_os_addr          = 16'h01;
 
 localparam chan_src_sel_addr    = 16'h02;
@@ -43,34 +48,47 @@ localparam opt_mult_addr        = 16'h0d;
 localparam opt_rs_addr          = 16'h0e;
 localparam opt_add_chan_addr    = 16'h0f;
 
-//////////////////////////////////////////
-// request register addresses
-// - request registers are unique in that
-//   they will clear themselves after the
-//   request has been executed
-//////////////////////////////////////////
+//--------------------------------------------------------------------
+// Request Addresses
+//--------------------------------------------------------------------
+// Address specifiers for request registers in the PID controller.
+// Request registers differ from normal memory in that they will
+// automatically clear themselves after the request has been
+// completed.
+//--------------------------------------------------------------------
 localparam ovr_clr_rqst         = 16'h10;
 localparam pid_clr_rqst         = 16'h11;
 localparam opt_clr_rqst         = 16'h12;
 localparam opt_inj_rqst         = 16'h13;
 localparam pipe_cset_rqst       = 16'h14;
 
-//////////////////////////////////////////
-// trigger-in endpoints
-//////////////////////////////////////////
+//--------------------------------------------------------------------
+// Trigger Endpoints
+//--------------------------------------------------------------------
+// Endpoint addresses for PID controller trigger arrays. The sys_gp
+// trigger array is the only trigger implemented at the moment. It
+// supplies general purpose controller triggers specified by the
+// offsets in the next section.
+//--------------------------------------------------------------------
 localparam sys_gp_itep          = 8'h40;
 
-//////////////////////////////////////////
-// multipurpose trigger offsets
-//////////////////////////////////////////
+//--------------------------------------------------------------------
+// System Trigger Offsets
+//--------------------------------------------------------------------
+// Offset specifiers for system triggers within the sys_gp trigger
+// array.
+//--------------------------------------------------------------------
 localparam sys_rst_offset       = 0;
 localparam adc_cstart_offset    = 1;
 localparam wr_en_offset         = 2;
 localparam dac_rset_offset      = 3;
 
-//////////////////////////////////////////
-// wire/pipe-out endpoints
-//////////////////////////////////////////
+//--------------------------------------------------------------------
+// Data Logging Endpoints
+//--------------------------------------------------------------------
+// Endpoint addresses for wire-outs and pipes involved in data
+// logging.
+//--------------------------------------------------------------------
 localparam data_log_status_owep = 8'h20;
 localparam data_log0_owep       = 8'h21;
 localparam data_log_opep        = 8'ha0;

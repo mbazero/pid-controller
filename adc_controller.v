@@ -7,30 +7,30 @@
 // -----------------------------------------------------------
 
 module adc_controller #(
-    parameter W_OUT = 18, // width of adc data channels
-    parameter N_CHAN = 8, // number of channels to output
-    parameter W_CHAN = 3, // width of channel select
-    parameter W_OS = 2 // width of oversample signal
+    parameter W_OUT = 18,               // width of adc data channels
+    parameter N_CHAN = 8,               // number of channels to output
+    parameter W_CHAN = 3,               // width of channel select
+    parameter W_OS = 2                  // width of oversample signal
     )(
     // inputs <- top level entity
-    input wire clk_in, // adc serial clock; max frequency 17mhz
-    input wire reset_in, // system reset
+    input wire clk_in,                  // adc serial clock; max frequency 17mhz
+    input wire reset_in,                // system reset
 
     // inputs <- AD7608
-    input wire busy_in, // conversion busy signal
-    input wire data_a_in, // serial data channel a
-    input wire data_b_in, // serial data channel b
+    input wire busy_in,                 // conversion busy signal
+    input wire data_a_in,               // serial data channel a
+    input wire data_b_in,               // serial data channel b
 
     // inputs <- frontpanel controller
-    input wire [W_OS-1:0] os_in, // sets adc oversampling mode
-    input wire cstart_in, // pulse starts continuous adc conversion cycle
+    input wire [W_OS-1:0] os_in,        // sets adc oversampling mode
+    input wire cstart_in,               // pulse starts continuous adc conversion cycle
 
     // outputs -> AD7608
-    output wire [W_OS-1:0] os_out, // oversampling signal to adc
-    output wire convst_out, // convert start signal to adc
-    output wire reset_out, // reset signal to adc
-    output wire sclk_out, // serial clock signal to adc
-    output wire n_cs_out, // chip select signal to adc
+    output wire [W_OS-1:0] os_out,      // oversampling signal to adc
+    output wire convst_out,             // convert start signal to adc
+    output wire reset_out,              // reset signal to adc
+    output wire sclk_out,               // serial clock signal to adc
+    output wire n_cs_out,               // chip select signal to adc
 
     // outputs -> pid core
     output reg dv_out,
@@ -201,7 +201,7 @@ end
 
 /* next state combinational logic */
 always @( * ) begin
-    cv_next_state <= cv_cur_state; // default assignment if no case and condition is satisfied
+    cv_next_state <= cv_cur_state; // default assignment
     case ( cv_cur_state )
         CV_ST_IDLE: begin
             if ( cstart_reg == 1 )
@@ -246,7 +246,7 @@ end
 
 /* next state combinational logic */
 always @( * ) begin
-    rd_next_state <= rd_cur_state; // default assignment if no case and condition is satisfied
+    rd_next_state <= rd_cur_state; // default assignment
     case ( rd_cur_state )
         RD_ST_IDLE: begin
             if ( busy_in == 1 )                     rd_next_state <= RD_ST_READ;
