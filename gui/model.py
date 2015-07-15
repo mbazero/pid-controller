@@ -2,7 +2,7 @@
 Store and manage PID lock array configuration parameters
 '''
 class Model:
-    def __init__(self, io_config, params):
+    def __init__(self, io_config, params, pmap=0):
         self.n_in = params.n_pid_src
         self.n_out = params.n_pid_chan
 
@@ -12,7 +12,11 @@ class Model:
         self.slog_window_size = 1000
         self.slog_start_t = [0] * self.n_out
 
-        self.init_param_map();
+        if pmap:
+            self.pmap = pmap
+        else:
+            self.init_param_map();
+
         self.init_data_logs();
 
     '''

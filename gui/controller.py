@@ -3,17 +3,19 @@ import binascii
 import threading
 import time
 import cPickle
+import model as md
 from PyQt4.Qt import *
 
 '''
 Handle state synchronization between model and view
 '''
 class Controller():
-    def __init__(self, view, model, fpga, params, config):
+    def __init__(self, view, model, fpga, io_config, params, ld_config=0):
         self.view = view
         self.model = model
         self.fpga = fpga
         self.params = params
+        self.io_config = io_config
 
         self.sample_period = 0.1
         self.block_transfer = False
@@ -27,8 +29,8 @@ class Controller():
         self.init_worker_thread()
         self.register_view_handlers()
         self.set_view_validators()
-        if config:
-            self.load_model(config)
+        if ld_config:
+            self.load_config(ld_config)
         else:
             self.update_view()
 
@@ -47,8 +49,8 @@ class Controller():
                 lambda: self.update_block_transfer(gp_view.block_transfer.isChecked()))
         gp_view.save_config.clicked.connect(
                 lambda: self.save_config())
-        gp_view.load_model.clicked.connect(
-                lambda: self.load_model())
+        gp_view.load_config.clicked.connect(
+                lambda: self.load_config())
         gp_view.sys_reset.clicked.connect(
                 lambda: self.trigger_sys_reset())
 
@@ -274,17 +276,18 @@ class Controller():
     def save_config(self):
         fname = self.view.get_save_file('Save Config')
         f = open(fname, 'w')
-        cPickle.dump(self.model, f)
+        cPickle.dump(self.model.get_param_map(), f)
 
     '''
     Load configuration from path
     '''
-    def load_model(self, fname=''):
+    def load_config(self, fname=''):
         if not fname:
             fname = self.view.get_open_file('Load Config')
         f = open(fname, 'r')
-        model = cPickle.load(f)
-        self.update_view(model)
+        pmap = cPickle.load(f)
+        new_model = md.Model(self.io_config, self.params, pmap)
+        self.update_view(new_model)
 
     '''
     Initialize worker thread for graph updating
@@ -379,9 +382,6 @@ class Controller():
             data = self.uint16_to_int32(data)
             data = self.adjust_logged_data(data, 'ADC')
             data = self.model.denormalize_input(chan, data)
-            print "****************************************************"
-            print time.time()
-            print "****************************************************"
             self.model.update_data_log_single(chan, time.time(), data)
         else:
             self.model.clear_data_log_single(chan)
@@ -466,6 +466,7 @@ class Controller():
     Oversample filter param update handling
     '''
     def update_ovr_os(self, chan, value):
+        self.request_ovr_clear(chan)
         self.update_model_and_fpga(self.params.ovr_os_addr, chan, value)
         print self.model.chan_to_string(chan) + " oversample ratio set to " + str(2**value)
 

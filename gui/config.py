@@ -6,7 +6,7 @@ Modify this file to change GUI configuration
 header_list = [ '../init.vh', '../ep_map.vh', '../parameters.vh']
 
 # default parameter config file
-pconfig = ''
+pconfig = 'default_config.pid'
 
 # fpga config
 pid_bit_file = './pid_controller.bit' # path to hdl bit file

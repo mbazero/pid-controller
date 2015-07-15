@@ -33,6 +33,7 @@ if fpga.init_device() == False:
 Instantiate MVC and start GUI
 '''
 model = model.Model(io_config, params)
-view = view.View(params)
-controller = controller.Controller(view, model, fpga, params, config.pconfig)
+view = view.View(io_config, params)
+controller = controller.Controller(view, model, fpga, io_config, params,
+        config.pconfig)
 view.run()

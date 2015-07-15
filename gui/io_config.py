@@ -7,6 +7,7 @@ class IOConfig:
         self.adc_range_units = [-5.0, 5.0]
         self.adc_range_norm = self.range_from_bitwidth(params.w_adc_data, 'signed')
         self.adc_base_t = 5e-6; # Base ADC cycle time (s) with adc_os = 0
+        self.adc_os_modes = [str(2**x) for x in range(1, 7)]
 
         self.dac_units = 'V'
         self.dac_range_units = [0.0, 5.0]
