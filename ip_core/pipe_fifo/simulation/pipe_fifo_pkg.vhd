@@ -203,6 +203,7 @@ PACKAGE pipe_fifo_pkg IS
            ALMOST_FULL               : OUT std_logic;
            RST                       : IN  std_logic;
            PROG_FULL                 : OUT std_logic;
+           PROG_EMPTY                : OUT std_logic;
            WR_EN 		     : IN  std_logic;
            RD_EN                     : IN  std_logic;
            DIN                       : IN  std_logic_vector(16-1 DOWNTO 0);

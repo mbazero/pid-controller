@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="44" />
+   <WVObjectSize size="48" />
    <wvobject fp_name="/pid_controller_tf/adc_os_out" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">adc_os_out[2:0]</obj_property>
       <obj_property name="ObjectShortName">adc_os_out[2:0]</obj_property>
@@ -200,17 +200,33 @@
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/data_log_reg" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">data_log_reg[0:10,17:0]</obj_property>
-      <obj_property name="ObjectShortName">data_log_reg[0:10,17:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
    </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/clr_rqst" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">clr_rqst[10:0]</obj_property>
-      <obj_property name="ObjectShortName">clr_rqst[10:0]</obj_property>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
    </wvobject>
-   <wvobject fp_name="/pid_controller_tf/uut/pid_pipe/opt/inj_rqst" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">inj_rqst[10:0]</obj_property>
-      <obj_property name="ObjectShortName">inj_rqst[10:0]</obj_property>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/fifo_almost_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">fifo_almost_full</obj_property>
+      <obj_property name="ObjectShortName">fifo_almost_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/rd_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_ready</obj_property>
+      <obj_property name="ObjectShortName">rd_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/fifo_half_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">fifo_half_full</obj_property>
+      <obj_property name="ObjectShortName">fifo_half_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pid_controller_tf/uut/fp_intf/log_pipe_buf/cur_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cur_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cur_state[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
 </wave_config>

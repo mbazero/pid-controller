@@ -68,7 +68,8 @@ pipe_fifo your_instance_name (
   .full(full), // output full
   .almost_full(almost_full), // output almost_full
   .empty(empty), // output empty
-  .prog_full(prog_full) // output prog_full
+  .prog_full(prog_full), // output prog_full
+  .prog_empty(prog_empty) // output prog_empty
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 

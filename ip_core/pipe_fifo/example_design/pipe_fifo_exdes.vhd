@@ -78,6 +78,7 @@ entity pipe_fifo_exdes is
            ALMOST_FULL               : OUT std_logic;
            RST                       : IN  std_logic;
            PROG_FULL                 : OUT std_logic;
+           PROG_EMPTY                : OUT std_logic;
            WR_EN 		     : IN  std_logic;
            RD_EN                     : IN  std_logic;
            DIN                       : IN  std_logic_vector(16-1 DOWNTO 0);
@@ -103,6 +104,7 @@ architecture xilinx of pipe_fifo_exdes is
            ALMOST_FULL               : OUT std_logic;
            RST                       : IN  std_logic;
            PROG_FULL                 : OUT std_logic;
+           PROG_EMPTY                : OUT std_logic;
            WR_EN 		     : IN  std_logic;
            RD_EN                     : IN  std_logic;
            DIN                       : IN  std_logic_vector(16-1 DOWNTO 0);
@@ -135,6 +137,7 @@ begin
            ALMOST_FULL               => almost_full,
            RST                       => rst,
            PROG_FULL                 => prog_full,
+           PROG_EMPTY                => prog_empty,
            WR_EN 		     => wr_en,
            RD_EN                     => rd_en,
            DIN                       => din,

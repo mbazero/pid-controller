@@ -24,9 +24,11 @@ module pipe_tx_fifo (
 /* block read length */
 localparam READ_LEN = 1024;
 
-/* wires */
-wire fifo_almost_full, fifo_half_full, fifo_rd_en;
-wire pipe_read;
+/* fifo fires */
+wire fifo_rd_en;
+wire fifo_almost_full;
+wire fifo_half_full;
+wire fifo_half_empty;
 wire [15:0] fifo_dout;
 
 /* read counter */
@@ -44,7 +46,7 @@ localparam  ST_WAIT     = 3'd0,
 // combinational logic
 //////////////////////////////////////////
 
-assign rd_ready = fifo_half_full;
+assign rd_ready = !fifo_half_empty;
 assign fifo_rd_en = ( fifo_half_full && ( cur_state == ST_WAIT )) || rd_en || fifo_almost_full;
 
 //////////////////////////////////////////
@@ -81,6 +83,7 @@ pipe_fifo pipe_buf (
         .full       (),
         .almost_full(fifo_almost_full),
         .prog_full  (fifo_half_full),
+        .prog_empty (fifo_half_empty),
         .empty      ()
         );
 

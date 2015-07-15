@@ -100,6 +100,7 @@ ARCHITECTURE simulation_arch OF pipe_fifo_synth IS
     SIGNAL almost_full                    :   STD_LOGIC;
     SIGNAL rst	                          :   STD_LOGIC;
     SIGNAL prog_full                      :   STD_LOGIC;
+    SIGNAL prog_empty                     :   STD_LOGIC;
     SIGNAL wr_en                          :   STD_LOGIC;
     SIGNAL rd_en                          :   STD_LOGIC;
     SIGNAL din                            :   STD_LOGIC_VECTOR(16-1 DOWNTO 0);
@@ -291,6 +292,7 @@ ARCHITECTURE simulation_arch OF pipe_fifo_synth IS
            ALMOST_FULL               => almost_full,
            RST                       => rst,
            PROG_FULL                 => prog_full,
+           PROG_EMPTY                => prog_empty,
            WR_EN 		     => wr_en,
            RD_EN                     => rd_en,
            DIN                       => din,

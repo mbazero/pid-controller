@@ -310,8 +310,8 @@ class Controller():
             self.read_data_log_single(chan)
 
         # Read log pipe-out for focused channel if it is ready
-        # if self.fpga.get_wire_out_value(self.params.data_log_status_owep):
-        if self.block_transfer:
+        if self.block_transfer and \
+                self.fpga.get_wire_out_value(self.params.data_log_status_owep):
             self.read_data_log_block()
 
     '''

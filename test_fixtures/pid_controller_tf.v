@@ -137,7 +137,7 @@ module pid_controller_tf;
     //////////////////////////////////////////
 
     // simulation reps
-    localparam REPS = 10;
+    localparam REPS = 1055;
 
     // adc params
     reg [15:0] adc_os = 0;
@@ -345,10 +345,10 @@ module pid_controller_tf;
             adc_transmit(REPS);
             check_pid(NAC * REPS);
             check_opp(NAC * REPS);
-            check_dac_rcv(nac_of_type("DAC") * REPS);
+            //check_dac_rcv(nac_of_type("DAC") * REPS);
             //check_amp_rcv(0, REPS);
-            log_data(NAC * REPS);
-            check_data_log(REPS);
+            //log_data(NAC * REPS);
+            //check_data_log(REPS);
         join
 
         // Clear oversample memory and verify
