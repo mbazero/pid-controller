@@ -1,18 +1,24 @@
 import hdl_parser
 import config
+import io_config
 import device_manager
 import model
 import view
 import controller
 
 '''
-Parse hdl parameters
+Parse HDL parameters
 '''
-hdlp = hdl_parser.HDLParser()
-params = hdlp.get_params()
+hdl_parser = hdl_parser.HDLParser()
+params = hdl_parser.get_params()
 
 for header in config.header_list:
-    hdlp.parse(header)
+    hdl_parser.parse(header)
+
+'''
+Get I/O configuration
+'''
+io_config = io_config.IOConfig(params)
 
 '''
 Instantiate FPGA device manager
@@ -26,7 +32,7 @@ if fpga.init_device() == False:
 '''
 Instantiate MVC and start GUI
 '''
-model = model.Model(params)
+model = model.Model(io_config, params)
 view = view.View(params)
 controller = controller.Controller(view, model, fpga, params, config.pconfig)
 view.run()

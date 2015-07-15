@@ -2,14 +2,15 @@
 Store and manage PID lock array configuration parameters
 '''
 class Model:
-    def __init__(self, params):
+    def __init__(self, io_config, params):
         self.n_in = params.n_pid_src
         self.n_out = params.n_pid_chan
 
+        self.io_config = io_config
         self.params = params
+        self.os_changed = 1
 
         self.init_param_map();
-        self.init_io_params();
         self.init_data_logs();
 
     '''
@@ -44,34 +45,6 @@ class Model:
                 }
 
     '''
-    Initialize input and output parameters
-    '''
-    def init_io_params(self):
-        self.adc_units = 'V'
-        self.adc_range_units = [-5.0, 5.0]
-        self.adc_range_norm = self.range_from_bitwidth(self.params.w_adc_data, 'signed')
-        self.adc_cycle_t = 85; # TODO needs dynamic assignment
-
-        self.dac_units = 'V'
-        self.dac_range_units = [0.0, 5.0]
-        self.dac_range_norm = self.range_from_bitwidth(self.params.w_dac_data, 'unsigned')
-
-        self.freq_units = 'MHz'
-        self.freq_range_units = [0.0, 1000.0]
-        self.freq_range_norm = self.range_from_bitwidth(self.params.w_freq_data, 'unsigned')
-        print self.freq_range_norm
-
-        self.phase_units = '?'
-        self.phase_range_norm = self.range_from_bitwidth(self.params.w_phase_data, 'unsigned')
-        self.phase_range_units = self.phase_range_norm
-        print self.phase_range_norm
-
-        self.amp_units = '?'
-        self.amp_range_norm = self.range_from_bitwidth(self.params.w_amp_data, 'unsigned')
-        self.amp_range_units = self.amp_range_norm
-        print self.amp_range_norm
-
-    '''
     Initialize data logging arrays
     '''
     def init_data_logs(self):
@@ -87,6 +60,12 @@ class Model:
     the same name and input parameters.
     '''
     def set_param(self, addr, chan, data):
+        # Set flags if oversample mode is changed
+        if addr == self.params.adc_os_addr:
+            self.os_changed = 1
+        elif addr == self.params.ovr_os_addr:
+            self.os_changed = 1
+
         if isinstance(self.pmap[addr], list):
             self.pmap[addr][chan] = data
         else:
@@ -128,11 +107,21 @@ class Model:
     '''
     def update_data_log_block(self, chan, data_y):
         self.data_log_block_y[chan] = data_y
-        if not self.data_log_block_x[chan]:
+
+        # Generate block time axis if it is empty or if an oversample
+        # ratio has changed
+        if self.os_changed or not self.data_log_block_x[chan]:
             adc_os = self.get_param(self.params.adc_os_addr, 0)
-            pipe_delta_t = (adc_os ** self.adc_cycle_t) * (10 ** -6) # seconds
+            ovr_os = self.get_param(self.params.ovr_os_addr, chan)
+            adc_base_t = self.io_config.adc_base_t
+            adc_cycle_t = 2**adc_os * adc_base_t
+            print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+            print "adc_cycle_t = " + str(adc_cycle_t * 1e6) + " us"
+            print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+            pipe_delta_t = 2**ovr_os * adc_cycle_t
             self.data_log_block_x[chan] = \
                 [x * pipe_delta_t for x in range(self.params.pipe_depth)]
+            self.os_changed = 0
 
     '''
     Return single word data log for specified channel
@@ -261,8 +250,8 @@ class Model:
     specified channel
     '''
     def get_input_ranges(self, chan):
-        range_units = self.adc_range_units
-        range_norm = self.adc_range_norm
+        range_units = self.io_config.adc_range_units
+        range_norm = self.io_config.adc_range_norm
 
         return [range_units, range_norm]
 
@@ -270,7 +259,7 @@ class Model:
     Return inputs denormalized units
     '''
     def get_input_units(self, chan):
-        return self.adc_units
+        return self.io_config.adc_units
 
     '''
     Return output range with units and normalized output range for
@@ -278,19 +267,20 @@ class Model:
     '''
     def get_output_ranges(self, chan):
         output_string = self.output_to_string(chan)
+        io_config = self.io_config
 
         if 'DAC' in output_string:
-            range_units = self.dac_range_units
-            range_norm = self.dac_range_norm
+            range_units = io_config.dac_range_units
+            range_norm = io_config.dac_range_norm
         elif 'FREQ' in output_string:
-            range_units = self.freq_range_units
-            range_norm = self.freq_range_norm
+            range_units = io_config.freq_range_units
+            range_norm = io_config.freq_range_norm
         elif 'PHASE' in output_string:
-            range_units = self.phase_range_units
-            range_norm = self.phase_range_norm
+            range_units = io_config.phase_range_units
+            range_norm = io_config.phase_range_norm
         elif 'AMP' in output_string:
-            range_units = self.amp_range_units
-            range_norm = self.amp_range_norm
+            range_units = io_config.amp_range_units
+            range_norm = io_config.amp_range_norm
 
         return [range_units, range_norm]
 
@@ -299,15 +289,16 @@ class Model:
     '''
     def get_output_units(self, chan):
         output_string = self.output_to_string(chan)
+        io_config = self.io_config
 
         if 'DAC' in output_string:
-            return self.dac_units
+            return io_config.dac_units
         elif 'FREQ' in output_string:
-            return self.freq_units
+            return io_config.freq_units
         elif 'PHASE' in output_string:
-            return self.phase_units
+            return io_config.phase_units
         elif 'AMP' in output_string:
-            return self.amp_units
+            return io_config.amp_units
         else:
             return '?'
 
@@ -354,24 +345,3 @@ class Model:
         rel_value = value - cur_range[0]
         slope = float(new_range[1] - new_range[0]) / float(cur_range[1] - cur_range[0])
         return slope * rel_value + new_range[0]
-
-    '''
-    Helper function to return the integer range for a bit precision. The
-    function assumes two's complement for signed inputs.
-    '''
-    def range_from_bitwidth(self, precision, sign_type):
-        if sign_type == 'signed':
-            high = (2 ** (precision - 1)) - 1
-            low = -high
-        elif sign_type == 'unsigned':
-            high = (2 ** precision) - 1
-            low = 0
-
-        return [low, high]
-
-
-
-
-
-
-

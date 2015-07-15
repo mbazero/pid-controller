@@ -266,7 +266,7 @@ class Controller():
         # Output min
         opt_min = model.get_param(params.opt_min_addr, chan)
         opt_min_denorm = model.denormalize_output(chan, opt_min)
-        output_view.opt_max.setText(str(opt_min_denorm))
+        output_view.opt_min.setText(str(opt_min_denorm))
         self.update_opt_min(chan, opt_min_denorm)
 
     '''

@@ -6,8 +6,8 @@
 //   channels not needed
 // ----------------------------------------------------------------------------
 localparam N_ADC            = 8;                    // Number of adc channels to generate
-localparam N_DAC            = 1;                    // Number of dac channels to generate
-localparam N_DDS            = 0;                    // Number of dds channels to generate
+localparam N_DAC            = 8;                    // Number of dac channels to generate
+localparam N_DDS            = 4;                    // Number of dds channels to generate
 localparam W_ADC_DATA       = 18;                   // Width of adc data word
 localparam W_ADC_CHAN       = 3;                    // Width of adc channel select
 localparam W_ADC_OS         = 3;                    // Width of adc oversample mode signal
@@ -21,10 +21,10 @@ localparam W_AMP_DATA       = 10;                   // Width of dds amplitude in
 // - Sbsolute output channel descriptors are mapped to relative descriptors
 //   according to the table below
 // ----------------------------------------------------------------------------
-//  [ 0                         : N_DAC - 1                 ] - DAC Channels
-//  [ N_DAC                 : N_DAC + N_DDS - 1     ] - DDS Frequency Channels
+//  [ 0                 : N_DAC - 1             ] - DAC Channels
+//  [ N_DAC             : N_DAC + N_DDS - 1     ] - DDS Frequency Channels
 //  [ N_DAC + N_DDS     : N_DAC + 2*N_DDS - 1   ] - DDS Phase Channels
-//  [ N_DAC + 2*N_DDS       : N_DAC + 3*N_DDS - 1   ] - DDS Amplitude Channels
+//  [ N_DAC + 2*N_DDS   : N_DAC + 3*N_DDS - 1   ] - DDS Amplitude Channels
 // ----------------------------------------------------------------------------
 localparam DAC0_ADDR        = 0;                    // DAC channel 0 output address
 localparam FREQ0_ADDR       = N_DAC;                // Frequency channel 0 output address
