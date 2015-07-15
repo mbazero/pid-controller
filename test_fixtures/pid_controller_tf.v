@@ -252,8 +252,7 @@ module pid_controller_tf;
         for ( x = 0; x < NAC; x = x + 1 ) begin
             // Routing
             src[x] = $unsigned($random) % N_ADC;
-            // dest[x] = x;
-            dest[x] = 10;
+            dest[x] = x;
 
             // Oversample
             os[x] = 0;
@@ -347,7 +346,7 @@ module pid_controller_tf;
             check_pid(NAC * REPS);
             check_opp(NAC * REPS);
             check_dac_rcv(nac_of_type("DAC") * REPS);
-            check_amp_rcv(0, REPS);
+            //check_amp_rcv(0, REPS);
             log_data(NAC * REPS);
             check_data_log(REPS);
         join

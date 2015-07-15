@@ -313,6 +313,7 @@ class Controller():
 
         # Read log pipe-out for focused channel if it is ready
         # if self.fpga.get_wire_out_value(self.params.data_log_status_owep):
+        if self.block_transfer:
             self.read_data_log_block()
 
     '''
@@ -329,15 +330,18 @@ class Controller():
     Read block logged data for tab focused channel and store in model
     '''
     def read_data_log_block(self):
-        buf = bytearray(self.params.pipe_depth * 2)
-        self.fpga.read_from_pipe_out(self.params.data_log_opep, buf)
+        if self.model.has_valid_input(self.focused_chan):
+            buf = bytearray(self.params.pipe_depth * 2)
+            self.fpga.read_from_pipe_out(self.params.data_log_opep, buf)
 
-        # unpack byte array as array of signed shorts
-        fmt_str = '<' + str(self.params.pipe_depth) + 'h'
-        data = struct.unpack(fmt_str, buf)
+            # unpack byte array as array of signed shorts
+            fmt_str = '<' + str(self.params.pipe_depth) + 'h'
+            data = struct.unpack(fmt_str, buf)
 
-        data = [self.model.denormalize_input(self.focused_chan, word) for word in data]
-        self.model.update_data_log_block(self.focused_chan, data)
+            data = [self.model.denormalize_input(self.focused_chan, word) for word in data]
+            self.model.update_data_log_block(self.focused_chan, data)
+        else:
+            self.model.clear_data_log_block(self.focused_chan)
 
     '''
     ADC param update handling
