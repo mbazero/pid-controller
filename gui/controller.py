@@ -237,8 +237,6 @@ class Controller():
     def init_worker_thread(self):
         self.worker = WorkerThread(self)
         self.view.connect(self.worker, SIGNAL("new_plot_data()"), self.update_graph)
-        self.worker_wake = threading.Event()
-        self.worker_wake.clear()
         self.worker.start()
 
     '''
@@ -308,7 +306,7 @@ class Controller():
         self.fpga.update_wire_outs()
 
         # Read log wire-outs for each channel
-        for chan in self.model.get_routed_chans():
+        for chan in range(self.params.n_pid_chan):
             self.read_data_log_single(chan)
 
         # Read log pipe-out for focused channel if it is ready
@@ -320,11 +318,14 @@ class Controller():
     Read single word logged data for specified channel
     '''
     def read_data_log_single(self, chan):
-        data_log_owep = self.params.data_log0_owep + chan
-        data = self.fpga.get_wire_out_value(data_log_owep)
-        data = self.uint16_to_int32(data)
-        data = self.model.denormalize_input(chan, data)
-        self.model.update_data_log_single(chan, time.time(), data)
+        if self.model.has_valid_input(chan):
+            data_log_owep = self.params.data_log0_owep + chan
+            data = self.fpga.get_wire_out_value(data_log_owep)
+            data = self.uint16_to_int32(data)
+            data = self.model.denormalize_input(chan, data*4)
+            self.model.update_data_log_single(chan, time.time(), data)
+        else:
+            self.model.clear_data_log_single(chan)
 
     '''
     Read block logged data for tab focused channel and store in model
@@ -338,7 +339,7 @@ class Controller():
             fmt_str = '<' + str(self.params.pipe_depth) + 'h'
             data = struct.unpack(fmt_str, buf)
 
-            data = [self.model.denormalize_input(self.focused_chan, word) for word in data]
+            data = [self.model.denormalize_input(self.focused_chan, word*4) for word in data]
             self.model.update_data_log_block(self.focused_chan, data)
         else:
             self.model.clear_data_log_block(self.focused_chan)
@@ -377,18 +378,13 @@ class Controller():
         if src_sel != old_src_sel:
             self.model.clear_data_logs(chan)
             if self.model.is_valid_input(src_sel):
-                print "CHAN = " + str(chan)
-                print "SRC_SEL = " + str(src_sel)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, src_sel)
-                self.worker_wake.set() # wake worker thread to handle data logging
                 print self.model.chan_to_string(chan) + " input set to " + self.model.input_to_string(src_sel)
 
             else:
                 self.update_pid_lock_en(chan, False) # disable pid lock for invalid route
                 self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, 0)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, self.params.null_src)
-                if sum(self.model.get_routed_chans()) == 0: # sleep worker thread if no routed channels remain
-                    self.worker_wake.clear()
                 print self.model.chan_to_string(chan) + " input deactivated"
 
     '''
@@ -531,11 +527,6 @@ class WorkerThread(QThread):
 
     def run(self):
         while not self.exiting:
-
-            # wait for pid lock array to become activate
-            while not self.controller.worker_wake.isSet():
-                self.controller.worker_wake.wait()
-
             self.controller.read_fpga_data()
             self.emit(SIGNAL('new_plot_data()')) # signal gui that new data is available to be plotted
             time.sleep(self.controller.sample_period) # sleep for a period of time
