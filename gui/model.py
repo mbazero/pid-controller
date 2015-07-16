@@ -124,8 +124,8 @@ class Model:
             data_x.append(dword_x)
             data_y.append(dword_y)
         else:
-            data_x = data_x[1:] + [dword_x]
-            data_y = data_y[1:] + [dword_y]
+            self.data_log_single_x[chan] = data_x[1:] + [dword_x]
+            self.data_log_single_y[chan] = data_y[1:] + [dword_y]
 
         # Update lock statistics
         if len(data_x) > self.lock_status_window:

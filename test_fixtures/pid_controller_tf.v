@@ -252,7 +252,7 @@ module pid_controller_tf;
         for ( x = 0; x < NAC; x = x + 1 ) begin
             // Routing
             src[x] = $unsigned($random) % N_ADC;
-            dest[x] = x;
+            dest[x] = 8;
 
             // Oversample
             os[x] = 0;
@@ -574,6 +574,7 @@ module pid_controller_tf;
         repeat(reps) begin
             dds_chan = (dest[chan] - N_DAC) / 3;
             @(negedge dds_csb_out[dds_chan]) begin
+                #1;
                 repeat(64) begin
                     @(posedge dds_sclk_out[dds_chan]) begin
                         freq_instr = {freq_instr[62:0], dds_sdio_out[dds_chan]};

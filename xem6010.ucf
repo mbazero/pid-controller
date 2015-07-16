@@ -94,9 +94,9 @@ net "dds_sdio_out[0]"      loc="c15"   | iostandard=lvcmos33;
 net "dds_csb_out[0]"       loc="a15"   | iostandard=lvcmos33;
 net "dds_reset_out[0]"     loc="c17"   | iostandard=lvcmos33;
 net "dds_sclk_out[0]"      loc="a17"   | iostandard=lvcmos33;
-net "dds_csb_out[1]"       loc="a18"   | iostandard=lvcmos33;
+net "dds_io_update_out[1]" loc="a18"   | iostandard=lvcmos33;
 net "dds_sdio_out[1]"      loc="c11"   | iostandard=lvcmos33;
-net "dds_io_update_out[1]" loc="a11"   | iostandard=lvcmos33;
+net "dds_csb_out[1]"       loc="a11"   | iostandard=lvcmos33;
 
 # Maps dds[2] and dds[3] to breakout board out2
 net "dds_io_update_out[2]" loc="C6"   | iostandard=lvcmos33;
@@ -104,9 +104,9 @@ net "dds_sdio_out[2]"      loc="A3"   | iostandard=lvcmos33;
 net "dds_csb_out[2]"       loc="A4"   | iostandard=lvcmos33;
 net "dds_reset_out[2]"     loc="B8"   | iostandard=lvcmos33;
 net "dds_sclk_out[2]"      loc="A8"   | iostandard=lvcmos33;
-net "dds_csb_out[3]"       loc="B10"  | iostandard=lvcmos33;
+net "dds_io_update_out[3]" loc="B10"  | iostandard=lvcmos33;
 net "dds_sdio_out[3]"      loc="A10"  | iostandard=lvcmos33;
-net "dds_io_update_out[3]" loc="C13"  | iostandard=lvcmos33;
+net "dds_csb_out[3]"       loc="C13"  | iostandard=lvcmos33;
 
 # Specify dds max clock-to-output delays
 NET "dds_sdio_out[0]" OFFSET = OUT 8 ns AFTER "clk50_in" FALLING;

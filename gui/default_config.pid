@@ -3,22 +3,22 @@ I1
 I1
 sI2
 (lp2
-I0
+I-1
 aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI-1
+aI0
 aI1
-aI-1
-aI3
-aI-1
-aI-1
-aI-1
-aI-1
-aI-1
-aI-1
-aI-1
-aI-1
-aI-1
-aI-1
-aI-1
 aI-1
 aI-1
 aI-1
@@ -47,9 +47,7 @@ aI0
 aI0
 asI4
 (lp4
-I01
-aI0
-aI01
+I0
 aI0
 aI0
 aI0
@@ -62,6 +60,8 @@ aI0
 aI0
 aI0
 aI0
+aI0
+aI00
 aI0
 aI0
 aI0
@@ -113,44 +113,44 @@ aI0
 aI0
 asI7
 (lp7
-I100
+I0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
 aI0
 aI100
-aI0
 aI100
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
 aI0
 aI0
 aI0
 aI0
 asI8
 (lp8
-I10
+I0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
 aI0
 aI10
-aI0
 aI10
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
 aI0
 aI0
 aI0
@@ -201,11 +201,7 @@ aF0
 aF0
 asI11
 (lp11
-F65535
-aF0
-aF65535
-aF0
-aF65535
+F0
 aF0
 aF0
 aF0
@@ -217,15 +213,17 @@ aF0
 aF0
 aF0
 aF0
+aF0
+aF0
+aF8191.5
+aF8191.5
 aF0
 aF0
 aF0
 aF0
 asI12
 (lp12
-F26214
-aF0
-aF39321
+F0
 aF0
 aF0
 aF0
@@ -239,6 +237,8 @@ aF0
 aF0
 aF0
 aF0
+aF8191.5
+aF8191.5
 aF0
 aF0
 aF0
@@ -267,11 +267,7 @@ aI1
 aI1
 asI14
 (lp14
-I10
-aI0
-aI10
-aI0
-aI10
+I0
 aI0
 aI0
 aI0
@@ -283,6 +279,10 @@ aI0
 aI0
 aI0
 aI0
+aI0
+aI0
+aI30
+aI30
 aI0
 aI0
 aI0
@@ -311,80 +311,73 @@ aI-1
 aI-1
 asI21
 (lp16
-csip
-_unpickle_type
+S'DAC 1'
 p17
-(S'PyQt4.QtCore'
-p18
-S'QString'
-(VDAC 1
-p19
-ttRp20
 aS'DAC 8'
-p21
+p18
 aS'DAC 2'
-p22
+p19
 aS'DAC 7'
-p23
+p20
 aS'DAC 3'
-p24
+p21
 aS'DAC 6'
-p25
+p22
 aS'DAC 4'
-p26
+p23
 aS'DAC 5'
-p27
+p24
 aS'FREQ 1'
-p28
+p25
 aS'FREQ 2'
-p29
+p26
 aS'FREQ 3'
-p30
+p27
 aS'FREQ 4'
-p31
+p28
 aS'PHASE 1'
-p32
+p29
 aS'PHASE 2'
-p33
+p30
 aS'PHASE 3'
-p34
+p31
 aS'PHASE 4'
-p35
+p32
 aS'AMP 1'
-p36
+p33
 aS'AMP 2'
-p37
+p34
 aS'AMP 3'
-p38
+p35
 aS'AMP 4'
-p39
+p36
 asI22
-(lp40
-I1
+(lp37
+I0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
 aI0
 aI1
-aI0
 aI1
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
-aI0
 aI0
 aI0
 aI0
 aI0
 asI23
-(lp41
-F0.001
+(lp38
+I0
 aI0
-aF0.001
+aI0
 aI0
 aI0
 aI0

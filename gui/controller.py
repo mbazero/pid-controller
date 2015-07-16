@@ -559,8 +559,8 @@ class Controller():
             chan_idx = chan
             opt_tabs.setCurrentIndex(opt_idx)
         else:
-            opt_idx = (chan - self.params.n_dac) / 3
-            chan_idx = (chan - self.params.n_dac) % 3
+            opt_idx = (chan - self.params.n_dac) % self.params.n_dds + 1
+            chan_idx = (chan - self.params.n_dac) / 3
             opt_tabs.setCurrentIndex(opt_idx)
 
         chan_tabs = opt_tabs.currentWidget()
@@ -601,6 +601,8 @@ class Controller():
     '''
     def update_pid_lock_en(self, chan, enable, reset=True):
         if self.model.has_valid_input(chan):
+            if enable and not self.model.get_param(self.params.qv_visible_addr, chan):
+                self.view.chan_views[chan].config_view.quick_view_toggle.setChecked(True)
             self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
         else:
             self.view.chan_views[chan].config_view.pid_lock_en.setChecked(False)
@@ -716,7 +718,7 @@ class Controller():
             rs = float(proc_view.opt_rs.value())
             mult = float(proc_view.opt_mult.value())
             scale_factor = mult / 2**rs
-            proc_view.scale_factor.setText(format(scale_factor, '.8f'))
+            proc_view.scale_factor.setText(format(scale_factor, '.4e'))
         except:
             proc_view.scale_factor.setText("NaN")
 
