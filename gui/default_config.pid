@@ -113,7 +113,7 @@ aI0
 aI0
 asI7
 (lp7
-I100
+I0
 aI0
 aI0
 aI0
@@ -135,7 +135,7 @@ aI0
 aI0
 asI8
 (lp8
-I10
+I0
 aI0
 aI0
 aI0
@@ -309,4 +309,83 @@ aI-1
 aI-1
 aI-1
 aI-1
+asI21
+(lp16
+csip
+_unpickle_type
+p17
+(S'PyQt4.QtCore'
+p18
+S'QString'
+(VMain Lock
+p19
+ttRp20
+aS'DAC 8'
+p21
+aS'DAC 2'
+p22
+aS'DAC 7'
+p23
+ag17
+(g18
+S'QString'
+(VSecondary Lock
+p24
+ttRp25
+aS'DAC 6'
+p26
+aS'DAC 4'
+p27
+ag17
+(g18
+S'QString'
+(VThird Lock
+p28
+ttRp29
+aS'FREQ 1'
+p30
+aS'FREQ 2'
+p31
+aS'FREQ 3'
+p32
+aS'FREQ 4'
+p33
+aS'PHASE 1'
+p34
+aS'PHASE 2'
+p35
+aS'PHASE 3'
+p36
+aS'PHASE 4'
+p37
+aS'AMP 1'
+p38
+aS'AMP 2'
+p39
+aS'AMP 3'
+p40
+aS'AMP 4'
+p41
+asI22
+(lp42
+I1
+aI0
+aI0
+aI1
+aI1
+aI0
+aI0
+aI1
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
 as.

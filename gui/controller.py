@@ -22,7 +22,6 @@ class Controller():
         self.block_transfer = False
         self.graph_freeze = [0] * params.n_pid_chan
         self.focused_chan = 0
-        view.gp_view.chan_sel_arr[self.focused_chan].setChecked(True)
 
         self.trigger_adc_cstart()
         self.trigger_dac_rset()
@@ -77,15 +76,15 @@ class Controller():
     def register_chan_view_handlers(self, chan):
         gp_view = self.view.gp_view
         chan_view = self.view.chan_views[chan]
-        mode_view = chan_view.mode_view
+        config_view = chan_view.config_view
         error_view = chan_view.error_view
         pid_view = chan_view.pid_view
         proc_view = chan_view.proc_view
         output_view = chan_view.output_view
 
-        # TODO
-        gp_view.chan_sel_arr[chan].clicked.connect(
-                lambda: self.update_focused_chan(chan))
+        # Quick view
+        gp_view.chan_labels[chan].clicked.connect(
+                lambda: self.handle_quick_view_jump(chan))
 
         # Graph handlers
         chan_view.graph_freeze.clicked.connect(
@@ -93,13 +92,17 @@ class Controller():
         chan_view.graph_clear.clicked.connect(
                 lambda: self.trigger_graph_clear(chan))
 
-        # Mode view handlers
-        mode_view.chan_src_sel.activated.connect(
-                lambda: self.update_chan_src_sel(chan, mode_view.chan_src_sel.currentIndex() - 1))
-        mode_view.chan_reset.clicked.connect(
+        # Config view handlers
+        config_view.chan_src_sel.activated.connect(
+                lambda: self.update_chan_src_sel(chan, config_view.chan_src_sel.currentIndex() - 1))
+        config_view.chan_name.textEdited.connect(
+                lambda: self.update_chan_name(chan, config_view.chan_name.text()))
+        config_view.quick_view_toggle.stateChanged.connect(
+                lambda: self.update_quick_view(chan, config_view.quick_view_toggle.isChecked()))
+        config_view.chan_reset.clicked.connect(
                 lambda: self.request_chan_reset(chan));
-        mode_view.pid_lock_en.clicked.connect(
-                lambda: self.update_pid_lock_en(chan, mode_view.pid_lock_en.isChecked()))
+        config_view.pid_lock_en.clicked.connect(
+                lambda: self.update_pid_lock_en(chan, config_view.pid_lock_en.isChecked()))
 
         # Error view handlers
         error_view.ovr_os.activated.connect(
@@ -154,15 +157,15 @@ class Controller():
 
         for chan in range(self.params.n_pid_chan):
             chan_view = self.view.chan_views[chan]
-            mode_view = chan_view.mode_view
+            config_view = chan_view.config_view
             error_view = chan_view.error_view
             pid_view = chan_view.pid_view
             proc_view = chan_view.proc_view
             output_view = chan_view.output_view
 
             # Channel source select
-            mode_view.chan_src_sel.clear()
-            mode_view.chan_src_sel.addItems(['None'] + self.model.get_input_list())
+            config_view.chan_src_sel.clear()
+            config_view.chan_src_sel.addItems(['None'] + self.model.get_input_list())
 
             # Oversample mode
             error_view.ovr_os.clear()
@@ -190,7 +193,7 @@ class Controller():
 
             # Add channel
             proc_view.opt_add_chan.clear()
-            proc_view.opt_add_chan.addItems(['None'] + self.model.get_chan_list())
+            proc_view.opt_add_chan.addItems(['None'] + self.model.get_chan_list('port', 'usr'))
 
             # Output bounds
             opt_range = self.model.get_output_ranges(chan)[0]
@@ -226,8 +229,14 @@ class Controller():
     '''
     def initialize(self, pmap=0):
         if pmap:
+            # This is really janky...the whole initialization code is. The
+            # code will only update some params if they are different than
+            # those stored in the current model. Thus, to initalize a new model
+            # we must clear the current model and create a local model with
+            # the parameter map. This is really bad design, but whatever.
+            self.model = md.Model(self.io_config, self.params)
             model = md.Model(self.io_config, self.params, pmap)
-        if not model:
+        else:
             model = self.model
 
         # Sample rate
@@ -247,7 +256,7 @@ class Controller():
     '''
     def initialize_chan(self, chan, model):
         chan_view = self.view.chan_views[chan]
-        mode_view = chan_view.mode_view
+        config_view = chan_view.config_view
         error_view = chan_view.error_view
         pid_view = chan_view.pid_view
         proc_view = chan_view.proc_view
@@ -256,12 +265,21 @@ class Controller():
 
         # Channel source select
         chan_src_sel = model.get_param(params.chan_src_sel_addr, chan)
-        mode_view.chan_src_sel.setCurrentIndex(chan_src_sel + 1)
+        config_view.chan_src_sel.setCurrentIndex(chan_src_sel + 1)
         self.update_chan_src_sel(chan, chan_src_sel)
+
+        # Channel name
+        chan_name = model.get_param(params.chan_name_addr, chan)
+        config_view.chan_name.setText(chan_name)
+        self.update_chan_name(chan, chan_name)
+
+        # Quick view
+        qv_visible = model.get_param(params.qv_visible_addr, chan)
+        self.update_quick_view(chan, qv_visible)
 
         # Lock enable
         pid_lock_en = model.get_param(params.pid_lock_en_addr, chan)
-        mode_view.pid_lock_en.setChecked(pid_lock_en)
+        config_view.pid_lock_en.setChecked(pid_lock_en)
         self.update_pid_lock_en(chan, pid_lock_en)
 
         # Oversample mode
@@ -360,7 +378,7 @@ class Controller():
     '''
     def update_channel_view(self, chan):
         chan_view = self.view.chans[chan]
-        mode_view = chan_view.mode_view
+        config_view = chan_view.config_view
         pid_view = chan_view.pid_view
         output_view = chan_view.output_view
 
@@ -478,6 +496,50 @@ class Controller():
                 return data
 
     '''
+    Handle quick view jump
+    '''
+    def handle_quick_view_jump(self, chan):
+        # Change displayed tab
+        chan_string = self.model.chan_to_string(chan, 'can')
+        opt_tabs = self.view.opt_tabs
+
+        if 'DAC' in chan_string:
+            opt_idx = 0
+            chan_idx = chan
+            opt_tabs.setCurrentIndex(opt_idx)
+        else:
+            opt_idx = (chan - self.params.n_dac) / 3
+            chan_idx = (chan - self.params.n_dac) % 3
+            opt_tabs.setCurrentIndex(opt_idx)
+
+        chan_tabs = opt_tabs.currentWidget()
+        chan_tabs.setCurrentIndex(self.io_config.map_chan_to_port(chan_idx))
+
+        # Update focused channel
+        self.update_focused_chan(chan)
+
+    '''
+    Update channel in quick view
+    '''
+    def update_quick_view(self, chan, show):
+        chan_label = self.view.gp_view.chan_labels[chan]
+        qv_layout = self.view.gp_view.qv_layout
+        qv_visible = self.model.pmap[self.params.qv_visible_addr]
+        print sum(qv_visible)
+
+        if show:
+            if chan == self.focused_chan:
+                chan_label.setChecked(True)
+            chan_label.setVisible(True)
+            qv_layout.insertWidget(sum(qv_visible), chan_label)
+            qv_visible[chan] = 1
+        else:
+            chan_label.setChecked(False)
+            chan_label.setVisible(False)
+            qv_layout.removeWidget(chan_label)
+            qv_visible[chan] = 0
+
+    '''
     ADC param update handling
     '''
     def update_adc_os(self, value):
@@ -494,15 +556,26 @@ class Controller():
         if reset and not enable:
             self.request_chan_reset(chan)
 
-        print self.model.chan_to_string(chan) + (" activated" if enable else " deactivated")
+        self.chan_print(chan, "activated" if enable else " deactivated")
 
     def update_focused_chan(self, chan):
         if chan == self.focused_chan:
-            self.view.gp_view.chan_sel_arr[self.focused_chan].setChecked(True)
+            self.view.gp_view.chan_labels[self.focused_chan].setChecked(True)
         else:
-            self.view.gp_view.chan_sel_arr[self.focused_chan].setChecked(False)
+            self.view.gp_view.chan_labels[self.focused_chan].setChecked(False)
+            self.view.gp_view.chan_labels[chan].setChecked(True)
             self.focused_chan = chan
             self.send_fpga_request(self.params.pipe_cset_rqst, chan);
+
+    def update_chan_name(self, chan, name):
+        self.model.set_param(self.params.chan_name_addr, chan, name)
+
+        proc_view = self.view.chan_views[chan].proc_view
+        proc_view.opt_add_chan.clear()
+        proc_view.opt_add_chan.addItems(['None'] + self.model.get_chan_list('port', 'usr'))
+
+        # Update label name in view
+        self.view.gp_view.chan_labels[chan].setText(name)
 
     def update_chan_src_sel(self, chan, src_sel):
         old_src_sel = self.model.get_param(self.params.chan_src_sel_addr, chan)
@@ -511,13 +584,13 @@ class Controller():
             self.model.clear_data_logs(chan)
             if self.model.is_valid_input(src_sel):
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, src_sel)
-                print self.model.chan_to_string(chan) + " input set to " + self.model.input_to_string(src_sel)
+                self.chan_print(chan, "input set to " + self.model.input_to_string(src_sel))
 
             else:
                 self.update_pid_lock_en(chan, False) # disable pid lock for invalid route
                 self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, 0)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, self.params.null_src)
-                print self.model.chan_to_string(chan) + " input deactivated"
+                self.chan_print(chan, "input deactivated")
 
     '''
     Oversample filter param update handling
@@ -525,7 +598,7 @@ class Controller():
     def update_ovr_os(self, chan, value):
         self.request_ovr_clear(chan)
         self.update_model_and_fpga(self.params.ovr_os_addr, chan, value)
-        print self.model.chan_to_string(chan) + " oversample ratio set to " + str(2**value)
+        self.chan_print(chan, "oversample ratio set to " + str(2**value))
 
     '''
     PID filter param update handling
@@ -533,23 +606,23 @@ class Controller():
     def update_pid_setpoint(self, chan, value):
         norm_value = self.model.normalize_input(chan, value);
         self.update_model_and_fpga(self.params.pid_setpoint_addr, chan, norm_value)
-        print self.model.chan_to_string(chan) + " setpoint set to " + str(value)
+        self.chan_print(chan, "setpoint set to " + str(value))
 
     def update_pid_p_coef(self, chan, value):
         self.update_model_and_fpga(self.params.pid_p_coef_addr, chan, value)
-        print self.model.chan_to_string(chan) + " P coefficient set to " + str(value)
+        self.chan_print(chan, "P coefficient set to " + str(value))
 
     def update_pid_i_coef(self, chan, value):
         self.update_model_and_fpga(self.params.pid_i_coef_addr, chan, value)
-        print self.model.chan_to_string(chan) + " I coefficient set to " + str(value)
+        self.chan_print(chan, "I coefficient set to " + str(value))
 
     def update_pid_d_coef(self, chan, value):
         self.update_model_and_fpga(self.params.pid_d_coef_addr, chan, value)
-        print self.model.chan_to_string(chan) + " D coefficient set to " + str(value)
+        self.chan_print(chan, "D coefficient set to " + str(value))
 
     def update_pid_inv_error(self, chan, invert):
         self.update_model_and_fpga(self.params.pid_inv_error_addr, chan, invert)
-        print self.model.chan_to_string(chan) + " error inversion " + ("enabled" if invert else "disabled")
+        self.chan_print(chan, "error inversion " + ("enabled" if invert else "disabled"))
 
     '''
     Output filter param update handling
@@ -557,27 +630,27 @@ class Controller():
     def update_opt_init(self, chan, value):
         norm_value = self.model.normalize_output(chan, value)
         self.update_model_and_fpga(self.params.opt_init_addr, chan, norm_value)
-        print self.model.chan_to_string(chan) + " init set to " + str(value)
+        self.chan_print(chan, "init set to " + str(value))
 
     def update_opt_max(self, chan, value):
         norm_value = self.model.normalize_output(chan, value)
         self.update_model_and_fpga(self.params.opt_max_addr, chan, norm_value)
-        print self.model.chan_to_string(chan) + " max set to " + str(value)
+        self.chan_print(chan, "max set to " + str(value))
 
     def update_opt_min(self, chan, value):
         norm_value = self.model.normalize_output(chan, value)
         self.update_model_and_fpga(self.params.opt_min_addr, chan, norm_value)
-        print self.model.chan_to_string(chan) + " min set to " + str(value)
+        self.chan_print(chan, "min set to " + str(value))
 
     def update_opt_mult(self, chan, value):
         self.update_model_and_fpga(self.params.opt_mult_addr, chan, value)
         self.update_scale_factor(chan)
-        print self.model.chan_to_string(chan) + " multiplier set to " + str(value)
+        self.chan_print(chan, "multiplier set to " + str(value))
 
     def update_opt_rs(self, chan, value):
         self.update_model_and_fpga(self.params.opt_rs_addr, chan, value)
         self.update_scale_factor(chan)
-        print self.model.chan_to_string(chan) + " right shift set to " + str(value)
+        self.chan_print(chan, "right shift set to " + str(value))
 
     def update_scale_factor(self, chan):
         proc_view = self.view.chan_views[chan].proc_view
@@ -591,7 +664,7 @@ class Controller():
 
     def update_opt_add_chan(self, chan, value):
         self.update_model_and_fpga(self.params.opt_add_chan_addr, chan, value)
-        print self.model.chan_to_string(chan) + " add channel set to " + self.model.chan_to_string(value)
+        self.chan_print(chan, "add channel set to " + self.model.chan_to_string(value, 'usr'))
 
     '''
     Request handling
@@ -611,19 +684,19 @@ class Controller():
 
     def request_ovr_clear(self, chan):
         self.send_fpga_request(self.params.ovr_clr_rqst, chan);
-        print self.model.chan_to_string(chan) + " oversample memory cleared"
+        self.chan_print(chan, "oversample memory cleared");
 
     def request_pid_clear(self, chan):
         self.send_fpga_request(self.params.pid_clr_rqst, chan);
-        print self.model.chan_to_string(chan) + " PID memory cleared"
+        self.chan_print(chan, "PID memory cleared");
 
     def request_opt_clear(self, chan):
         self.send_fpga_request(self.params.opt_clr_rqst, chan);
-        print self.model.chan_to_string(chan) + " output memory cleared"
+        self.chan_print(chan, "output memory cleared");
 
     def request_opt_inject(self, chan):
         self.send_fpga_request(self.params.opt_inj_rqst, chan);
-        print self.model.chan_to_string(chan) + " write injection sent"
+        self.chan_print(chan, "write injection sent");
 
     '''
     Trigger handling
@@ -639,6 +712,12 @@ class Controller():
         self.fpga.activate_sys_trigger(self.params.sys_rst_offset)
         self.trigger_adc_cstart()
         self.trigger_dac_rset()
+
+    '''
+    Helper function to print a message with the channel name
+    '''
+    def chan_print(self, chan, msg):
+        print self.model.chan_to_string(chan, 'usr') + ' ' + msg
 
     '''
     Helper function to convert from unsigned 16-bit number to signed

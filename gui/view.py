@@ -35,7 +35,7 @@ class View(QWidget):
             # channels. The index x represents the output index, so it must be
             # transformed before selecting a channel view for insertion.
             xmod = io_config.aout_to_dac[x]
-            dac_tabs.addTab(self.chan_views[xmod], 'AOUT' + str(x+1))
+            dac_tabs.addTab(self.chan_views[xmod], 'DAC ' + str(x+1))
         self.opt_tabs.addTab(dac_tabs, 'DAC')
 
         # Create dds tab layout
@@ -47,7 +47,7 @@ class View(QWidget):
             dds_tabs.addTab(self.chan_views[fidx], 'FREQ')
             dds_tabs.addTab(self.chan_views[pidx], 'PHASE')
             dds_tabs.addTab(self.chan_views[aidx], 'AMP')
-            self.opt_tabs.addTab(dds_tabs, 'DDS' + str(x))
+            self.opt_tabs.addTab(dds_tabs, 'DDS ' + str(x + 1))
 
         self.layout.addWidget(self.opt_tabs)
 
@@ -94,11 +94,11 @@ class GlobalParamsView(QGroupBox):
         self.block_transfer.setCheckable(True)
         self.layout.addWidget(self.block_transfer)
 
-        # Lock status quick view tool box
-        self.chan_sel_arr = []
+        # Lock quick view tool box
+        self.chan_labels = []
         for x in range(params.n_pid_chan):
             if x < params.freq0_addr:
-                title = 'OUT' + str(x)
+                title = 'AOUT' + str(x)
             elif x < params.phase0_addr:
                 title = 'FREQ'
             elif x < params.amp0_addr:
@@ -108,31 +108,15 @@ class GlobalParamsView(QGroupBox):
             cs_button = QPushButton(title, self)
             cs_button.setFlat(True)
             cs_button.setCheckable(True)
-            self.chan_sel_arr.append(cs_button)
+            cs_button.setVisible(False)
+            self.chan_labels.append(cs_button)
 
-        chan_sel_tb = QToolBox()
-        active_group = QGroupBox()
-        chan_sel_tb.addItem(active_group, "Active")
+        qv_group = QGroupBox('Quick View')
+        self.qv_layout = QVBoxLayout()
+        qv_group.setLayout(self.qv_layout)
+        self.qv_layout.addStretch(1)
 
-        dac_group = QGroupBox()
-        dac_layout = QVBoxLayout()
-        for i in range(params.n_dac):
-            dac_layout.addWidget(self.chan_sel_arr[params.dac0_addr + i])
-        dac_layout.addStretch(1)
-        dac_group.setLayout(dac_layout)
-        chan_sel_tb.addItem(dac_group, 'DAC')
-
-        for j in range(params.n_dds):
-            dds_group = QGroupBox()
-            dds_layout = QVBoxLayout()
-            dds_layout.addWidget(self.chan_sel_arr[params.freq0_addr + j])
-            dds_layout.addWidget(self.chan_sel_arr[params.phase0_addr + j])
-            dds_layout.addWidget(self.chan_sel_arr[params.amp0_addr + j])
-            dds_layout.addStretch(1)
-            dds_group.setLayout(dds_layout)
-            chan_sel_tb.addItem(dds_group, 'DDS' + str(j))
-
-        self.layout.addWidget(chan_sel_tb)
+        self.layout.addWidget(qv_group)
 
         # Save configuration push button
         self.save_config = QPushButton('Save Config', self)
@@ -158,14 +142,21 @@ class ChannelView(QWidget):
         self.chan_no = chan_no
 
         # Create and place channel control componenets
-        self.mode_view = ModeView()
+        self.config_view = ConfigView()
         self.error_view = ErrorView()
         self.pid_view = PIDView()
         self.proc_view = ProcessingView()
         self.output_view = OutputView()
 
+        cwidth = 200
+        self.config_view.setFixedWidth(cwidth)
+        self.error_view.setFixedWidth(cwidth)
+        self.pid_view.setFixedWidth(cwidth)
+        self.proc_view.setFixedWidth(cwidth)
+        self.output_view.setFixedWidth(cwidth)
+
         self.cc_layout = QHBoxLayout()
-        self.cc_layout.addWidget(self.mode_view)
+        self.cc_layout.addWidget(self.config_view)
         self.cc_layout.addWidget(self.error_view)
         self.cc_layout.addWidget(self.pid_view)
         self.cc_layout.addWidget(self.proc_view)
@@ -234,9 +225,9 @@ class ChannelView(QWidget):
         self.mean.setText(str(mean))
 
 '''
-Display channel mode parameters
+Display channel general configuration parameters
 '''
-class ModeView(QGroupBox):
+class ConfigView(QGroupBox):
 
     def __init__(self):
         QGroupBox.__init__(self)
@@ -244,24 +235,29 @@ class ModeView(QGroupBox):
         self.layout = QVBoxLayout()
         self.form_layout = QFormLayout()
 
-        # Channel mode combo box
-        self.chan_mode = QComboBox(self)
-        self.chan_mode.addItems(['PID lock', 'Constant drive'])
-        self.form_layout.addRow('Mode', self.chan_mode)
-
         # Channel source select combo box
         self.chan_src_sel = QComboBox(self)
         self.form_layout.addRow('Input', self.chan_src_sel)
         self.layout.addLayout(self.form_layout)
 
+        # Channel name line edit
+        self.chan_name = QLineEdit(self)
+        self.form_layout.addRow('Name', self.chan_name)
+
+        # Add to quick view button
+        self.quick_view_toggle = QCheckBox('Show in quick view')
+        self.layout.addWidget(self.quick_view_toggle)
+
         # PID lock enable button
+        self.hb_layout = QHBoxLayout()
         self.pid_lock_en = QPushButton('Enable lock', self)
         self.pid_lock_en.setCheckable(True)
-        self.layout.addWidget(self.pid_lock_en)
+        self.hb_layout.addWidget(self.pid_lock_en)
 
         # Channel reset button
-        self.chan_reset = QPushButton('Channel reset', self)
-        self.layout.addWidget(self.chan_reset)
+        self.chan_reset = QPushButton('Reset', self)
+        self.hb_layout.addWidget(self.chan_reset)
+        self.layout.addLayout(self.hb_layout)
 
         self.setLayout(self.layout)
 
@@ -340,13 +336,11 @@ class ProcessingView(QGroupBox):
         # Multiplier spin box
         self.opt_mult = QSpinBox(self)
         self.opt_mult.setMinimumWidth(100)
-        self.opt_mult.setMaximum(1000)
         self.form_layout.addRow('Multiplier', self.opt_mult)
 
         # Right shift spin box
         self.opt_rs = QSpinBox(self)
         self.opt_rs.setMinimumWidth(100)
-        self.opt_rs.setMaximum(1000)
         self.form_layout.addRow('Right shift', self.opt_rs)
 
         # Scale factor display box

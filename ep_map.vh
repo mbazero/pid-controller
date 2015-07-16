@@ -63,6 +63,15 @@ localparam opt_inj_rqst         = 16'h13;
 localparam pipe_cset_rqst       = 16'h14;
 
 //--------------------------------------------------------------------
+// GUI Specific Memory addresses
+//--------------------------------------------------------------------
+// These addresses don't reference actual memory on the FPGA, but
+// are used by the GUI to access GUI specific channel state.
+//--------------------------------------------------------------------
+localparam chan_name_addr       = 16'h15;
+localparam qv_visible_addr      = 16'h16;
+
+//--------------------------------------------------------------------
 // Trigger Endpoints
 //--------------------------------------------------------------------
 // Endpoint addresses for PID controller trigger arrays. The sys_gp

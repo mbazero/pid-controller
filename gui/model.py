@@ -25,7 +25,6 @@ class Model:
     parsed from the parameters.vh header file.
     '''
     def init_param_map(self):
-        zeros = [0] * self.n_out;
         params = self.params
         self.pmap = {
                 # ADC controller
@@ -47,7 +46,10 @@ class Model:
                 params.opt_init_addr : [params.opt_init_init] * self.n_out,
                 params.opt_mult_addr : [params.opt_mult_init] * self.n_out,
                 params.opt_rs_addr : [params.opt_rs_init] * self.n_out,
-                params.opt_add_chan_addr : [params.opt_add_chan_init] * self.n_out
+                params.opt_add_chan_addr : [params.opt_add_chan_init] * self.n_out,
+                # GUI specific
+                params.chan_name_addr : self.get_chan_list('logical', 'can'),
+                params.qv_visible_addr : [0] * self.n_out
                 }
 
     '''
@@ -208,8 +210,9 @@ class Model:
     Return string representation for output channel number
     '''
     def output_to_string(self, output):
-        n_dac = self.params.n_dac
-        n_dds = self.params.n_dds
+        freq0 = self.params.freq0_addr
+        phase0 = self.params.phase0_addr
+        amp0 = self.params.amp0_addr
 
         if not self.is_valid_output(output):
             return 'Invalid output'
@@ -218,20 +221,27 @@ class Model:
             # linear mapping between the dac chip output channels
             # and the breakout board analog output ports.
             aout = self.io_config.dac_to_aout[output]
-            return 'DAC ' + str(aout)
+            return 'DAC ' + str(aout + 1)
         elif output < self.params.phase0_addr:
-            return 'FREQ ' + str(output - n_dac)
+            return 'FREQ ' + str(output - freq0 + 1)
         elif output < self.params.amp0_addr:
-            return 'PHASE ' + str(output - n_dac - n_dds)
+            return 'PHASE ' + str(output - phase0 + 1)
         else:
-            return 'AMP ' + str(output - n_dac - 2*n_dds)
+            return 'AMP ' + str(output - amp0 + 1)
 
     '''
-    Return string representation for channel number. Channels are defined by
-    their outputs, so the output string representation is returned.
+    Return string representation for channel number. The ntype flag
+    specifies whether to return the canonical channel name or the
+    user-set channel name. Channels are defined by their outputs,
+    so the output string representation is returned if the canonical
+    name is requested.
     '''
-    def chan_to_string(self, chan):
-        return self.output_to_string(chan)
+    def chan_to_string(self, chan, ntype):
+        if ntype == 'usr':
+            return self.get_param(self.params.chan_name_addr, chan)
+
+        elif ntype == 'can':
+            return self.output_to_string(chan)
 
     '''
     Return list of all input names
@@ -244,20 +254,26 @@ class Model:
         return ilist
 
     '''
-    Return a list of all channel names
+    Return list of channel names. The order flag specifies if the list is
+    returned in logical order, or output port order. These ordering are
+    different only for DAC channels. The ntype flag specifies whether
+    to return the canonical or user-set name.
     '''
-    def get_chan_list(self):
+    def get_chan_list(self, order, ntype):
         clist = []
 
-        # DAC channels must be added out of order because of the
-        # nonlinear mapping between DAC channels and output ports.
-        for dac in self.io_config.aout_to_dac:
-            if self.is_valid_input(dac):
-                clist.append(self.chan_to_string(dac))
+        if order == 'port':
+            # For port ordering, DAC channels must be added out of order
+            for dac in self.io_config.aout_to_dac:
+                if self.is_valid_input(dac):
+                    clist.append(self.chan_to_string(dac, ntype))
+        elif order == 'logical':
+            for x in range(self.params.n_dac):
+                clist.append(self.chan_to_string(x, ntype))
 
         # The rest of the channels can be added in order
         for chan in range(self.params.n_dac, self.n_out):
-            clist.append(self.chan_to_string(chan))
+            clist.append(self.chan_to_string(chan, ntype))
 
         return clist
 
