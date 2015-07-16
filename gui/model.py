@@ -1,3 +1,5 @@
+import numpy as np
+
 '''
 Store and manage PID lock array configuration parameters
 '''
@@ -9,8 +11,11 @@ class Model:
         self.io_config = io_config
         self.params = params
         self.os_changed = 1
-        self.slog_window_size = 1000
+        self.slog_window = 1000
         self.slog_start_t = [0] * self.n_out
+
+        self.lock_status_window = 10
+        self.lock_status = [0] * self.n_out
 
         if pmap:
             self.pmap = pmap
@@ -49,7 +54,8 @@ class Model:
                 params.opt_add_chan_addr : [params.opt_add_chan_init] * self.n_out,
                 # GUI specific
                 params.chan_name_addr : self.get_chan_list('logical', 'can'),
-                params.qv_visible_addr : [0] * self.n_out
+                params.qv_visible_addr : [0] * self.n_out,
+                params.lock_threshold_addr : [0] * self.n_out
                 }
 
     '''
@@ -101,8 +107,8 @@ class Model:
         return self.pmap
 
     '''
-    Update single word data log for specified channel. Takes as input a single
-    data word and a timestamp
+    Update single word data log and lock status for specified channel. Takes
+    as input a single data word and a timestamp.
     '''
     def update_data_log_single(self, chan, dword_x, dword_y):
         data_x = self.data_log_single_x[chan]
@@ -114,12 +120,21 @@ class Model:
 
         # Update logs
         dword_x -= self.slog_start_t[chan]
-        if len(data_x) < self.slog_window_size:
+        if len(data_x) < self.slog_window:
             data_x.append(dword_x)
             data_y.append(dword_y)
         else:
             data_x = data_x[1:] + [dword_x]
             data_y = data_y[1:] + [dword_y]
+
+        # Update lock statistics
+        if len(data_x) > self.lock_status_window:
+            thresh = self.get_param(self.params.lock_threshold_addr, chan)
+            setpoint = self.get_param(self.params.pid_setpoint_addr, chan)
+            mean = np.mean(data_x[-self.lock_status_window:])
+            self.lock_status[chan] = abs(mean - setpoint) < thresh
+        else:
+            self.lock_status[chan] = 0
 
     '''
     Update block data log for specified channel. Takes as input an array of
@@ -172,6 +187,12 @@ class Model:
     def clear_data_log_block(self, chan):
         self.data_log_block_x[chan] = []
         self.data_log_block_y[chan] = []
+
+    '''
+    Returns channel lock stataus. '1' indicates the channel is locked
+    '''
+    def get_lock_status(self, chan):
+        return self.lock_status[chan]
 
     '''
     Return true if PID lock is enabled for the specified channel

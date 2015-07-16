@@ -105,11 +105,12 @@ class GlobalParamsView(QGroupBox):
                 title = 'PHASE'
             else:
                 title = 'AMP'
-            cs_button = QPushButton(title, self)
-            cs_button.setFlat(True)
-            cs_button.setCheckable(True)
-            cs_button.setVisible(False)
-            self.chan_labels.append(cs_button)
+            cl_button = QPushButton(title, self)
+            #cl_button.setFlat(True)
+            cl_button.setVisible(False)
+            cl_button.setStyleSheet('QPushButton { background-color:lightgrey;}')
+            cl_button.setMaximumHeight(30)
+            self.chan_labels.append(cl_button)
 
         qv_group = QGroupBox('Quick View')
         self.qv_layout = QVBoxLayout()
@@ -280,6 +281,11 @@ class ErrorView(QGroupBox):
         self.pid_setpoint = QDoubleSpinBox(self)
         self.pid_setpoint.setMinimumWidth(100)
         self.form_layout.addRow('Setpoint', self.pid_setpoint)
+
+        # Lock threshold spin box
+        self.lock_threshold = QDoubleSpinBox(self)
+        self.lock_threshold.setMinimumWidth(100)
+        self.form_layout.addRow('Threshold', self.lock_threshold)
         self.layout.addLayout(self.form_layout)
 
         # PID invert error check box
@@ -346,7 +352,7 @@ class ProcessingView(QGroupBox):
         # Scale factor display box
         self.scale_factor = QLineEdit(self)
         self.scale_factor.setEnabled(False)
-        self.scale_factor.setStyleSheet("QLineEdit {background-color: tomato; }")
+        self.scale_factor.setStyleSheet('QLineEdit {background-color: tomato; }')
         self.form_layout.addRow('Scale factor', self.scale_factor)
         self.scale_factor.setEnabled(False)
 

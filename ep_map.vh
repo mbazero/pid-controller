@@ -70,6 +70,7 @@ localparam pipe_cset_rqst       = 16'h14;
 //--------------------------------------------------------------------
 localparam chan_name_addr       = 16'h15;
 localparam qv_visible_addr      = 16'h16;
+localparam lock_threshold_addr  = 16'h17;
 
 //--------------------------------------------------------------------
 // Trigger Endpoints

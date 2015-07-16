@@ -109,6 +109,8 @@ class Controller():
                 lambda: self.update_ovr_os(chan, error_view.ovr_os.currentIndex()))
         error_view.pid_setpoint.valueChanged.connect(
                 lambda: self.update_pid_setpoint(chan, error_view.pid_setpoint.value()))
+        error_view.lock_threshold.valueChanged.connect(
+                lambda: self.update_lock_threshold(chan, error_view.lock_threshold.value()))
         error_view.pid_inv_error.stateChanged.connect(
                 lambda: self.update_pid_inv_error(chan, error_view.pid_inv_error.isChecked()))
 
@@ -173,14 +175,24 @@ class Controller():
                     [str(2**x) for x in range(2**self.params.w_pid_os)])
 
             # Setpoint
-            error_view.pid_setpoint.setRange(*self.model.get_input_ranges(chan)[0])
-            error_view.pid_setpoint.setDecimals(self.model.get_input_decimals(chan))
-            self.set_form_units(error_view.pid_setpoint, error_view.form_layout,
-                    self.model.get_input_units(chan))
+            input_range = self.model.get_input_ranges(chan)[0]
+            input_decimals = self.model.get_input_decimals(chan)
+            input_units = self.model.get_input_units(chan)
+            input_form = error_view.form_layout
+
+            error_view.pid_setpoint.setRange(*input_range)
+            error_view.pid_setpoint.setDecimals(input_decimals)
+            self.set_form_units(error_view.pid_setpoint, input_form, input_units)
+
+            # Threshold
+            error_view.lock_threshold.setRange(*input_range)
+            error_view.lock_threshold.setDecimals(input_decimals)
+            self.set_form_units(error_view.lock_threshold, input_form, input_units)
 
             # PID coefficients
             oprnd_high = 2**self.params.w_pid_oprnds - 1
             oprnd_range = [-oprnd_high, oprnd_high]
+
             pid_view.pid_p_coef.setRange(*oprnd_range)
             pid_view.pid_i_coef.setRange(*oprnd_range)
             pid_view.pid_d_coef.setRange(*oprnd_range)
@@ -195,7 +207,7 @@ class Controller():
             proc_view.opt_add_chan.clear()
             proc_view.opt_add_chan.addItems(['None'] + self.model.get_chan_list('port', 'usr'))
 
-            # Output bounds
+            # Output initial
             opt_range = self.model.get_output_ranges(chan)[0]
             opt_decimals = self.model.get_output_decimals(chan)
             opt_units = self.model.get_output_units(chan)
@@ -205,10 +217,12 @@ class Controller():
             output_view.opt_init.setDecimals(opt_decimals)
             self.set_form_units(output_view.opt_init, opt_form, opt_units)
 
+            # Output max
             output_view.opt_max.setRange(*opt_range)
             output_view.opt_max.setDecimals(opt_decimals)
             self.set_form_units(output_view.opt_max, opt_form, opt_units)
 
+            # Output min
             output_view.opt_min.setRange(*opt_range)
             output_view.opt_min.setDecimals(opt_decimals)
             self.set_form_units(output_view.opt_min, opt_form, opt_units)
@@ -293,6 +307,11 @@ class Controller():
         error_view.pid_setpoint.setValue(pid_setpoint_denorm)
         self.update_pid_setpoint(chan, pid_setpoint_denorm)
 
+        # Threshold
+        lock_threshold = model.get_param(params.lock_threshold_addr, chan)
+        error_view.lock_threshold.setValue(lock_threshold)
+        self.update_lock_threshold(chan, lock_threshold)
+
         # Invert error
         pid_inv_error = model.get_param(params.pid_inv_error_addr, chan)
         error_view.pid_inv_error.setChecked(pid_inv_error)
@@ -370,7 +389,7 @@ class Controller():
     '''
     def init_worker_thread(self):
         self.worker = WorkerThread(self)
-        self.view.connect(self.worker, SIGNAL("new_plot_data()"), self.update_graph)
+        self.view.connect(self.worker, SIGNAL("new_data()"), self.handle_new_data)
         self.worker.start()
 
     '''
@@ -381,6 +400,35 @@ class Controller():
         config_view = chan_view.config_view
         pid_view = chan_view.pid_view
         output_view = chan_view.output_view
+
+    '''
+    Handle new data from FPGA
+    '''
+    def handle_new_data(self):
+        for chan in range(self.params.n_pid_chan):
+            self.update_lock_status(chan)
+
+        self.update_graph()
+
+    '''
+    Update lock status indicators in quick view
+    '''
+    def update_lock_status(self, chan):
+        qv_visible = self.model.get_param(self.params.qv_visible_addr, chan)
+
+        if qv_visible:
+            enabled = self.model.is_lock_enabled(chan)
+            locked = self.model.get_lock_status(chan)
+            chan_label = self.view.gp_view.chan_labels[chan]
+
+            if not enabled:
+                color = 'lightgray'
+            elif locked:
+                color = 'lightgreen'
+            else:
+                color = 'lightcorol'
+
+            chan_label.setStyleSheet('QPushButton { background-color:' + color + ';}')
 
     '''
     Update view graph
@@ -525,7 +573,6 @@ class Controller():
         chan_label = self.view.gp_view.chan_labels[chan]
         qv_layout = self.view.gp_view.qv_layout
         qv_visible = self.model.pmap[self.params.qv_visible_addr]
-        print sum(qv_visible)
 
         if show:
             if chan == self.focused_chan:
@@ -603,6 +650,10 @@ class Controller():
     '''
     PID filter param update handling
     '''
+    def update_lock_threshold(self, chan, value):
+        self.model.set_param(self.params.lock_threshold_addr, chan, value)
+        self.chan_print(chan, "lock threshold set to " + str(value))
+
     def update_pid_setpoint(self, chan, value):
         norm_value = self.model.normalize_input(chan, value);
         self.update_model_and_fpga(self.params.pid_setpoint_addr, chan, norm_value)
@@ -740,7 +791,7 @@ class WorkerThread(QThread):
     def run(self):
         while not self.exiting:
             self.controller.read_fpga_data()
-            self.emit(SIGNAL('new_plot_data()')) # signal gui that new data is available to be plotted
+            self.emit(SIGNAL('new_data()')) # signal gui that new data is available to be plotted
             time.sleep(1/self.controller.sample_rate) # sleep for a period of time
 
     def shutDown(self):
