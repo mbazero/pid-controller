@@ -35,5 +35,5 @@ Instantiate MVC and start GUI
 model = model.Model(io_config, params)
 view = view.View(io_config, params)
 controller = controller.Controller(view, model, fpga, io_config, params,
-        config.pconfig)
+        config.config_path)
 view.run()

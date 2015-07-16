@@ -18,9 +18,7 @@ class View(QWidget):
 
         # Create channel views
         n_chan = params.n_dac + params.n_dds
-        self.chan_views = [ChannelView(chan_no) for chan_no in range(params.n_dac)]
-        for x in range(params.n_dds):
-            self.chan_views += [ChannelView(chan_no) for chan_no in range(3)]
+        self.chan_views = [ChannelView(chan_no) for chan_no in range(params.n_pid_chan)]
 
         # Initalize global params view
         self.layout = QHBoxLayout()
@@ -28,16 +26,15 @@ class View(QWidget):
         self.layout.addWidget(self.gp_view)
 
         # Create output tabs
-        opt_tabs = QTabWidget()
+        self.opt_tabs = QTabWidget()
 
         # Create dac tab layout
         dac_tabs = QTabWidget()
         for x in range(params.n_dac):
             dac_tabs.addTab(self.chan_views[x], 'OUT' + str(x+1))
-        opt_tabs.addTab(dac_tabs, 'DAC')
+        self.opt_tabs.addTab(dac_tabs, 'DAC')
 
         # Create dds tab layout
-        dds_tabs = QTabWidget()
         for x in range(params.n_dds):
             dds_tabs = QTabWidget()
             fidx = params.freq0_addr + x
@@ -46,9 +43,9 @@ class View(QWidget):
             dds_tabs.addTab(self.chan_views[fidx], 'FREQ')
             dds_tabs.addTab(self.chan_views[pidx], 'PHASE')
             dds_tabs.addTab(self.chan_views[aidx], 'AMP')
-            opt_tabs.addTab(dds_tabs, 'DDS' + str(x))
+            self.opt_tabs.addTab(dds_tabs, 'DDS' + str(x))
 
-        self.layout.addWidget(opt_tabs)
+        self.layout.addWidget(self.opt_tabs)
 
         self.setLayout(self.layout)
 
@@ -80,15 +77,11 @@ class GlobalParamsView(QGroupBox):
 
         # ADC oversample combo box
         self.adc_os = QComboBox(self)
-        adc_os_ops = [str(mode) for mode in io_config.adc_os_modes]
-        self.adc_os.addItems(adc_os_ops)
         self.form_layout.addRow('ADC oversample', self.adc_os)
 
-        # Sample period line edit
-        self.sample_period = QLineEdit(self)
-        spv = QDoubleValidator(0.0, 10.0, 3)
-        self.sample_period.setValidator(spv)
-        self.form_layout.addRow('Sampling period (s)', self.sample_period)
+        # Sample rate spin box
+        self.sample_rate = QDoubleSpinBox(self)
+        self.form_layout.addRow('Sampling rate (Hz)', self.sample_rate)
 
         self.layout.addLayout(self.form_layout)
 
@@ -283,8 +276,9 @@ class ErrorView(QGroupBox):
         self.ovr_os = QComboBox(self)
         self.form_layout.addRow('Oversample', self.ovr_os)
 
-        # PID setpoint line edit
-        self.pid_setpoint = QLineEdit(self)
+        # PID setpoint spin box
+        self.pid_setpoint = QDoubleSpinBox(self)
+        self.pid_setpoint.setMinimumWidth(100)
         self.form_layout.addRow('Setpoint', self.pid_setpoint)
         self.layout.addLayout(self.form_layout)
 
@@ -376,18 +370,18 @@ class OutputView(QGroupBox):
         self.layout = QVBoxLayout()
         self.form_layout = QFormLayout()
 
-        # Initial output line edit
-        self.opt_init = QLineEdit(self)
+        # Initial output spin box
+        self.opt_init = QDoubleSpinBox(self)
         self.opt_init.setMinimumWidth(100)
         self.form_layout.addRow('Initial', self.opt_init)
 
-        # Max output line edit
-        self.opt_max = QLineEdit(self)
+        # Max output spin box
+        self.opt_max = QDoubleSpinBox(self)
         self.opt_max.setMinimumWidth(100)
         self.form_layout.addRow('Max', self.opt_max)
 
-        # Min output line edit
-        self.opt_min = QLineEdit(self)
+        # Min output spin box
+        self.opt_min = QDoubleSpinBox(self)
         self.opt_min.setMinimumWidth(100)
         self.form_layout.addRow('Min', self.opt_min)
 

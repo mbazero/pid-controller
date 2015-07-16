@@ -5,19 +5,20 @@ import time
 import cPickle
 import model as md
 from PyQt4.Qt import *
+from functools import partial
 
 '''
 Handle state synchronization between model and view
 '''
 class Controller():
-    def __init__(self, view, model, fpga, io_config, params, ld_config=0):
+    def __init__(self, view, init_model, fpga, io_config, params, config_path=0):
         self.view = view
-        self.model = model
+        self.model = init_model # model representing the initial FPGA state
         self.fpga = fpga
         self.params = params
         self.io_config = io_config
 
-        self.sample_period = 0.1
+        self.sample_rate = 10 # Hz
         self.block_transfer = False
         self.graph_freeze = [0] * params.n_pid_chan
         self.focused_chan = 0
@@ -28,23 +29,35 @@ class Controller():
 
         self.init_worker_thread()
         self.register_view_handlers()
-        self.set_view_validators()
-        if ld_config:
-            self.load_config(ld_config)
+        self.set_view_ranges()
+
+        if config_path:
+            self.load_config(config_path)
         else:
-            self.update_view()
+            self.initialize()
 
     '''
     Register all input view handlers
     '''
     def register_view_handlers(self):
 
+        # Outer tab handler
+        opt_tabs = self.view.opt_tabs;
+        get_tab_chan_no = lambda: opt_tabs.currentWidget().currentWidget().chan_no
+        opt_tabs.currentChanged.connect(
+                lambda: self.update_focused_chan(get_tab_chan_no()))
+
+        # Inner tab handlers
+        for x in range(opt_tabs.count()):
+            opt_tabs.widget(x).currentChanged.connect(
+                lambda: self.update_focused_chan(get_tab_chan_no()))
+
         # Global params view handlers
         gp_view = self.view.gp_view
         gp_view.adc_os.activated.connect(
                 lambda: self.update_adc_os(gp_view.adc_os.currentIndex() + 1))
-        gp_view.sample_period.editingFinished.connect(
-                lambda: self.update_sampling_period(float(gp_view.sample_period.text())))
+        gp_view.sample_rate.valueChanged.connect(
+                lambda: self.update_sample_rate(gp_view.sample_rate.value()))
         gp_view.block_transfer.clicked.connect(
                 lambda: self.update_block_transfer(gp_view.block_transfer.isChecked()))
         gp_view.save_config.clicked.connect(
@@ -91,85 +104,112 @@ class Controller():
         # Error view handlers
         error_view.ovr_os.activated.connect(
                 lambda: self.update_ovr_os(chan, error_view.ovr_os.currentIndex()))
-        error_view.pid_setpoint.textEdited.connect(
-                lambda: self.update_pid_setpoint(chan, float(error_view.pid_setpoint.text())))
+        error_view.pid_setpoint.valueChanged.connect(
+                lambda: self.update_pid_setpoint(chan, error_view.pid_setpoint.value()))
         error_view.pid_inv_error.stateChanged.connect(
                 lambda: self.update_pid_inv_error(chan, error_view.pid_inv_error.isChecked()))
 
         # PID view handlers
         pid_view.pid_p_coef.valueChanged.connect(
-                lambda: self.update_pid_p_coef(chan, int(pid_view.pid_p_coef.text())))
+                lambda: self.update_pid_p_coef(chan, pid_view.pid_p_coef.text()))
         pid_view.pid_i_coef.valueChanged.connect(
-                lambda: self.update_pid_i_coef(chan, int(pid_view.pid_i_coef.text())))
+                lambda: self.update_pid_i_coef(chan, pid_view.pid_i_coef.text()))
         pid_view.pid_d_coef.valueChanged.connect(
-                lambda: self.update_pid_d_coef(chan, int(pid_view.pid_d_coef.text())))
+                lambda: self.update_pid_d_coef(chan, pid_view.pid_d_coef.text()))
         pid_view.pid_clear.clicked.connect(
                 lambda: self.request_pid_clear(chan))
 
         # Processing view handlers
         proc_view.opt_mult.valueChanged.connect(
-                lambda: self.update_opt_mult(chan, int(proc_view.opt_mult.text())))
+                lambda: self.update_opt_mult(chan, proc_view.opt_mult.text()))
         proc_view.opt_rs.valueChanged.connect(
-                lambda: self.update_opt_rs(chan, int(proc_view.opt_rs.text())))
+                lambda: self.update_opt_rs(chan, proc_view.opt_rs.text()))
         proc_view.opt_add_chan.activated.connect(
                 lambda: self.update_opt_add_chan(chan, proc_view.opt_add_chan.currentIndex() - 1))
 
 
         # Output view handlers
-        output_view.opt_init.textEdited.connect(
-                lambda: self.update_opt_init(chan, float(output_view.opt_init.text())))
-        output_view.opt_max.textEdited.connect(
-                lambda: self.update_opt_max(chan, float(output_view.opt_max.text())))
-        output_view.opt_min.textEdited.connect(
-                lambda: self.update_opt_min(chan, float(output_view.opt_min.text())))
+        output_view.opt_init.valueChanged.connect(
+                lambda: self.update_opt_init(chan, output_view.opt_init.value()))
+        output_view.opt_max.valueChanged.connect(
+                lambda: self.update_opt_max(chan, output_view.opt_max.text()))
+        output_view.opt_min.valueChanged.connect(
+                lambda: self.update_opt_min(chan, output_view.opt_min.text()))
         output_view.opt_inject.clicked.connect(
                 lambda: self.request_opt_inject(chan))
 
     '''
-    Set view validators
+    Set allowable ranges for view spin boxes
     '''
-    def set_view_validators(self):
+    def set_view_ranges(self):
+        # Sampling rate
+        self.view.gp_view.sample_rate.setValue(self.sample_rate)
+        self.view.gp_view.sample_rate.setRange(1, 100)
+        self.view.gp_view.sample_rate.setDecimals(1)
+
+        # ADC oversample mode
+        self.view.gp_view.adc_os.addItems(
+                [str(mode) for mode in self.io_config.adc_os_modes]);
+
         for chan in range(self.params.n_pid_chan):
             chan_view = self.view.chan_views[chan]
+            mode_view = chan_view.mode_view
             error_view = chan_view.error_view
             pid_view = chan_view.pid_view
             proc_view = chan_view.proc_view
             output_view = chan_view.output_view
 
-            # Error view validators
+            # Channel source select
+            mode_view.chan_src_sel.clear()
+            mode_view.chan_src_sel.addItems(['None'] + self.model.get_input_list())
+
+            # Oversample mode
+            error_view.ovr_os.clear()
             error_view.ovr_os.addItems(
                     [str(2**x) for x in range(2**self.params.w_pid_os)])
-            inpt_validator = QDoubleValidator(
-                    *(self.model.get_input_ranges(chan)[0] + [3]))
-            error_view.pid_setpoint.setValidator(inpt_validator)
 
-            # PID view handlers
-            pid_view.pid_p_coef.setMaximum(2**self.params.w_pid_oprnds)
-            pid_view.pid_i_coef.setMaximum(2**self.params.w_pid_oprnds)
-            pid_view.pid_d_coef.setMaximum(2**self.params.w_pid_oprnds)
+            # Setpoint
+            error_view.pid_setpoint.setRange(*self.model.get_input_ranges(chan)[0])
+            error_view.pid_setpoint.setDecimals(self.model.get_input_decimals(chan))
 
-            # Processing view handlers
-            proc_view.opt_mult.setMaximum(2**self.params.w_pid_oprnds)
-            proc_view.opt_rs.setMaximum(2**self.params.w_pid_oprnds)
+            # PID coefficients
+            oprnd_high = 2**self.params.w_pid_oprnds - 1
+            oprnd_range = [-oprnd_high, oprnd_high]
+            pid_view.pid_p_coef.setRange(*oprnd_range)
+            pid_view.pid_i_coef.setRange(*oprnd_range)
+            pid_view.pid_d_coef.setRange(*oprnd_range)
 
-            # Output view handlers
-            opt_validator = QDoubleValidator(
-                    *(self.model.get_output_ranges(chan)[0] + [3]))
-            print "output range: " + str(self.model.get_output_ranges(chan)[0])
-            output_view.opt_init.setValidator(QDoubleValidator(0.0, 5.0, 2))
-            output_view.opt_max.setValidator(opt_validator)
-            output_view.opt_min.setValidator(opt_validator)
+            # Multiplier
+            proc_view.opt_mult.setRange(*oprnd_range)
+
+            # Right shift
+            proc_view.opt_rs.setRange(*oprnd_range)
+
+            # Add channel
+            proc_view.opt_add_chan.clear()
+            proc_view.opt_add_chan.addItems(['None'] + self.model.get_chan_list())
+
+            # Output bounds
+            opt_range = self.model.get_output_ranges(chan)[0]
+            output_view.opt_init.setRange(*opt_range)
+            output_view.opt_max.setRange(*opt_range)
+            output_view.opt_min.setRange(*opt_range)
 
 
     '''
-    Update view with model data
+    Initialize view, model, and fpga. If a parameter map is supplied, all
+    three components are initialized with the map values. If no parameter
+    map is supplied, only the view is updated with the prexisting parameters
+    in the active model.
     '''
-    def update_view(self, model=0):
+    def initialize(self, pmap=0):
+        if pmap:
+            model = md.Model(self.io_config, self.params, pmap)
         if not model:
             model = self.model
 
-        # Sample period
-        self.view.gp_view.sample_period.setText(str(self.sample_period))
+        # Sample rate
+        self.view.gp_view.sample_rate.setValue(self.sample_rate)
 
         # ADC oversample mode
         adc_os = model.get_param(self.params.adc_os_addr, 0)
@@ -178,12 +218,12 @@ class Controller():
 
         # Channel params
         for chan in range(self.params.n_pid_chan):
-            self.update_chan_view(chan, model)
+            self.initialize_chan(chan, model)
 
     '''
     Update channel view with model data
     '''
-    def update_chan_view(self, chan, model):
+    def initialize_chan(self, chan, model):
         chan_view = self.view.chan_views[chan]
         mode_view = chan_view.mode_view
         error_view = chan_view.error_view
@@ -193,8 +233,6 @@ class Controller():
         params = self.params
 
         # Channel source select
-        mode_view.chan_src_sel.clear()
-        mode_view.chan_src_sel.addItems(['None'] + model.get_input_list())
         chan_src_sel = model.get_param(params.chan_src_sel_addr, chan)
         mode_view.chan_src_sel.setCurrentIndex(chan_src_sel + 1)
         self.update_chan_src_sel(chan, chan_src_sel)
@@ -212,7 +250,7 @@ class Controller():
         # Setpoint
         pid_setpoint = model.get_param(params.pid_setpoint_addr, chan)
         pid_setpoint_denorm = model.denormalize_input(chan, pid_setpoint)
-        error_view.pid_setpoint.setText(str(pid_setpoint_denorm))
+        error_view.pid_setpoint.setValue(pid_setpoint_denorm)
         self.update_pid_setpoint(chan, pid_setpoint_denorm)
 
         # Invert error
@@ -236,8 +274,6 @@ class Controller():
         self.update_pid_d_coef(chan, pid_d_coef)
 
         # Add channel
-        proc_view.opt_add_chan.clear()
-        proc_view.opt_add_chan.addItems(['None'] + self.model.get_chan_list())
         opt_add_chan = model.get_param(params.opt_add_chan_addr, chan)
         proc_view.opt_add_chan.setCurrentIndex(opt_add_chan + 1)
         self.update_opt_add_chan(chan, opt_add_chan)
@@ -255,19 +291,19 @@ class Controller():
         # Output initial
         opt_init = model.get_param(params.opt_init_addr, chan)
         opt_init_denorm = model.denormalize_output(chan, opt_init)
-        output_view.opt_init.setText(str(opt_init_denorm))
+        output_view.opt_init.setValue(opt_init_denorm)
         self.update_opt_init(chan, opt_init_denorm)
 
         # Output max
         opt_max = model.get_param(params.opt_max_addr, chan)
         opt_max_denorm = model.denormalize_output(chan, opt_max)
-        output_view.opt_max.setText(str(opt_max_denorm))
+        output_view.opt_max.setValue(opt_max_denorm)
         self.update_opt_max(chan, opt_max_denorm)
 
         # Output min
         opt_min = model.get_param(params.opt_min_addr, chan)
         opt_min_denorm = model.denormalize_output(chan, opt_min)
-        output_view.opt_min.setText(str(opt_min_denorm))
+        output_view.opt_min.setValue(opt_min_denorm)
         self.update_opt_min(chan, opt_min_denorm)
 
     '''
@@ -286,8 +322,7 @@ class Controller():
             fname = self.view.get_open_file('Load Config')
         f = open(fname, 'r')
         pmap = cPickle.load(f)
-        new_model = md.Model(self.io_config, self.params, pmap)
-        self.update_view(new_model)
+        self.initialize(pmap)
 
     '''
     Initialize worker thread for graph updating
@@ -330,9 +365,9 @@ class Controller():
     '''
     Update fpga data sampling period
     '''
-    def update_sampling_period(self, value):
-        self.sample_period = value
-        print "Sample period set to " + str(value)
+    def update_sample_rate(self, value):
+        self.sample_rate = value
+        print "Sample rate set to " + str(value)
 
     '''
     Update block transfer state
@@ -439,12 +474,12 @@ class Controller():
         print self.model.chan_to_string(chan) + (" activated" if enable else " deactivated")
 
     def update_focused_chan(self, chan):
+        print "NEW FOCUS = " + str(chan)
         if chan == self.focused_chan:
             self.view.gp_view.chan_sel_arr[self.focused_chan].setChecked(True)
         else:
             self.view.gp_view.chan_sel_arr[self.focused_chan].setChecked(False)
             self.focused_chan = chan
-            self.view.chan_stack.setCurrentIndex(chan)
             self.send_fpga_request(self.params.pipe_cset_rqst, chan);
 
     def update_chan_src_sel(self, chan, src_sel):
@@ -605,7 +640,7 @@ class WorkerThread(QThread):
         while not self.exiting:
             self.controller.read_fpga_data()
             self.emit(SIGNAL('new_plot_data()')) # signal gui that new data is available to be plotted
-            time.sleep(self.controller.sample_period) # sleep for a period of time
+            time.sleep(1/self.controller.sample_rate) # sleep for a period of time
 
     def shutDown(self):
         self.exiting = True

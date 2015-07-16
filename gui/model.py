@@ -272,10 +272,17 @@ class Model:
         return [range_units, range_norm]
 
     '''
-    Return inputs denormalized units
+    Return input denormalization units
     '''
     def get_input_units(self, chan):
         return self.io_config.adc_units
+
+    '''
+    Return input decimal precision
+    '''
+    def get_input_decimals(self, chan):
+        return self.io_config.adc_decimals
+
 
     '''
     Return output range with units and normalized output range for
