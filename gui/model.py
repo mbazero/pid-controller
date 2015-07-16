@@ -214,7 +214,11 @@ class Model:
         if not self.is_valid_output(output):
             return 'Invalid output'
         elif output < self.params.freq0_addr:
-            return 'DAC ' + str(output)
+            # DAC channels must be remapped because there is not a
+            # linear mapping between the dac chip output channels
+            # and the breakout board analog output ports.
+            aout = self.io_config.dac_to_aout[output]
+            return 'DAC ' + str(aout)
         elif output < self.params.phase0_addr:
             return 'FREQ ' + str(output - n_dac)
         elif output < self.params.amp0_addr:
@@ -244,7 +248,15 @@ class Model:
     '''
     def get_chan_list(self):
         clist = []
-        for chan in range(self.n_out):
+
+        # DAC channels must be added out of order because of the
+        # nonlinear mapping between DAC channels and output ports.
+        for dac in self.io_config.aout_to_dac:
+            if self.is_valid_input(dac):
+                clist.append(self.chan_to_string(dac))
+
+        # The rest of the channels can be added in order
+        for chan in range(self.params.n_dac, self.n_out):
             clist.append(self.chan_to_string(chan))
 
         return clist
@@ -282,7 +294,6 @@ class Model:
     '''
     def get_input_decimals(self, chan):
         return self.io_config.adc_decimals
-
 
     '''
     Return output range with units and normalized output range for
@@ -324,6 +335,24 @@ class Model:
             return io_config.amp_units
         else:
             return '?'
+
+    '''
+    Return output decimal precision
+    '''
+    def get_output_decimals(self, chan):
+        output_string = self.output_to_string(chan)
+        io_config = self.io_config
+
+        if 'DAC' in output_string:
+            return io_config.dac_decimals
+        elif 'FREQ' in output_string:
+            return io_config.freq_decimals
+        elif 'PHASE' in output_string:
+            return io_config.phase_decimals
+        elif 'AMP' in output_string:
+            return io_config.amp_decimals
+        else:
+            return 3
 
     '''
     Normalize input value from actual input range with units to unitless

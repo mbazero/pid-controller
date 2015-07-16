@@ -83,7 +83,7 @@ class Controller():
         proc_view = chan_view.proc_view
         output_view = chan_view.output_view
 
-        # Tab handler
+        # TODO
         gp_view.chan_sel_arr[chan].clicked.connect(
                 lambda: self.update_focused_chan(chan))
 
@@ -125,7 +125,8 @@ class Controller():
         proc_view.opt_rs.valueChanged.connect(
                 lambda: self.update_opt_rs(chan, proc_view.opt_rs.text()))
         proc_view.opt_add_chan.activated.connect(
-                lambda: self.update_opt_add_chan(chan, proc_view.opt_add_chan.currentIndex() - 1))
+                lambda: self.update_opt_add_chan(chan,
+                    self.io_config.map_port_to_chan(proc_view.opt_add_chan.currentIndex()-1)))
 
 
         # Output view handlers
@@ -171,6 +172,8 @@ class Controller():
             # Setpoint
             error_view.pid_setpoint.setRange(*self.model.get_input_ranges(chan)[0])
             error_view.pid_setpoint.setDecimals(self.model.get_input_decimals(chan))
+            self.set_form_units(error_view.pid_setpoint, error_view.form_layout,
+                    self.model.get_input_units(chan))
 
             # PID coefficients
             oprnd_high = 2**self.params.w_pid_oprnds - 1
@@ -191,10 +194,29 @@ class Controller():
 
             # Output bounds
             opt_range = self.model.get_output_ranges(chan)[0]
-            output_view.opt_init.setRange(*opt_range)
-            output_view.opt_max.setRange(*opt_range)
-            output_view.opt_min.setRange(*opt_range)
+            opt_decimals = self.model.get_output_decimals(chan)
+            opt_units = self.model.get_output_units(chan)
+            opt_form = output_view.form_layout
 
+            output_view.opt_init.setRange(*opt_range)
+            output_view.opt_init.setDecimals(opt_decimals)
+            self.set_form_units(output_view.opt_init, opt_form, opt_units)
+
+            output_view.opt_max.setRange(*opt_range)
+            output_view.opt_max.setDecimals(opt_decimals)
+            self.set_form_units(output_view.opt_max, opt_form, opt_units)
+
+            output_view.opt_min.setRange(*opt_range)
+            output_view.opt_min.setDecimals(opt_decimals)
+            self.set_form_units(output_view.opt_min, opt_form, opt_units)
+
+    '''
+    Helper function to add units to a Qt form layout
+    '''
+    def set_form_units(self, wgt, form, units):
+        label = form.labelForField(wgt)
+        unit_text = label.text() + ' (' + units + ')'
+        label.setText(unit_text)
 
     '''
     Initialize view, model, and fpga. If a parameter map is supplied, all
@@ -275,7 +297,8 @@ class Controller():
 
         # Add channel
         opt_add_chan = model.get_param(params.opt_add_chan_addr, chan)
-        proc_view.opt_add_chan.setCurrentIndex(opt_add_chan + 1)
+        opt_add_port = self.io_config.map_chan_to_port(opt_add_chan)
+        proc_view.opt_add_chan.setCurrentIndex(opt_add_port + 1)
         self.update_opt_add_chan(chan, opt_add_chan)
 
         # Multiplier
@@ -363,7 +386,7 @@ class Controller():
             self.model.clear_data_log_single(chan)
 
     '''
-    Update fpga data sampling period
+    Update fpga data sampling rate
     '''
     def update_sample_rate(self, value):
         self.sample_rate = value
@@ -474,7 +497,6 @@ class Controller():
         print self.model.chan_to_string(chan) + (" activated" if enable else " deactivated")
 
     def update_focused_chan(self, chan):
-        print "NEW FOCUS = " + str(chan)
         if chan == self.focused_chan:
             self.view.gp_view.chan_sel_arr[self.focused_chan].setChecked(True)
         else:

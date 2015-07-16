@@ -31,7 +31,11 @@ class View(QWidget):
         # Create dac tab layout
         dac_tabs = QTabWidget()
         for x in range(params.n_dac):
-            dac_tabs.addTab(self.chan_views[x], 'OUT' + str(x+1))
+            # DAC channels are not mapped linearly to the breakout board output
+            # channels. The index x represents the output index, so it must be
+            # transformed before selecting a channel view for insertion.
+            xmod = io_config.aout_to_dac[x]
+            dac_tabs.addTab(self.chan_views[xmod], 'AOUT' + str(x+1))
         self.opt_tabs.addTab(dac_tabs, 'DAC')
 
         # Create dds tab layout
