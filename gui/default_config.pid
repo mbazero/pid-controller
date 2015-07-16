@@ -3,9 +3,9 @@ I1
 I1
 sI2
 (lp2
-I-1
+I0
 aI-1
-aI-1
+aI1
 aI-1
 aI-1
 aI-1
@@ -47,7 +47,7 @@ aI0
 aI0
 asI4
 (lp4
-I0
+I01
 aI0
 aI0
 aI0
@@ -113,9 +113,9 @@ aI0
 aI0
 asI7
 (lp7
-I0
+I100
 aI0
-aI0
+aI100
 aI0
 aI0
 aI0
@@ -135,9 +135,9 @@ aI0
 aI0
 asI8
 (lp8
-I0
+I10
 aI0
-aI0
+aI10
 aI0
 aI0
 aI0
@@ -201,9 +201,9 @@ aF0
 aF0
 asI11
 (lp11
-F0
+F65535
 aF0
-aF0
+aF65535
 aF0
 aF0
 aF0
@@ -223,9 +223,9 @@ aF0
 aF0
 asI12
 (lp12
-F0
+F26214
 aF0
-aF0
+aF39321
 aF0
 aF0
 aF0
@@ -267,9 +267,9 @@ aI1
 aI1
 asI14
 (lp14
-I0
+I10
 aI0
-aI0
+aI10
 aI0
 aI0
 aI0
@@ -317,7 +317,7 @@ p17
 (S'PyQt4.QtCore'
 p18
 S'QString'
-(VMain Lock
+(VDAC 1
 p19
 ttRp20
 aS'DAC 8'
@@ -326,56 +326,70 @@ aS'DAC 2'
 p22
 aS'DAC 7'
 p23
-ag17
-(g18
-S'QString'
-(VSecondary Lock
+aS'DAC 3'
 p24
-ttRp25
 aS'DAC 6'
-p26
+p25
 aS'DAC 4'
+p26
+aS'DAC 5'
 p27
-ag17
-(g18
-S'QString'
-(VThird Lock
-p28
-ttRp29
 aS'FREQ 1'
-p30
+p28
 aS'FREQ 2'
-p31
+p29
 aS'FREQ 3'
-p32
+p30
 aS'FREQ 4'
-p33
+p31
 aS'PHASE 1'
-p34
+p32
 aS'PHASE 2'
-p35
+p33
 aS'PHASE 3'
-p36
+p34
 aS'PHASE 4'
-p37
+p35
 aS'AMP 1'
-p38
+p36
 aS'AMP 2'
-p39
+p37
 aS'AMP 3'
-p40
+p38
 aS'AMP 4'
-p41
+p39
 asI22
-(lp42
+(lp40
 I1
 aI0
-aI0
-aI1
 aI1
 aI0
 aI0
-aI1
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+aI0
+asI23
+(lp41
+F1
+aI0
+aF2
+aI0
+aI0
+aI0
+aI0
+aI0
 aI0
 aI0
 aI0

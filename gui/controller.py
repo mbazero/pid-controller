@@ -116,19 +116,19 @@ class Controller():
 
         # PID view handlers
         pid_view.pid_p_coef.valueChanged.connect(
-                lambda: self.update_pid_p_coef(chan, pid_view.pid_p_coef.text()))
+                lambda: self.update_pid_p_coef(chan, pid_view.pid_p_coef.value()))
         pid_view.pid_i_coef.valueChanged.connect(
-                lambda: self.update_pid_i_coef(chan, pid_view.pid_i_coef.text()))
+                lambda: self.update_pid_i_coef(chan, pid_view.pid_i_coef.value()))
         pid_view.pid_d_coef.valueChanged.connect(
-                lambda: self.update_pid_d_coef(chan, pid_view.pid_d_coef.text()))
+                lambda: self.update_pid_d_coef(chan, pid_view.pid_d_coef.value()))
         pid_view.pid_clear.clicked.connect(
                 lambda: self.request_pid_clear(chan))
 
         # Processing view handlers
         proc_view.opt_mult.valueChanged.connect(
-                lambda: self.update_opt_mult(chan, proc_view.opt_mult.text()))
+                lambda: self.update_opt_mult(chan, proc_view.opt_mult.value()))
         proc_view.opt_rs.valueChanged.connect(
-                lambda: self.update_opt_rs(chan, proc_view.opt_rs.text()))
+                lambda: self.update_opt_rs(chan, proc_view.opt_rs.value()))
         proc_view.opt_add_chan.activated.connect(
                 lambda: self.update_opt_add_chan(chan,
                     self.io_config.map_port_to_chan(proc_view.opt_add_chan.currentIndex()-1)))
@@ -138,9 +138,9 @@ class Controller():
         output_view.opt_init.valueChanged.connect(
                 lambda: self.update_opt_init(chan, output_view.opt_init.value()))
         output_view.opt_max.valueChanged.connect(
-                lambda: self.update_opt_max(chan, output_view.opt_max.text()))
+                lambda: self.update_opt_max(chan, output_view.opt_max.value()))
         output_view.opt_min.valueChanged.connect(
-                lambda: self.update_opt_min(chan, output_view.opt_min.text()))
+                lambda: self.update_opt_min(chan, output_view.opt_min.value()))
         output_view.opt_inject.clicked.connect(
                 lambda: self.request_opt_inject(chan))
 
@@ -289,7 +289,10 @@ class Controller():
 
         # Quick view
         qv_visible = model.get_param(params.qv_visible_addr, chan)
+        config_view.quick_view_toggle.blockSignals(True)
         self.update_quick_view(chan, qv_visible)
+        config_view.quick_view_toggle.setChecked(qv_visible)
+        config_view.quick_view_toggle.blockSignals(False)
 
         # Lock enable
         pid_lock_en = model.get_param(params.pid_lock_en_addr, chan)
@@ -426,7 +429,7 @@ class Controller():
             elif locked:
                 color = 'lightgreen'
             else:
-                color = 'lightcorol'
+                color = 'tomato'
 
             chan_label.setStyleSheet('QPushButton { background-color:' + color + ';}')
 
@@ -597,7 +600,10 @@ class Controller():
     Channel param update handling
     '''
     def update_pid_lock_en(self, chan, enable, reset=True):
-        self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
+        if self.model.has_valid_input(chan):
+            self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, enable)
+        else:
+            self.view.chan_views[chan].config_view.pid_lock_en.setChecked(False)
 
         # Reset channel on disable
         if reset and not enable:
@@ -634,6 +640,7 @@ class Controller():
                 self.chan_print(chan, "input set to " + self.model.input_to_string(src_sel))
 
             else:
+                self.view.chan_views[chan].config_view.pid_lock_en.setChecked(False)
                 self.update_pid_lock_en(chan, False) # disable pid lock for invalid route
                 self.update_model_and_fpga(self.params.pid_lock_en_addr, chan, 0)
                 self.update_model_and_fpga(self.params.chan_src_sel_addr, chan, self.params.null_src)
@@ -706,10 +713,10 @@ class Controller():
     def update_scale_factor(self, chan):
         proc_view = self.view.chan_views[chan].proc_view
         try:
-            rs = float(proc_view.opt_rs.text())
-            mult = float(proc_view.opt_mult.text())
+            rs = float(proc_view.opt_rs.value())
+            mult = float(proc_view.opt_mult.value())
             scale_factor = mult / 2**rs
-            proc_view.scale_factor.setText(str(scale_factor))
+            proc_view.scale_factor.setText(format(scale_factor, '.8f'))
         except:
             proc_view.scale_factor.setText("NaN")
 

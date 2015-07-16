@@ -131,7 +131,7 @@ class Model:
         if len(data_x) > self.lock_status_window:
             thresh = self.get_param(self.params.lock_threshold_addr, chan)
             setpoint = self.get_param(self.params.pid_setpoint_addr, chan)
-            mean = np.mean(data_x[-self.lock_status_window:])
+            mean = np.mean(data_y[-self.lock_status_window:])
             self.lock_status[chan] = abs(mean - setpoint) < thresh
         else:
             self.lock_status[chan] = 0

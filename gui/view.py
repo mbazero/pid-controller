@@ -106,7 +106,7 @@ class GlobalParamsView(QGroupBox):
             else:
                 title = 'AMP'
             cl_button = QPushButton(title, self)
-            #cl_button.setFlat(True)
+            cl_button.setCheckable(True)
             cl_button.setVisible(False)
             cl_button.setStyleSheet('QPushButton { background-color:lightgrey;}')
             cl_button.setMaximumHeight(30)
@@ -275,16 +275,17 @@ class ErrorView(QGroupBox):
 
         # Oversample mode combo box
         self.ovr_os = QComboBox(self)
+        self.ovr_os.setMaximumWidth(90)
         self.form_layout.addRow('Oversample', self.ovr_os)
 
         # PID setpoint spin box
         self.pid_setpoint = QDoubleSpinBox(self)
-        self.pid_setpoint.setMinimumWidth(100)
+        self.pid_setpoint.setMinimumWidth(90)
         self.form_layout.addRow('Setpoint', self.pid_setpoint)
 
         # Lock threshold spin box
         self.lock_threshold = QDoubleSpinBox(self)
-        self.lock_threshold.setMinimumWidth(100)
+        self.lock_threshold.setMinimumWidth(90)
         self.form_layout.addRow('Threshold', self.lock_threshold)
         self.layout.addLayout(self.form_layout)
 
@@ -307,17 +308,17 @@ class PIDView(QGroupBox):
 
         # PID P coefficient spin box
         self.pid_p_coef = QSpinBox(self)
-        self.pid_p_coef.setMinimumWidth(100)
+        self.pid_p_coef.setMinimumWidth(90)
         self.form_layout.addRow('P coef', self.pid_p_coef)
 
         # PID I coefficient spin box
         self.pid_i_coef = QSpinBox(self)
-        self.pid_i_coef.setMinimumWidth(100)
+        self.pid_i_coef.setMinimumWidth(90)
         self.form_layout.addRow('I coef', self.pid_i_coef)
 
         # PID D coefficient spin box
         self.pid_d_coef = QSpinBox(self)
-        self.pid_d_coef.setMinimumWidth(100)
+        self.pid_d_coef.setMinimumWidth(90)
         self.form_layout.addRow('D coef', self.pid_d_coef)
 
         self.layout.addLayout(self.form_layout)
@@ -341,23 +342,24 @@ class ProcessingView(QGroupBox):
 
         # Multiplier spin box
         self.opt_mult = QSpinBox(self)
-        self.opt_mult.setMinimumWidth(100)
+        self.opt_mult.setMinimumWidth(90)
         self.form_layout.addRow('Multiplier', self.opt_mult)
 
         # Right shift spin box
         self.opt_rs = QSpinBox(self)
-        self.opt_rs.setMinimumWidth(100)
+        self.opt_rs.setMinimumWidth(90)
         self.form_layout.addRow('Right shift', self.opt_rs)
 
         # Scale factor display box
         self.scale_factor = QLineEdit(self)
         self.scale_factor.setEnabled(False)
-        self.scale_factor.setStyleSheet('QLineEdit {background-color: tomato; }')
+        self.scale_factor.setStyleSheet('QLineEdit {background-color: lightsteelblue; }')
         self.form_layout.addRow('Scale factor', self.scale_factor)
         self.scale_factor.setEnabled(False)
 
         # Add channel combo box
         self.opt_add_chan = QComboBox(self)
+        self.opt_add_chan.setMaximumWidth(90)
         self.form_layout.addRow('Add channel ', self.opt_add_chan)
 
         self.layout.addLayout(self.form_layout)
@@ -376,17 +378,17 @@ class OutputView(QGroupBox):
 
         # Initial output spin box
         self.opt_init = QDoubleSpinBox(self)
-        self.opt_init.setMinimumWidth(100)
+        self.opt_init.setMinimumWidth(90)
         self.form_layout.addRow('Initial', self.opt_init)
 
         # Max output spin box
         self.opt_max = QDoubleSpinBox(self)
-        self.opt_max.setMinimumWidth(100)
+        self.opt_max.setMinimumWidth(90)
         self.form_layout.addRow('Max', self.opt_max)
 
         # Min output spin box
         self.opt_min = QDoubleSpinBox(self)
-        self.opt_min.setMinimumWidth(100)
+        self.opt_min.setMinimumWidth(90)
         self.form_layout.addRow('Min', self.opt_min)
 
         self.layout.addLayout(self.form_layout)
