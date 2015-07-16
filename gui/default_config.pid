@@ -7,7 +7,7 @@ I0
 aI-1
 aI1
 aI-1
-aI-1
+aI3
 aI-1
 aI-1
 aI-1
@@ -49,7 +49,7 @@ asI4
 (lp4
 I01
 aI0
-aI0
+aI01
 aI0
 aI0
 aI0
@@ -117,7 +117,7 @@ I100
 aI0
 aI100
 aI0
-aI0
+aI100
 aI0
 aI0
 aI0
@@ -139,7 +139,7 @@ I10
 aI0
 aI10
 aI0
-aI0
+aI10
 aI0
 aI0
 aI0
@@ -205,7 +205,7 @@ F65535
 aF0
 aF65535
 aF0
-aF0
+aF65535
 aF0
 aF0
 aF0
@@ -271,7 +271,7 @@ I10
 aI0
 aI10
 aI0
-aI0
+aI10
 aI0
 aI0
 aI0
@@ -364,7 +364,7 @@ I1
 aI0
 aI1
 aI0
-aI0
+aI1
 aI0
 aI0
 aI0
@@ -382,9 +382,9 @@ aI0
 aI0
 asI23
 (lp41
-F1
+F0.001
 aI0
-aF2
+aF0.001
 aI0
 aI0
 aI0

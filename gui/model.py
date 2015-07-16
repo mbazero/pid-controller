@@ -130,7 +130,7 @@ class Model:
         # Update lock statistics
         if len(data_x) > self.lock_status_window:
             thresh = self.get_param(self.params.lock_threshold_addr, chan)
-            setpoint = self.get_param(self.params.pid_setpoint_addr, chan)
+            setpoint = self.denormalize_input(chan, self.get_param(self.params.pid_setpoint_addr, chan))
             mean = np.mean(data_y[-self.lock_status_window:])
             self.lock_status[chan] = abs(mean - setpoint) < thresh
         else:
@@ -225,7 +225,7 @@ class Model:
         if not self.is_valid_input(inpt):
             return 'Invalid input'
         else:
-            return 'ADC ' + str(inpt)
+            return 'ADC ' + str(inpt + 1)
 
     '''
     Return string representation for output channel number
