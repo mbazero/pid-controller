@@ -2,6 +2,7 @@ import sys
 import time
 import threading
 import sip
+import tooltips as tt
 import pyqtgraph as pg
 import numpy as np
 from PyQt4.Qt import *
@@ -81,16 +82,19 @@ class GlobalParamsView(QGroupBox):
 
         # ADC oversample combo box
         self.adc_os = QComboBox(self)
+        self.adc_os.setToolTip(tt.adc_os)
         self.form_layout.addRow('ADC oversample', self.adc_os)
 
         # Sample rate spin box
         self.sample_rate = QDoubleSpinBox(self)
+        self.sample_rate.setToolTip(tt.sample_rate)
         self.form_layout.addRow('Sampling rate (Hz)', self.sample_rate)
 
         self.layout.addLayout(self.form_layout)
 
         # Block transfer push button
         self.block_transfer = QPushButton('Block logging', self)
+        self.block_transfer.setToolTip(tt.block_transfer)
         self.block_transfer.setCheckable(True)
         self.layout.addWidget(self.block_transfer)
 
@@ -121,15 +125,17 @@ class GlobalParamsView(QGroupBox):
 
         # Save configuration push button
         self.save_config = QPushButton('Save Config', self)
+        self.save_config.setToolTip(tt.save_config)
         self.layout.addWidget(self.save_config)
 
         # Load configuration push button
         self.load_config = QPushButton('Load Config', self)
-        # self.load_config.setStyleSheet('background-color: red')
+        self.load_config.setToolTip(tt.load_config)
         self.layout.addWidget(self.load_config)
 
         # System reset push button
         self.sys_reset = QPushButton('System Reset', self)
+        self.sys_reset.setToolTip(tt.sys_reset)
         self.layout.addWidget(self.sys_reset)
 
         self.setLayout(self.layout)
@@ -192,8 +198,10 @@ class ChannelView(QWidget):
         self.gcontrol_layout = QHBoxLayout()
 
         self.graph_freeze = QPushButton('Freeze', self)
+        self.graph_freeze.setToolTip(tt.graph_freeze)
         self.graph_freeze.setCheckable(True)
         self.graph_clear = QPushButton('Clear', self)
+        self.graph_clear.setToolTip(tt.graph_clear)
 
         self.std_dev_fl = QFormLayout()
         self.std_dev = QLabel('0')
@@ -238,25 +246,30 @@ class ConfigView(QGroupBox):
 
         # Channel source select combo box
         self.chan_src_sel = QComboBox(self)
+        self.chan_src_sel.setToolTip(tt.chan_src_sel)
         self.form_layout.addRow('Input', self.chan_src_sel)
         self.layout.addLayout(self.form_layout)
 
         # Channel name line edit
         self.chan_name = QLineEdit(self)
+        self.chan_name.setToolTip(tt.chan_name)
         self.form_layout.addRow('Name', self.chan_name)
 
         # Add to quick view button
         self.quick_view_toggle = QCheckBox('Show in quick view')
+        self.quick_view_toggle.setToolTip(tt.quick_view_toggle)
         self.layout.addWidget(self.quick_view_toggle)
 
         # PID lock enable button
         self.hb_layout = QHBoxLayout()
         self.pid_lock_en = QPushButton('Enable lock', self)
+        self.pid_lock_en.setToolTip(tt.pid_lock_en)
         self.pid_lock_en.setCheckable(True)
         self.hb_layout.addWidget(self.pid_lock_en)
 
         # Channel reset button
         self.chan_reset = QPushButton('Reset', self)
+        self.chan_reset.setToolTip(tt.chan_reset)
         self.hb_layout.addWidget(self.chan_reset)
         self.layout.addLayout(self.hb_layout)
 
@@ -275,22 +288,26 @@ class ErrorView(QGroupBox):
 
         # Oversample mode combo box
         self.ovr_os = QComboBox(self)
+        self.ovr_os.setToolTip(tt.ovr_os)
         self.ovr_os.setMaximumWidth(90)
         self.form_layout.addRow('Oversample', self.ovr_os)
 
         # PID setpoint spin box
         self.pid_setpoint = QDoubleSpinBox(self)
+        self.pid_setpoint.setToolTip(tt.pid_setpoint)
         self.pid_setpoint.setMinimumWidth(90)
         self.form_layout.addRow('Setpoint', self.pid_setpoint)
 
         # Lock threshold spin box
         self.lock_threshold = QDoubleSpinBox(self)
+        self.lock_threshold.setToolTip(tt.lock_threshold)
         self.lock_threshold.setMinimumWidth(90)
         self.form_layout.addRow('Threshold', self.lock_threshold)
         self.layout.addLayout(self.form_layout)
 
         # PID invert error check box
         self.pid_inv_error = QCheckBox('Invert Error', self)
+        self.pid_inv_error.setToolTip(tt.pid_inv_error)
         self.layout.addWidget(self.pid_inv_error)
 
         self.setLayout(self.layout)
@@ -308,16 +325,19 @@ class PIDView(QGroupBox):
 
         # PID P coefficient spin box
         self.pid_p_coef = QSpinBox(self)
+        self.pid_p_coef.setToolTip(tt.pid_p_coef)
         self.pid_p_coef.setMinimumWidth(90)
         self.form_layout.addRow('P coef', self.pid_p_coef)
 
         # PID I coefficient spin box
         self.pid_i_coef = QSpinBox(self)
+        self.pid_i_coef.setToolTip(tt.pid_i_coef)
         self.pid_i_coef.setMinimumWidth(90)
         self.form_layout.addRow('I coef', self.pid_i_coef)
 
         # PID D coefficient spin box
         self.pid_d_coef = QSpinBox(self)
+        self.pid_d_coef.setToolTip(tt.pid_i_coef)
         self.pid_d_coef.setMinimumWidth(90)
         self.form_layout.addRow('D coef', self.pid_d_coef)
 
@@ -325,6 +345,7 @@ class PIDView(QGroupBox):
 
         # PID clear button
         self.pid_clear = QPushButton('Clear', self)
+        self.pid_clear.setToolTip(tt.pid_clear)
         self.layout.addWidget(self.pid_clear)
 
         self.setLayout(self.layout)
@@ -342,16 +363,19 @@ class ProcessingView(QGroupBox):
 
         # Multiplier spin box
         self.opt_mult = QSpinBox(self)
+        self.opt_mult.setToolTip(tt.opt_mult)
         self.opt_mult.setMinimumWidth(90)
         self.form_layout.addRow('Multiplier', self.opt_mult)
 
         # Right shift spin box
         self.opt_rs = QSpinBox(self)
+        self.opt_rs.setToolTip(tt.opt_rs)
         self.opt_rs.setMinimumWidth(90)
         self.form_layout.addRow('Right shift', self.opt_rs)
 
         # Scale factor display box
         self.scale_factor = QLineEdit(self)
+        self.scale_factor.setToolTip(tt.scale_factor)
         self.scale_factor.setEnabled(False)
         self.scale_factor.setStyleSheet('QLineEdit {background-color: lightsteelblue; }')
         self.form_layout.addRow('Scale factor', self.scale_factor)
@@ -359,6 +383,7 @@ class ProcessingView(QGroupBox):
 
         # Add channel combo box
         self.opt_add_chan = QComboBox(self)
+        self.opt_add_chan.setToolTip(tt.opt_add_chan)
         self.opt_add_chan.setMaximumWidth(90)
         self.form_layout.addRow('Add channel ', self.opt_add_chan)
 
@@ -378,16 +403,19 @@ class OutputView(QGroupBox):
 
         # Initial output spin box
         self.opt_init = QDoubleSpinBox(self)
+        self.opt_init.setToolTip(tt.opt_init)
         self.opt_init.setMinimumWidth(90)
         self.form_layout.addRow('Initial', self.opt_init)
 
         # Max output spin box
         self.opt_max = QDoubleSpinBox(self)
+        self.opt_max.setToolTip(tt.opt_max)
         self.opt_max.setMinimumWidth(90)
         self.form_layout.addRow('Max', self.opt_max)
 
         # Min output spin box
         self.opt_min = QDoubleSpinBox(self)
+        self.opt_min.setToolTip(tt.opt_min)
         self.opt_min.setMinimumWidth(90)
         self.form_layout.addRow('Min', self.opt_min)
 
@@ -395,6 +423,7 @@ class OutputView(QGroupBox):
 
         # Write injection button
         self.opt_inject = QPushButton('Write initial', self)
+        self.opt_inject.setToolTip(tt.opt_inject)
         self.layout.addWidget(self.opt_inject)
 
         self.setLayout(self.layout)
