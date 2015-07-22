@@ -8,7 +8,7 @@
 // substantial packing and unpacking complexity.
 //
 // This module handles all frontpanel input and output. Input
-// data is received on three wire-in channels. The data target
+// data is received on foru wire-in channels. The data target
 // is defined by an address and channel. The address specifies
 // the type of data being received. The channel specifies
 // the target PID input or output channel.

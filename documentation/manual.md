@@ -15,6 +15,8 @@ filtering is supported on all channels at the cost of reduced channel
 update rate. A Python GUI is provided for real time controller
 configuration and monitoring.
 
+![PID controller block diagram](system_block.png)
+
 ## Definition of Terms
 __PID channel__ refers to a logical channel in the PID controller. There
 is a one-to-one mapping between output channels and logical channels, so
@@ -54,120 +56,16 @@ destination channel of the instruction, which in turn specifies the PID
 configuration to be used in processing the ADC data word.
 
 ## Verilog Design
+Input data is read by the ADC controller, buffered, and passed to
+the PID pipeline.  The PID pipeline looks up output destination(s)
+assigned to input sources and does all processing on input data.
+Processed data is sent to the DAC output buffer or one of multiple DDS
+controllers depending on destination target. DAC or DDS chips are
+updated with processed data by their respective controllers. All writing
+and reading of controller data and PC management of controller
+operations is handled through the frontpanel interface.
 
-### Frontpanel Interface
-The frontpanel interface module handles all USB communication to and
-from the FPGA. PC-to-FPGA communication allows for triggering of system
-operations, writing configuration memory, and submitting system
-requests. FPGA-to-PC communication allows for datalogging of averaged
-input data streams.
-
-#### Triggering System Operations
-System operations are triggered with a single Opal Kelly trigger-in
-module synchronous with the PID pipeline clock. The trigger-in module is
-16-bits wide and supplies system reset, ADC conversion start, write
-enable, and DAC reference set triggers. All triggers are asserted for a
-single clock cycle. The offsets for these triggers within the array are
-specified in `ep_map.vh.` Supported triggers are discussed below.
-
-##### System Reset Trigger
-Resets all PID controller modules as well as external ADC, DAC, and DDS
-chips. System reset does not modify configuration state. e.g. a value
-written for a channel's P-coefficient will persist through a system
-reset. The only way to clear configuration state is to write zero
-values.
-
-##### ADC Conversion Start Trigger
-Signals the ADC controller to start continuous conversion mode. In
-continuous conversion mode, the ADC chip and controller loop
-indefinitely, converting new data and reading old data in parallel. The
-speed of the read/convert loop is determined by the ADC oversample
-ratio. At the base oversample ratio of 2, the read/convert loop operates
-at 100kHz. Once continuous conversion mode is started, the only way to
-stop it is with a system reset.
-
-##### Write Enable Trigger
-Signals a write of PID controller configuration memory. The address and
-channel wire-ins are used to address the specific memory location to be
-written.  The array of four data wire-ins supplies the data to be
-written to this location.
-
-##### DAC Reference Set Trigger
-Triggers the DAC controller to send an internal reference set
-instruction to the DAC chip. By default, the DAC chip is configured to
-use an external reference voltage. There is no external reference
-voltage supplied in the breakout board design. The reference set
-instruction must be sent before the DAC chip can process write
-instructions.
-
-#### Writing Configuration Memory
-Six Opal Kelly wire-in endpoints and a single write enable trigger (as
-described above) are used to write data to PID controller configuration
-memory.
-
-The first wire-in endpoint specifies the address target of the write
-operation. Valid addresses are defined by address parameters in
-`ep_map.vh`. An example of valid address is `pid_p_coef_addr` which
-targets P coefficient memory in the PID controller.
-
-The second wire-in endpoint specifies the channel target of the write
-operation. Write channels are specified with a zero reference. This is
-different from the GUI and breakout board, which mark channel numbers
-with a one reference.
-
-The last four wire-in endpoints are the data channels. The concatenation
-of these channels forms a single data vector, which is written into the
-memory location specified by the address and channel endpoints on a
-write enable pulse.
-
-#### Submitting System Requests
-The request system uses the same address and channel endpoints and write
-enable trigger used to write configuration memory. Request addresses are
-specified in `ep_map.vh` separately from configuration memory write
-addresses. Supported requests are discussed below.
-
-##### Oversample Clear Requests
-Clears accumulating sum memory and any instructions in the oversample
-filter pipeline for the channel specified by the write channel endpoint.
-
-##### PID Clear Request
-Clears previous error and previous PID sum memory and any instructions
-in the PID filter pipeline for the channel specified by the write
-channel endpoint.
-
-##### Output Clear Request
-Clears previous output memory and any instructions in the output filter
-pipeline for the channel specified by the write channel endpoint.
-
-##### Output Injection Request
-Injects a single write instruction into the output filter to write the
-initial value stored in memory for the channel specified by the write
-channel endpoint.
-
-##### Pipe Channel Set Requests
-Sets the channel used for pipe data logging to that specified by the
-write channel endpoint.
-
-#### Datalogging
-The frontpanel interface facilitates logging of input ADC data. Two
-datalogging modes are supported. The first mode is called single-word
-mode. It uses Opal Kelly wire-out endpoints to transfer a single ADC
-data word per PID channel per read request. The second mode is called
-block-mode. It uses a single Opal Kelly pipe-out endpoint to transfer a
-block of 1024 ADC data words for a single channel per read request.
-Single-word data logging has low overhead and is intended to be used for
-constant monitoring of locked channels. Block-mode datalogging has
-substantially greater overhead in terms of FPGA area and USB transfer
-time. It is intended to be used when a lock is first set up to assist in
-PID parameter tuning.
-
-### Inputs
-The sole source of input in the PID controller default configuration is
-the integrated AD7608 ADC chip on the MIST breakout board. The AD7608
-supports eight channels each with 18-bits of precision. Additional
-inputs could easily be added, provided that the different input streams
-are serialized and synced with the PID clock before entry into the PID
-pipeline.
+![Verilog top level schematic](top_scm.png)
 
 #### ADC Controller
 The ADC controller manages the AD7608 chip. The controller runs the
@@ -210,66 +108,68 @@ filter, PID filter, and output filter.  The PID pipeline sits behind a
 clean and simple interface, and thus can be treated as black box and
 easily integrated into other controller schemes.
 
+![PID pipeline schematic](pid_pipe_scm.png)
+
 #### Interface
 
-##### clk\_in
+`clk_in`
 Pipeline clock, to which all pipeline operations are synchronized. The
 pipeline can handle clock speeds of greater than 100MHz. However, in the
 default implementation, the pipeline is clocked at 50MHz. This is the
 maximum serial clock rate of the DAC and DDS chips. Using the same clock
 for the PID pipeline and output chips reduces circuit complexity.
 
-##### rst\_it
+`rst_in`
 Pipeline synchronous reset signal. Clears all internal memory and
 flushes all instructions in the pipeline. Does not modify configuration
 memory.
 
-##### dv\_in
+`dv_in`
 Input data valid signal. Indicates that data on the `src_in` and
 `data_in` buses are valid. Should be asserted for one clock cycle per
 valid PID instruction. `dv_in` may be held high for multiple clock
 cycles if new data is put on the src and data buses each clock cycle.
 
-##### src\_in
+`src_in`
 Specifies the source channel of the input data. In the pipeline, the
 source channel is used to lookup the assigned destination channel(s).
 The instruction dispatch stage sends an instruction into the pipeline
 for every valid destination mapping. Destination mappings are created by
 writing to `chan_src_sel_addr` in configuration memory.
 
-##### data\_in
+`data_in`
 Carries input data to be processed in the pipeline.
 
-##### wr\_en
+`wr_en`
 Pulsed high for one clock cycle to trigger a write of configuration
 memory using data on the `wr_addr`, `wr_chan`, and `wr_data` buses.
 
-##### wr\_addr
+`wr_addr`
 Specifies the memory address for a configuration memory write. Write
 addresses are stored as human-readable parameters in `ep_map.vh`.
 
-##### wr\_chan
+`wr_chan`
 Specifies the channel number for a configuration memory write.
 
-##### wr\_data
+`wr_data`
 Holds the data to be written for a configuration memory write.
 
-##### ovr\_dv
+`ovr_data`
 Data valid signal for the oversample filter output data bus.  Used for
 datalogging averaged input data.
 
-##### ovr\_chan
+`ovr_chan`
 Specifies the destination channel number of oversample filter output
 data. Used for datalogging.
 
-##### ovr\_data
+`ovr_data`
 Oversample filter output data. Used for datalogging.
 
-##### dv\_out
+`dv_out`
 Output data valid signal. Indicates that data on the `chan_out` and
 `data_out` buses is valid.
 
-##### chan\_out
+`chan_out`
 Specifies the destination channel of the output data. Mapping between
 logical destination channel numbers and physical outputs is given in
 `parameters.vh`.
@@ -526,6 +426,121 @@ available, the DDS controller sends a DDS update instruction targeting
 the appropriate frequency, phase, or amplitude register. If more than
 one input data word is valid at a time, update instructions are sent
 sequentially, preferencing frequency, phase, and amplitude in order.
+
+### Frontpanel Interface
+The frontpanel interface module handles all USB communication to and
+from the FPGA. PC-to-FPGA communication allows for triggering of system
+operations, writing configuration memory, and submitting system
+requests. FPGA-to-PC communication allows for datalogging of averaged
+input data streams.
+
+#### Triggering System Operations
+System operations are triggered with a single Opal Kelly trigger-in
+module synchronous with the PID pipeline clock. The trigger-in module is
+16-bits wide and supplies system reset, ADC conversion start, write
+enable, and DAC reference set triggers. All triggers are asserted for a
+single clock cycle. The offsets for these triggers within the array are
+specified in `ep_map.vh.` Supported triggers are discussed below.
+
+__System Reset Trigger__
+Resets all PID controller modules as well as external ADC, DAC, and DDS
+chips. System reset does not modify configuration state. e.g. a value
+written for a channel's P-coefficient will persist through a system
+reset. The only way to clear configuration state is to write zero
+values.
+
+__ADC Conversion Start Trigger__
+Signals the ADC controller to start continuous conversion mode. In
+continuous conversion mode, the ADC chip and controller loop
+indefinitely, converting new data and reading old data in parallel. The
+speed of the read/convert loop is determined by the ADC oversample
+ratio. At the base oversample ratio of 2, the read/convert loop operates
+at 100kHz. Once continuous conversion mode is started, the only way to
+stop it is with a system reset.
+
+__Write Enable Trigger__
+Signals a write of PID controller configuration memory. The address and
+channel wire-ins are used to address the specific memory location to be
+written.  The array of four data wire-ins supplies the data to be
+written to this location.
+
+__DAC Reference Set Trigger__
+Triggers the DAC controller to send an internal reference set
+instruction to the DAC chip. By default, the DAC chip is configured to
+use an external reference voltage. There is no external reference
+voltage supplied in the breakout board design. The reference set
+instruction must be sent before the DAC chip can process write
+instructions.
+
+#### Writing Configuration Memory
+Six Opal Kelly wire-in endpoints and a single write enable trigger (as
+described above) are used to write data to PID controller configuration
+memory.
+
+The first wire-in endpoint specifies the address target of the write
+operation. Valid addresses are defined by address parameters in
+`ep_map.vh`. An example of valid address is `pid_p_coef_addr` which
+targets P coefficient memory in the PID controller.
+
+The second wire-in endpoint specifies the channel target of the write
+operation. Write channels are specified with a zero reference. This is
+different from the GUI and breakout board, which mark channel numbers
+with a one reference.
+
+The last four wire-in endpoints are the data channels. The concatenation
+of these channels forms a single data vector, which is written into the
+memory location specified by the address and channel endpoints on a
+write enable pulse.
+
+#### Submitting System Requests
+The request system uses the same address and channel endpoints and write
+enable trigger used to write configuration memory. Request addresses are
+specified in `ep_map.vh` separately from configuration memory write
+addresses. Supported requests are discussed below.
+
+__Oversample Clear Requests__
+Clears accumulating sum memory and any instructions in the oversample
+filter pipeline for the channel specified by the write channel endpoint.
+
+__PID Clear Request__
+Clears previous error and previous PID sum memory and any instructions
+in the PID filter pipeline for the channel specified by the write
+channel endpoint.
+
+__Output Clear Request__
+Clears previous output memory and any instructions in the output filter
+pipeline for the channel specified by the write channel endpoint.
+
+__Output Injection Request__
+Injects a single write instruction into the output filter to write the
+initial value stored in memory for the channel specified by the write
+channel endpoint.
+
+__Pipe Channel Set Requests__
+Sets the channel used for pipe data logging to that specified by the
+write channel endpoint.
+
+#### Datalogging
+The frontpanel interface facilitates logging of input ADC data. Two
+datalogging modes are supported. The first mode is called single-word
+mode. It uses Opal Kelly wire-out endpoints to transfer a single ADC
+data word per PID channel per read request. The second mode is called
+block-mode. It uses a single Opal Kelly pipe-out endpoint to transfer a
+block of 1024 ADC data words for a single channel per read request.
+Single-word data logging has low overhead and is intended to be used for
+constant monitoring of locked channels. Block-mode datalogging has
+substantially greater overhead in terms of FPGA area and USB transfer
+time. It is intended to be used when a lock is first set up to assist in
+PID parameter tuning.
+
+### Inputs
+The sole source of input in the PID controller default configuration is
+the integrated AD7608 ADC chip on the MIST breakout board. The AD7608
+supports eight channels each with 18-bits of precision. Additional
+inputs could easily be added, provided that the different input streams
+are serialized and synced with the PID clock before entry into the PID
+pipeline.
+
 
 ## GUI Design
 The GUI is written in Python and uses the PyQt and PyQtGraph libraries
