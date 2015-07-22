@@ -67,6 +67,14 @@ controller operation is handled through the frontpanel interface.
 
 ![Verilog top level schematic](top_scm.png)
 
+### Controller Inputs
+The sole source of input in the PID controller default configuration is
+the integrated AD7608 ADC chip on the MIST breakout board. The AD7608
+supports eight channels each with 18-bits of precision. Additional
+inputs could easily be added, provided that the different input streams
+are serialized and synced with the PID clock before entry into the PID
+pipeline.
+
 #### ADC Controller
 The ADC controller manages the AD7608 chip. The controller runs the
 AD7608 in continuous conversion mode, where converted ADC data is read
@@ -369,7 +377,7 @@ If the inject flag is set, pass the initial output value to output.
 Otherwise, pass data from the previous stage to output. Writeback the
 outputted value.
 
-### Outputs
+### Controller Outputs
 The PID controller default configuration supports output to a single
 DAC8568 DAC chip and four AD9912 DDS chips. The DAC chip supplies eight
 channels of DC output. The DC value for all eight channels can be
@@ -536,15 +544,6 @@ constant monitoring of locked channels. Block-mode datalogging has
 substantially greater overhead in terms of FPGA area and USB transfer
 time. It is intended to be used when a lock is first set up to assist in
 PID parameter tuning.
-
-### Inputs
-The sole source of input in the PID controller default configuration is
-the integrated AD7608 ADC chip on the MIST breakout board. The AD7608
-supports eight channels each with 18-bits of precision. Additional
-inputs could easily be added, provided that the different input streams
-are serialized and synced with the PID clock before entry into the PID
-pipeline.
-
 
 ## GUI Design
 The GUI is written in Python and uses the PyQt and PyQtGraph libraries
