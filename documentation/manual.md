@@ -113,11 +113,11 @@ easily integrated into other controller schemes.
 #### Interface
 
 `clk_in`
-Pipeline clock, to which all pipeline operations are synchronized. The
-pipeline can handle clock speeds of greater than 100MHz. However, in the
-default implementation, the pipeline is clocked at 50MHz. This is the
-maximum serial clock rate of the DAC and DDS chips. Using the same clock
-for the PID pipeline and output chips reduces circuit complexity.
+Pipeline clock driving all pipeline operations. The pipeline can handle
+clock speeds of greater than 100MHz. However, in the default
+implementation, the pipeline is clocked at 50MHz. This is the maximum
+serial clock rate of the DAC and DDS chips. Using the same clock for the
+PID pipeline and output chips reduces circuit complexity.
 
 `rst_in`
 Pipeline synchronous reset signal. Clears all internal memory and
@@ -284,15 +284,15 @@ and setting `wr_data` to the source channel.
 Oversamples input data stream and computes a moving average. Processing
 is done in three pipeline stages.
 
-###### Fetch
+###### Stage 1: Fetch
 Register inputs and fetch the running sum and sample count.
 
-###### Accumulate
+###### Stage 2: Accumulate
 Add input data to the running sum, check for sum overflow and underflow,
 and fetch oversample ratio. Rail sum to max or min value if overflow or
 underflow has occurred.
 
-###### Divide and writeback
+###### Stage 3: Divide and writeback
 Check whether the oversample ratio has been satisfied--i.e. sample count
 equals 2^(oversample ratio). Divide sum by right shifting. If oversample
 ratio has been satisfied, pass divided sum to output and reset sum and
@@ -302,29 +302,29 @@ sample count. Writeback sum and sample count to internal memory.
 Computes PID sum on input data stream. Processing is done in six
 pipeline stages.
 
-###### Fetch
+###### Stage 1: Fetch
 Register inputs and fetch setpoint, PID coefficients, and invert error
 flag.
 
-###### Compute error and k-coefficients
+###### Stage 2: Compute error and k-coefficients
 Compute error signal using the channel setpoint. Invert error if error
 flag is set. Compute z-transform coefficients using the PID
 coefficients. Fetch previous two error values.
 
-###### Compute error products
+###### Stage 3: Compute error products
 Compute error products using z-transform coefficients, current error
 value, and previous error values. Writeback previous error values.
 
-###### Compute PID delta
+###### Stage 4: Compute PID delta
 Compute PID sum delta using error products. Fetch previous PID sum
 output.
 
-###### Compute output
+###### Stage 5: Compute output
 Compute output by adding PID sum delta to previous PID sum output. Check
 for overflow and underflow. Rail to maximum or minimum sum value if
 overflow or underflow has occurred.
 
-###### Writeback
+###### Stage 6: Writeback
 Writeback new PID sum output.
 
 ##### Output Filter
@@ -332,7 +332,7 @@ Multiplies and right shifts PID sum. Optionally adds result to that of
 another PID channel. Adds final result to the previously outputted data
 value. Processing is done in five pipeline stages.
 
-###### Fetch and Inject
+###### Stage 1: Fetch and Inject
 Register inputs. Fetch multiplier, right shift, and add channel. Handle
 injection requests.
 
@@ -342,7 +342,7 @@ write instruction will propagate through the pipeline and trigger a
 write of the initial output value. Injection register is cleared
 immediately after injection.
 
-###### Multiply and right shift
+###### Stage 2: Multiply and right shift
 Multiply and right shift data. The result of this operation will be
 referred to, henceforth, as MTRS data. If the add channel is valid,
 fetch the last MTRS data from that channel. If the add channel is
@@ -350,17 +350,17 @@ invalid, store zero in the add data register. MTRS data cannot overflow
 because the internal register is sufficiently large. Overflow checks are
 conducted later in the pipeline when data is truncated for output.
 
-###### Sum with add channel
+###### Stage 3: Sum with add channel
 Writeback MTRS data and sum MTRS data with add channel data. If the add
 channel is invalid, add data will be zero and MTRS data will pass
 through unmodified.
 
-###### Computee output
+###### Stage 4: Computee output
 Add data to previously outputted value and check for overflow and
 underflow. Rail to maximum or minimum value if overflow or underflow has
 occurred. Fetch initial output value to handle write injections.
 
-###### Inject and writeback
+###### Stage 5: Inject and writeback
 If the inject flag is set, pass the initial output value to output.
 Otherwise, pass data from the previous stage to output. Writeback the
 outputted value.
@@ -392,7 +392,7 @@ so no changes are required to the Python code.
 __Note on clocking:__ DAC output streams are buffered with a single
 dual-clocked FIFO between the PID pipeline and DAC controller.  DDS
 output streams have single word buffering inside the DDS controllers,
-but this buffering __is not dual-clocked__. Therefore, the PID pipeline
+but this buffering is not dual-clocked. Therefore, the PID pipeline
 must use the same 50MHz clock as the DDS controllers even though it can
 support much greater speeds. The design can be altered to allow the PID
 pipeline to use its own clock by adding dual-clocked buffers to all DDS
@@ -580,27 +580,27 @@ board output ports.
 #### config.py
 Defines GUI-specific configuration parameters.
 
-##### config\_path
+`config_path`
 Optional path to saved configuration file to load on
 initialization. Leave blank to use default configuration as defined in
 `init.vh`.
 
-##### pid\_bit\_file
+`pid_bit_file`
 Path to PID controller bit file.
 
-##### serial
+`serial`
 Target Opal Kelly serial number. Leave blank to use first Opal Kelly
 found on USB scan.
 
-##### adc\_clk\_freq
+`adc_clk_freq`
 Frequency of ADC serial clock. Don't change this unless hardware
 ADC changes.
 
-##### sys\_clk\_freq
+`sys_clk_freq`
 Frequency of PID pipeline clock, DAC serial clock, and DDS serial clock.
 Don't change this unless DAC or DDS hardware changes.
 
-##### header\_list
+`header_list`
 List of Verilog header files to parse and extract parameters from.
 
 ### Model-View-Controller
