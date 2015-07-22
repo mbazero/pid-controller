@@ -80,7 +80,6 @@ PyQtGraph can be downloaded from [here](http://www.pyqtgraph.org/).
   consistency between FGPA and GUI state.
 
 ### Notes
-
 * If there are errors connected to the Opal Kelly module, they will be
   displayed in console on GUI launch.
 * If Verilog changes are made, a new bit file must be generated. To do
@@ -88,3 +87,5 @@ PyQtGraph can be downloaded from [here](http://www.pyqtgraph.org/).
   project and select "Generate bit file." When the process completes,
   rename the bit file to `pid_controller.bit` and overwrite the old
   file.
+
+##
