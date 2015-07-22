@@ -454,14 +454,14 @@ enable, and DAC reference set triggers. All triggers are asserted for a
 single clock cycle. The offsets for these triggers within the array are
 specified in `ep_map.vh.` Supported triggers are discussed below.
 
-__System Reset Trigger__
+__System reset trigger:__
 Resets all PID controller modules as well as external ADC, DAC, and DDS
 chips. System reset does not modify configuration state. e.g. a value
 written for a channel's P-coefficient will persist through a system
 reset. The only way to clear configuration state is to write zero
 values.
 
-__ADC Conversion Start Trigger__
+__ADC conversion start trigger:__
 Signals the ADC controller to start continuous conversion mode. In
 continuous conversion mode, the ADC chip and controller loop
 indefinitely, converting new data and reading old data in parallel. The
@@ -470,13 +470,13 @@ ratio. At the base oversample ratio of 2, the read/convert loop operates
 at 100kHz. Once continuous conversion mode is started, the only way to
 stop it is with a system reset.
 
-__Write Enable Trigger__
+__Write enable trigger:__
 Signals a write of PID controller configuration memory. The address and
 channel wire-ins are used to address the specific memory location to be
 written.  The array of four data wire-ins supplies the data to be
 written to this location.
 
-__DAC Reference Set Trigger__
+__DAC reference set trigger:__
 Triggers the DAC controller to send an internal reference set
 instruction to the DAC chip. By default, the DAC chip is configured to
 use an external reference voltage. There is no external reference
@@ -510,25 +510,25 @@ enable trigger used to write configuration memory. Request addresses are
 specified in `ep_map.vh` separately from configuration memory write
 addresses. Supported requests are discussed below.
 
-__Oversample Clear Requests__
+__Oversample clear requests:__
 Clears accumulating sum memory and any instructions in the oversample
 filter pipeline for the channel specified by the write channel endpoint.
 
-__PID Clear Request__
+__PID clear request:__
 Clears previous error and previous PID sum memory and any instructions
 in the PID filter pipeline for the channel specified by the write
 channel endpoint.
 
-__Output Clear Request__
+__Output clear request:__
 Clears previous output memory and any instructions in the output filter
 pipeline for the channel specified by the write channel endpoint.
 
-__Output Injection Request__
+__Output injection request:__
 Injects a single write instruction into the output filter to write the
 initial value stored in memory for the channel specified by the write
 channel endpoint.
 
-__Pipe Channel Set Requests__
+__Pipe channel set requests:__
 Sets the channel used for pipe data logging to that specified by the
 write channel endpoint.
 
